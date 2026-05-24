@@ -1,0 +1,93 @@
+{
+  "downloaded_at": "2026-05-24T11:34:21.986Z",
+  "samples": [
+    {
+      "file": "repique/1.mp3",
+      "category": "repique",
+      "freesound_id": 455636,
+      "freesound_url": "https://freesound.org/s/455636/",
+      "name": "FD808A Conga mid.wav",
+      "author": "Uberproduktion",
+      "author_url": "https://freesound.org/people/Uberproduktion/",
+      "license": "Creative Commons 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "piano/1.mp3",
+      "category": "piano",
+      "freesound_id": 455504,
+      "freesound_url": "https://freesound.org/s/455504/",
+      "name": "LP Bongos Low.wav",
+      "author": "MrRentAPercussionist",
+      "author_url": "https://freesound.org/people/MrRentAPercussionist/",
+      "license": "Attribution",
+      "license_url": "https://creativecommons.org/licenses/by/3.0/"
+    },
+    {
+      "file": "piano/2.mp3",
+      "category": "piano",
+      "freesound_id": 455637,
+      "freesound_url": "https://freesound.org/s/455637/",
+      "name": "FD808A Conga low.wav",
+      "author": "Uberproduktion",
+      "author_url": "https://freesound.org/people/Uberproduktion/",
+      "license": "Creative Commons 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "madera/1.mp3",
+      "category": "madera",
+      "freesound_id": 710213,
+      "freesound_url": "https://freesound.org/s/710213/",
+      "name": "DXClap_02",
+      "author": "oceansonmars",
+      "author_url": "https://freesound.org/people/oceansonmars/",
+      "license": "Creative Commons 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "madera/2.mp3",
+      "category": "madera",
+      "freesound_id": 50580,
+      "freesound_url": "https://freesound.org/s/50580/",
+      "name": "080322 Clave single hit.wav",
+      "author": "BoilingSand",
+      "author_url": "https://freesound.org/people/BoilingSand/",
+      "license": "Attribution",
+      "license_url": "https://creativecommons.org/licenses/by/3.0/"
+    },
+    {
+      "file": "madera/3.mp3",
+      "category": "madera",
+      "freesound_id": 132417,
+      "freesound_url": "https://freesound.org/s/132417/",
+      "name": "Percussion clave like hit",
+      "author": "Sajmund",
+      "author_url": "https://freesound.org/people/Sajmund/",
+      "license": "Creative Commons 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "madera/4.mp3",
+      "category": "madera",
+      "freesound_id": 710210,
+      "freesound_url": "https://freesound.org/s/710210/",
+      "name": "Cowbell_01",
+      "author": "oceansonmars",
+      "author_url": "https://freesound.org/people/oceansonmars/",
+      "license": "Creative Commons 0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "madera/5.mp3",
+      "category": "madera",
+      "freesound_id": 121389,
+      "freesound_url": "https://freesound.org/s/121389/",
+      "name": "claves_hit07.wav",
+      "author": "soundbytez",
+      "author_url": "https://freesound.org/people/soundbytez/",
+      "license": "Attribution",
+      "license_url": "https://creativecommons.org/licenses/by/3.0/"
+    }
+  ]
+}

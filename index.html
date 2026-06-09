@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Repique Code 1.7 — Estudioprompt</title>
+  <title>Repique Code 1.8 — Estudioprompt</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -495,9 +495,12 @@
       margin-bottom: 0.18rem;
     }
     .viz-label {
-      width: 20px;
-      font-size: 0.75rem;
-      text-align: center;
+      width: 72px;
+      font-size: 0.55rem;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.55);
+      text-align: left;
+      white-space: nowrap;
       flex-shrink: 0;
       line-height: 1;
     }
@@ -531,9 +534,8 @@
     }
 
     /* ── Slider de tempo (potenciómetro lineal) ── */
-    #tempo-slider-wrap {
+    #tempo-slider-wrap, #filtro-slider-wrap {
       position: fixed;
-      top: 3.2rem;
       right: 1.65rem;
       display: flex;
       flex-direction: column;
@@ -542,14 +544,16 @@
       z-index: 10;
       user-select: none;
     }
-    #tempo-slider-track {
+    #tempo-slider-wrap  { top: 3.2rem; }
+    #filtro-slider-wrap { top: 17.5rem; }
+    #tempo-slider-track, #filtro-slider-track {
       position: relative;
       width: 3px;
       height: 150px;
       background: rgba(255,255,255,0.07);
       cursor: ns-resize;
     }
-    #tempo-slider-fill {
+    #tempo-slider-fill, #filtro-slider-fill {
       position: absolute;
       bottom: 0;
       left: 0;
@@ -557,7 +561,7 @@
       background: #8b1a2c;
       pointer-events: none;
     }
-    #tempo-slider-thumb {
+    #tempo-slider-thumb, #filtro-slider-thumb {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
@@ -567,12 +571,24 @@
       pointer-events: none;
       transition: background 0.1s;
     }
-    #tempo-bpm-label {
+    #tempo-bpm-label, #filtro-label {
       font-size: 0.44rem;
       letter-spacing: 0.1em;
       color: rgba(255,255,255,0.22);
       pointer-events: none;
     }
+    .slider-lock {
+      background: none;
+      border: none;
+      font-size: 0.62rem;
+      cursor: pointer;
+      opacity: 0.35;
+      padding: 0;
+      line-height: 1;
+      transition: opacity 0.15s;
+    }
+    .slider-lock:hover  { opacity: 0.7; }
+    .slider-lock.locked { opacity: 1; }
 
     /* ── Botón Vínculos (gesto shaka) ── */
     #btn-vinculos {
@@ -661,7 +677,7 @@
     <img id="logo-ep" src="logo-ep.png" alt="Estudioprompt">
     <div id="header-text">
       <div id="header-brand">Estudioprompt</div>
-      <div id="header-nombre">Repique Code 1.7</div>
+      <div id="header-nombre">Repique Code 1.8</div>
     </div>
   </div>
 
@@ -673,6 +689,15 @@
       <div id="tempo-slider-thumb"></div>
     </div>
     <span id="tempo-bpm-label">120</span>
+    <button class="slider-lock" id="tempo-lock" title="Bloquear el tempo a los gestos">🔓</button>
+  </div>
+  <div id="filtro-slider-wrap" title="Graves / agudos (arrastrar, gesto ☝🤞 o altura de las manos)">
+    <div id="filtro-slider-track">
+      <div id="filtro-slider-fill"></div>
+      <div id="filtro-slider-thumb"></div>
+    </div>
+    <span id="filtro-label">agudos</span>
+    <button class="slider-lock" id="filtro-lock" title="Bloquear graves/agudos a los gestos">🔓</button>
   </div>
 
   <div id="panel">

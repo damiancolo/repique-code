@@ -84,9 +84,12 @@ async function init() {
   let victoriaCount   = 0;
   let victoriaActivo  = false;
 
-  // ── Slider de tempo ──────────────────────────────────────────────────────────
+  // ── Sliders de tempo y filtro ────────────────────────────────────────────────
   let _bpmTarget   = 120;
-  let _gestureDrag = null; // { startY, startBPM } — enganche por gesto dos dedos
+  let _filtroT     = 0.73; // ≈ 4000 Hz, estado inicial del filtro
+  let _gestureDrag = null; // { tipo: 'bpm'|'filtro', startY, startVal }
+  let tempoLocked  = false; // candado manual del slider de tempo
+  let filtroLocked = false; // candado manual del slider de graves/agudos
 
   // ── Vínculos ─────────────────────────────────────────────────────────────────
   const FRAMES_SHAKA  = 15;
@@ -201,9 +204,9 @@ async function init() {
     return Math.hypot(mano[8].x - mano[12].x, mano[8].y - mano[12].y) < 0.08;
   }
 
-  /** Verifica que los dedos proyectados estén encima del área del slider en pantalla */
-  function dedosSobreSlider(mano) {
-    const rect = document.getElementById('tempo-slider-wrap').getBoundingClientRect();
+  /** Verifica que los dedos proyectados estén encima del área de un slider en pantalla */
+  function dedosSobreSlider(mano, wrapId) {
+    const rect = document.getElementById(wrapId).getBoundingClientRect();
     // Coordenadas espejadas (igual que el canvas de render)
     const sx = (1 - (mano[8].x + mano[12].x) / 2) * window.innerWidth;
     const sy = ((mano[8].y + mano[12].y) / 2) * window.innerHeight;
@@ -603,10 +606,14 @@ async function init() {
       if (ancho !== null) {
         if (formaConfirmada === 'dos_triangulos') {
           actualizarWow(centroY, ancho, subtipoAcid);
-        } else {
-          // Manos arriba (centroY bajo) = agudos, manos abajo (centroY alto) = graves
-          const tFiltro = mapear(centroY, 0.75, 0.15, 0, 1);
+        } else if (!filtroLocked && !locked) {
+          // Manos arriba (centroY bajo) = agudos, manos abajo (centroY alto) = graves.
+          // Con candado (manual o dos pinzas) el filtro queda congelado — se
+          // pueden hacer notas sin mover los graves.
+          const tFiltro = Math.max(0, Math.min(1, mapear(centroY, 0.75, 0.15, 0, 1)));
           actualizarFiltro(tFiltro);
+          _filtroT = tFiltro;
+          actualizarSliderFiltro(tFiltro);
         }
 
         if (state.audioIniciado) {
@@ -631,29 +638,40 @@ async function init() {
         framesCandidato = 0;
       }
 
-      // Gesto dos dedos pegados → control relativo del tempo
-      if (!_mouseDrag) {
+      // Gesto dos dedos pegados → control relativo de tempo o filtro (según slider)
+      if (!_mouseDrag && !_mouseDragFiltro) {
         const mano2 = manos.find(m => dosDeadosPegados(m));
         if (mano2) {
           const sy = ((mano2[8].y + mano2[12].y) / 2) * window.innerHeight;
           if (!_gestureDrag) {
-            // Solo enganchar si los dedos están sobre el slider
-            if (dedosSobreSlider(mano2)) {
-              _gestureDrag = { startY: sy, startBPM: _bpmTarget };
+            // Enganchar según sobre qué slider estén los dedos (si no hay candado)
+            if (!locked && !tempoLocked && dedosSobreSlider(mano2, 'tempo-slider-wrap')) {
+              _gestureDrag = { tipo: 'bpm', startY: sy, startVal: _bpmTarget };
+            } else if (!locked && !filtroLocked && dedosSobreSlider(mano2, 'filtro-slider-wrap')) {
+              _gestureDrag = { tipo: 'filtro', startY: sy, startVal: _filtroT };
             }
           }
           if (_gestureDrag) {
             // Tracking delta — funciona aunque los dedos se muevan fuera del área
-            const delta = _gestureDrag.startY - sy; // arriba = positivo = más BPM
-            const bpm = Math.max(80, Math.min(180, _gestureDrag.startBPM + delta * 0.7));
-            if (!locked) actualizarBPM(bpm);
-            _bpmTarget = bpm;
-            actualizarSlider(_bpmTarget);
+            const delta = _gestureDrag.startY - sy; // arriba = positivo
+            if (_gestureDrag.tipo === 'bpm') {
+              const bpm = Math.max(80, Math.min(180, _gestureDrag.startVal + delta * 0.7));
+              if (!locked && !tempoLocked) actualizarBPM(bpm);
+              _bpmTarget = bpm;
+              actualizarSlider(_bpmTarget);
+            } else {
+              _filtroT = Math.max(0, Math.min(1, _gestureDrag.startVal + delta / 150));
+              actualizarFiltro(_filtroT);
+              actualizarSliderFiltro(_filtroT);
+            }
           }
         } else {
           _gestureDrag = null; // dedos sueltos → soltar el enganche
         }
-        sliderThumb.style.background = _gestureDrag
+        sliderThumb.style.background = (_gestureDrag && _gestureDrag.tipo === 'bpm')
+          ? 'rgba(255,255,255,0.95)'
+          : 'rgba(255,255,255,0.55)';
+        filtroThumb.style.background = (_gestureDrag && _gestureDrag.tipo === 'filtro')
           ? 'rgba(255,255,255,0.95)'
           : 'rgba(255,255,255,0.55)';
       }
@@ -837,22 +855,61 @@ async function init() {
     tempoBpmLabel.textContent = Math.round(bpm);
   }
 
-  // Mouse drag
+  // ── Slider de filtro (graves/agudos) ─────────────────────────────────────────
+  const filtroTrack = document.getElementById('filtro-slider-track');
+  const filtroFill  = document.getElementById('filtro-slider-fill');
+  const filtroThumb = document.getElementById('filtro-slider-thumb');
+  const filtroLabel = document.getElementById('filtro-label');
+
+  function actualizarSliderFiltro(t) {
+    filtroFill.style.height = t * TRACK_H + 'px';
+    filtroThumb.style.top   = (1 - t) * TRACK_H - 2 + 'px';
+    filtroLabel.textContent = t > 0.66 ? 'agudos' : t > 0.33 ? 'medios' : 'graves';
+  }
+
+  // Mouse drag — el mouse siempre funciona, los candados solo bloquean gestos
   let _mouseDrag = null;
+  let _mouseDragFiltro = null;
   sliderTrack.addEventListener('mousedown', (e) => {
     _mouseDrag = { startY: e.clientY, startBPM: _bpmTarget };
     e.preventDefault();
   });
-  document.addEventListener('mousemove', (e) => {
-    if (!_mouseDrag) return;
-    const delta = _mouseDrag.startY - e.clientY;
-    _bpmTarget = Math.max(80, Math.min(180, _mouseDrag.startBPM + delta * 0.8));
-    actualizarBPM(_bpmTarget);
-    actualizarSlider(_bpmTarget);
+  filtroTrack.addEventListener('mousedown', (e) => {
+    _mouseDragFiltro = { startY: e.clientY, startT: _filtroT };
+    e.preventDefault();
   });
-  document.addEventListener('mouseup', () => { _mouseDrag = null; });
+  document.addEventListener('mousemove', (e) => {
+    if (_mouseDrag) {
+      const delta = _mouseDrag.startY - e.clientY;
+      _bpmTarget = Math.max(80, Math.min(180, _mouseDrag.startBPM + delta * 0.8));
+      actualizarBPM(_bpmTarget);
+      actualizarSlider(_bpmTarget);
+    }
+    if (_mouseDragFiltro) {
+      const delta = _mouseDragFiltro.startY - e.clientY;
+      _filtroT = Math.max(0, Math.min(1, _mouseDragFiltro.startT + delta / TRACK_H));
+      actualizarFiltro(_filtroT);
+      actualizarSliderFiltro(_filtroT);
+    }
+  });
+  document.addEventListener('mouseup', () => { _mouseDrag = null; _mouseDragFiltro = null; });
+
+  // ── Candados de los sliders (bloquean los gestos, no el mouse) ───────────────
+  const tempoLockBtn  = document.getElementById('tempo-lock');
+  const filtroLockBtn = document.getElementById('filtro-lock');
+  tempoLockBtn.addEventListener('click', () => {
+    tempoLocked = !tempoLocked;
+    tempoLockBtn.textContent = tempoLocked ? '🔒' : '🔓';
+    tempoLockBtn.classList.toggle('locked', tempoLocked);
+  });
+  filtroLockBtn.addEventListener('click', () => {
+    filtroLocked = !filtroLocked;
+    filtroLockBtn.textContent = filtroLocked ? '🔒' : '🔓';
+    filtroLockBtn.classList.toggle('locked', filtroLocked);
+  });
 
   actualizarSlider(_bpmTarget);
+  actualizarSliderFiltro(_filtroT);
 
   // ── Selector de ritmo ────────────────────────────────────────────────────────
   const ritmoViz      = document.getElementById('ritmo-viz');
@@ -861,11 +918,11 @@ async function init() {
   let ritmoActivoIdx  = 6;
 
   const VIZ_TRACKS = [
-    { key: 'chico',   label: '🔔', color: 'rgba(255,255,255,0.82)' },
-    { key: 'repique', label: '🥁', color: '#e63946' },
-    { key: 'piano',   label: '🔴', color: '#e67e22' },
-    { key: 'madera',  label: '👏', color: '#1abc9c' },
-    { key: 'bombo',   label: '💥', color: '#4a90e2' },
+    { key: 'chico',   label: '🪘 chico',   color: 'rgba(255,255,255,0.82)' },
+    { key: 'repique', label: '🥁 repique', color: '#e63946' },
+    { key: 'piano',   label: '🛢 piano',   color: '#e67e22' },
+    { key: 'madera',  label: '🥢 madera',  color: '#1abc9c' },
+    { key: 'bombo',   label: '💥 bombo',   color: '#4a90e2' },
   ];
 
   const LIBRE_IDX = 6;

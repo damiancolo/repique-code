@@ -209,10 +209,12 @@ async function cargarSamples(destino) {
       if (!porCategoria[s.category]) porCategoria[s.category] = [];
       porCategoria[s.category].push(s.file); // ej: "madera/1.mp3"
       // Categoría virtual 'clave': solo las maderas que son clave de verdad
-      // (madera/1 es un clap y madera/4 un cowbell — no sirven para candombe)
+      // (madera/1 es un clap y madera/4 un cowbell — no sirven para candombe).
+      // claves_hit07 va primero: es la madera del candombe sintetizado.
       if (s.category === 'madera' && /clave/i.test(s.name || '')) {
         if (!porCategoria.clave) porCategoria.clave = [];
-        porCategoria.clave.push(s.file);
+        if (/claves_hit/i.test(s.name)) porCategoria.clave.unshift(s.file);
+        else porCategoria.clave.push(s.file);
       }
     }
 

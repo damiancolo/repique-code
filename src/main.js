@@ -504,6 +504,7 @@ async function init() {
 
   // Loop principal
   let _lastFrameTime = 0;
+  let _vizStep = -1;
   function loop(timestamp) {
     const dt = _lastFrameTime ? Math.min((timestamp - _lastFrameTime) / 1000, 0.05) : 0.016;
     _lastFrameTime = timestamp;
@@ -739,6 +740,14 @@ async function init() {
       }
     }
 
+    // ── Indicador de paso actual en el viz de ritmo ─────────────────────────
+    if (ritmoViz.style.display === 'block' && _vizStep !== state.step) {
+      _vizStep = state.step;
+      ritmoViz.querySelectorAll('.viz-cell').forEach(c => {
+        c.classList.toggle('now', +c.dataset.step === _vizStep);
+      });
+    }
+
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -894,6 +903,7 @@ async function init() {
         }
         const celda = document.createElement('div');
         celda.className = 'viz-cell' + (hit ? ' hit' : '');
+        celda.dataset.step = idx;
         if (hit) celda.style.background = track.color;
 
         if (editable) {

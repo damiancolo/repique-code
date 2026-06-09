@@ -67,6 +67,15 @@ const BANCO_PATRONES = [
     madera:  [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
     bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
   },
+  // 7 · Candombe — chico real (silencio en 1.ª semicorchea de cada negra),
+  // madera con la clave del candombe, repique conversando, piano de base
+  {
+    piano:   [1,null,null,null, null,null,null,1, 1,null,null,1, null,null,null,null],
+    repique: [null,null,1,null, null,1,null,null, null,1,null,null, null,null,1,null],
+    chico:   [null,1,1,1, null,1,1,1, null,1,1,1, null,1,1,1],
+    madera:  [1,null,null,1, null,null,1,null, null,null,1,null, 1,null,null,null],
+    bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
+  },
 ];
 
 let ritmoActual = 6;
@@ -132,7 +141,7 @@ const chebyshev  = new Tone.Chebyshev({ order: 50, wet: 0 });
 let masterGain       = null;
 let players          = null;           // Tone.Players con los samples reales
 let samplesDisp      = {};             // { categoria: ['cat_0', 'cat_1', ...] }
-let seqPiano, seqRepique, seqChico, seqMadera, seqBombo;
+let seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep;
 let droneFormaActual = null;
 let bpmInterno       = 100;
 // [madera, chico, repique, piano] — siempre activos
@@ -173,19 +182,26 @@ async function cargarSamples(destino) {
 
 // ─── Disparo de samples con velocity ─────────────────────────────────────────
 
+const _rrIdx = {}; // round-robin por categoría
+
 function dispararSample(cat, time) {
   const keys = samplesDisp[cat];
   if (!players || !keys?.length) return false;
 
   try {
-    const key    = keys[0]; // siempre el mismo sample por categoría
-    const player = players.player(key);
+    _rrIdx[cat] = ((_rrIdx[cat] ?? -1) + 1) % keys.length;
+    const player = players.player(keys[_rrIdx[cat]]);
+    player.volume.setValueAtTime(Tone.gainToDb(0.7 + Math.random() * 0.3), time);
     player.start(time);
     return true;
   } catch (err) {
     console.warn('[Repique Code] Error disparando sample:', err.message);
     return false;
   }
+}
+
+function _vel() {
+  return 0.7 + Math.random() * 0.3;
 }
 
 // ─── Secuenciador ─────────────────────────────────────────────────────────────
@@ -196,38 +212,43 @@ function crearSecuencias() {
   seqMadera = new Tone.Sequence((time) => {
     if (!tracksActivos[0]) return;
     if (!dispararSample('madera', time))
-      synthMadera.triggerAttackRelease('16n', time);
+      synthMadera.triggerAttackRelease('16n', time, _vel());
   }, P.madera, '16n');
 
   seqChico = new Tone.Sequence((time) => {
     if (!tracksActivos[1]) return;
     if (!dispararSample('chico', time))
-      synthChico.triggerAttackRelease('C4', '16n', time);
+      synthChico.triggerAttackRelease('C4', '16n', time, _vel());
   }, P.chico, '16n');
 
   seqRepique = new Tone.Sequence((time) => {
     if (!tracksActivos[2]) return;
     if (!dispararSample('repique', time))
-      synthRepique.triggerAttackRelease('G2', '16n', time);
+      synthRepique.triggerAttackRelease('G2', '16n', time, _vel());
   }, P.repique, '16n');
 
   seqPiano = new Tone.Sequence((time) => {
     if (!tracksActivos[3]) return;
     if (!dispararSample('piano', time))
-      synthPiano.triggerAttackRelease('C1', '16n', time);
+      synthPiano.triggerAttackRelease('C1', '16n', time, _vel());
   }, P.piano, '16n');
 
   seqBombo = new Tone.Sequence((time) => {
-    synthBombo.triggerAttackRelease('C1', '8n', time);
+    synthBombo.triggerAttackRelease('C1', '8n', time, _vel());
   }, P.bombo, '16n');
+
+  // Track del paso actual → state.step (para el indicador del viz)
+  seqStep = new Tone.Sequence((time, idx) => {
+    Tone.getDraw().schedule(() => { state.step = idx; }, time);
+  }, [...Array(16).keys()], '16n');
 }
 
 export function cambiarRitmo(idx) {
   ritmoActual = idx;
   if (!state.audioIniciado) return;
-  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo].forEach(s => { s?.stop(); s?.dispose(); });
+  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => { s?.stop(); s?.dispose(); });
   crearSecuencias();
-  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo].forEach(s => s.start(0));
+  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s.start(0));
 }
 
 // ─── API pública ──────────────────────────────────────────────────────────────
@@ -274,13 +295,16 @@ export async function startAudio() {
     await Promise.race([Tone.loaded(), new Promise(r => setTimeout(r, 4000))]);
   }
 
-  // Arrancar ritmo y drone
+  // Arrancar ritmo y drone — C3 coincide con droneFormaActual ('rectangulo')
   crearSecuencias();
-  drone.triggerAttack('D3');
+  drone.triggerAttack('C3');
   droneFormaActual = 'rectangulo';
 
   Tone.getTransport().bpm.value = bpmInterno;
-  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo].forEach(s => s.start(0));
+  // Swing leve en semicorcheas — el candombe no es grid-perfect
+  Tone.getTransport().swing = 0.08;
+  Tone.getTransport().swingSubdivision = '16n';
+  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s.start(0));
   Tone.getTransport().start();
 
   state.audioIniciado = true;
@@ -290,7 +314,8 @@ export function stopAudio() {
   drone.triggerRelease();
   droneGain.gain.rampTo(0, 0.3);
   Tone.getTransport().stop();
-  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo].forEach(s => s?.dispose());
+  [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s?.dispose());
+  state.step = -1;
   state.audioIniciado = false;
 }
 

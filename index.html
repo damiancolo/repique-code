@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Repique Code 1.5 — Estudioprompt</title>
+  <title>Repique Code 1.6 — Estudioprompt</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -512,6 +512,7 @@
       flex-shrink: 0;
     }
     .viz-cell.hit { /* color set inline */ }
+    .viz-cell.now { outline: 1px solid rgba(255,255,255,0.6); outline-offset: 0; }
     .viz-gap { width: 3px; flex-shrink: 0; }
 
     /* ── Indicador de lock ── */
@@ -660,7 +661,7 @@
     <img id="logo-ep" src="logo-ep.png" alt="Estudioprompt">
     <div id="header-text">
       <div id="header-brand">Estudioprompt</div>
-      <div id="header-nombre">Repique Code 1.5</div>
+      <div id="header-nombre">Repique Code 1.6</div>
     </div>
   </div>
 
@@ -709,6 +710,7 @@
     <button class="ritmo-btn" data-ritmo="4">Medianoche</button>
     <button class="ritmo-btn" data-ritmo="5">Llamada</button>
     <button class="ritmo-btn activo" data-ritmo="6">Libre ✎</button>
+    <button class="ritmo-btn" data-ritmo="7">Candombe</button>
   </div>
 
   <div id="ritmo-viz">

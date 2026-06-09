@@ -78,9 +78,19 @@ const BANCO_PATRONES = [
     madera:  [1,null,null,1, null,null,1,null, null,null,1,null, 1,null,null,null],
     bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
   },
+  // 8 · Candombe real — loop grabado (dataset Jure & Rocamora, CC-BY 4.0).
+  // Patrón vacío: suena el Tone.Player con la grabación, no el secuenciador.
+  {
+    piano:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
+    repique: [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
+    chico:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
+    madera:  [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
+    bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
+  },
 ];
 
-const CANDOMBE_IDX = 7;
+const CANDOMBE_IDX      = 7;
+const CANDOMBE_REAL_IDX = 8;
 
 let ritmoActual = 6;
 
@@ -194,6 +204,8 @@ async function cargarSamples(destino) {
 
     const porCategoria = {};
     for (const s of data.samples) {
+      // El loop de candombe se carga aparte (asegurarLoop), no en Players
+      if (s.category === 'candombe') continue;
       if (!porCategoria[s.category]) porCategoria[s.category] = [];
       porCategoria[s.category].push(s.file); // ej: "madera/1.mp3"
       // Categoría virtual 'clave': solo las maderas que son clave de verdad
@@ -225,16 +237,15 @@ async function cargarSamples(destino) {
 
 // ─── Disparo de samples con velocity ─────────────────────────────────────────
 
-const _rrIdx = {}; // round-robin por categoría
-
 function dispararSample(cat, time, vFactor = 1) {
   const keys = samplesDisp[cat];
   if (!players || !keys?.length) return false;
 
   try {
-    _rrIdx[cat] = ((_rrIdx[cat] ?? -1) + 1) % keys.length;
-    const player = players.player(keys[_rrIdx[cat]]);
-    player.volume.setValueAtTime(Tone.gainToDb((0.7 + Math.random() * 0.3) * vFactor), time);
+    // Sample fijo por categoría — sin round-robin: en el editor cada paso
+    // tiene que sonar siempre igual para poder editar con criterio
+    const player = players.player(keys[0]);
+    player.volume.setValueAtTime(Tone.gainToDb((0.85 + Math.random() * 0.15) * vFactor), time);
     player.start(time);
     return true;
   } catch (err) {
@@ -243,8 +254,9 @@ function dispararSample(cat, time, vFactor = 1) {
   }
 }
 
+// Velocity con variación leve — humaniza sin volverse impredecible
 function _vel() {
-  return 0.7 + Math.random() * 0.3;
+  return 0.85 + Math.random() * 0.15;
 }
 
 // ─── Secuenciador ─────────────────────────────────────────────────────────────
@@ -315,10 +327,38 @@ function crearSecuencias() {
   }, [...Array(16).keys()], '16n');
 }
 
+// ─── Loop de candombe real (Jure & Rocamora, CC-BY 4.0) ──────────────────────
+const LOOP_BPM_NATIVO = 131.08; // 8 compases (20.1→28.1) de zavala.muniz.2014_46
+let loopPlayer   = null;
+let loopCargando = false;
+
+async function asegurarLoop() {
+  if (loopPlayer || loopCargando) return;
+  loopCargando = true;
+  try {
+    const p = new Tone.Player({ url: 'samples/candombe/loop1.m4a', loop: true });
+    await Tone.loaded();
+    p.connect(filtro); // los gestos siguen filtrando la grabación
+    loopPlayer = p;
+    sincronizarLoop();
+  } catch (err) {
+    console.warn('[Repique Code] No se pudo cargar el loop de candombe:', err.message);
+  }
+  loopCargando = false;
+}
+
+function sincronizarLoop() {
+  if (!loopPlayer) return;
+  loopPlayer.playbackRate = bpmInterno / LOOP_BPM_NATIVO;
+  const debeSonar = state.audioIniciado && ritmoActual === CANDOMBE_REAL_IDX;
+  if (debeSonar && loopPlayer.state !== 'started') loopPlayer.start();
+  if (!debeSonar && loopPlayer.state === 'started') loopPlayer.stop();
+}
+
 // Swing leve para los ritmos electrónicos; en candombe el feel lo pone el
 // microtiming propio del chico — el swing global correría la clave
 function _aplicarSwing() {
-  Tone.getTransport().swing = ritmoActual === CANDOMBE_IDX ? 0 : 0.08;
+  Tone.getTransport().swing = (ritmoActual === CANDOMBE_IDX || ritmoActual === CANDOMBE_REAL_IDX) ? 0 : 0.08;
 }
 
 export function cambiarRitmo(idx) {
@@ -328,6 +368,8 @@ export function cambiarRitmo(idx) {
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => { s?.stop(); s?.dispose(); });
   crearSecuencias();
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s.start(0));
+  if (idx === CANDOMBE_REAL_IDX) asegurarLoop();
+  sincronizarLoop();
 }
 
 // ─── API pública ──────────────────────────────────────────────────────────────
@@ -388,6 +430,7 @@ export async function startAudio() {
   Tone.getTransport().start();
 
   state.audioIniciado = true;
+  if (ritmoActual === CANDOMBE_REAL_IDX) asegurarLoop();
 }
 
 export function stopAudio() {
@@ -395,6 +438,7 @@ export function stopAudio() {
   droneGain.gain.rampTo(0, 0.3);
   Tone.getTransport().stop();
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s?.dispose());
+  loopPlayer?.stop();
   state.step = -1;
   state.audioIniciado = false;
 }
@@ -403,6 +447,7 @@ export function actualizarBPM(bpmObjetivo) {
   bpmInterno += (bpmObjetivo - bpmInterno) * 0.04;
   state.bpm = Math.round(bpmInterno);
   if (state.audioIniciado) Tone.getTransport().bpm.value = bpmInterno;
+  if (loopPlayer) loopPlayer.playbackRate = bpmInterno / LOOP_BPM_NATIVO;
 }
 
 // ancho 0→estrecho, 0.65+→ancho — mínimo 3500 Hz para no silenciar la percusión

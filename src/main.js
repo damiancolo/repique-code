@@ -870,12 +870,22 @@ async function init() {
 
   const LIBRE_IDX = 6;
   let _libreRect = null;  // posición del botón Libre, para re-renderizar desde la grilla
-  let _vizFijo   = false; // si true, mouseleave no cierra el viz (modo edición)
+  let _vizOpener = null;  // quién abrió el viz: índice de ritmo o 'rit' (♩)
 
-  function ocultarViz(forzar = false) {
-    if (_vizFijo && !forzar) return;
+  function ocultarViz() {
     ritmoViz.style.display = '';
-    _vizFijo = false;
+    _vizOpener = null;
+  }
+
+  // Aplica una edición del patrón Libre en tiempo real: re-arma las secuencias
+  // (Tone.Sequence NO relee el array mutado) y activa Libre si hacía falta
+  function aplicarEdicionLibre() {
+    const libreBtn = ritmoBtns[LIBRE_IDX];
+    cambiarRitmo(LIBRE_IDX);
+    ritmoActivoIdx = LIBRE_IDX;
+    ritmoNombreEl.textContent = libreBtn.textContent;
+    ritmoBtns.forEach((b, j) => b.classList.toggle('activo', j === LIBRE_IDX));
+    mostrarViz(BANCO_PATRONES[LIBRE_IDX], 'Libre ✎', _libreRect, true);
   }
 
   function mostrarViz(patron, nombre, btnRect, editable) {
@@ -909,17 +919,9 @@ async function init() {
         if (editable) {
           celda.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Mutación directa — Tone.Sequence lee el array por referencia en cada tick
             BANCO_PATRONES[LIBRE_IDX][track.key][idx] = hit ? null : 1;
-            mostrarViz(BANCO_PATRONES[LIBRE_IDX], 'Libre ✎', _libreRect, true);
-            // Auto-seleccionar Libre si no está activo, para escuchar en tiempo real
-            const libreBtn = ritmoBtns[LIBRE_IDX];
-            if (!libreBtn.classList.contains('activo')) {
-              cambiarRitmo(LIBRE_IDX);
-              ritmoActivoIdx = LIBRE_IDX;
-              ritmoNombreEl.textContent = libreBtn.textContent;
-              ritmoBtns.forEach((b, j) => b.classList.toggle('activo', j === LIBRE_IDX));
-            }
+            // En tiempo real: re-arma las secuencias y suena en la próxima pasada
+            aplicarEdicionLibre();
           });
         }
 
@@ -936,7 +938,7 @@ async function init() {
 
       const hint = document.createElement('span');
       hint.id = 'viz-edit-hint';
-      hint.textContent = 'clic para editar';
+      hint.textContent = 'clic para editar · en tiempo real';
 
       const btns = document.createElement('div');
       btns.id = 'viz-footer-btns';
@@ -949,33 +951,16 @@ async function init() {
         ['piano', 'repique', 'chico', 'madera', 'bombo'].forEach(key => {
           BANCO_PATRONES[LIBRE_IDX][key].fill(null);
         });
-        mostrarViz(BANCO_PATRONES[LIBRE_IDX], 'Libre ✎', _libreRect, true);
-      });
-
-      const btnActualizar = document.createElement('button');
-      btnActualizar.id = 'viz-actualizar-btn';
-      btnActualizar.textContent = '⟳ actualizar';
-      btnActualizar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Siempre activar Libre y re-aplicar el patrón
-        const libreBtn = ritmoBtns[LIBRE_IDX];
-        cambiarRitmo(LIBRE_IDX);
-        ritmoActivoIdx = LIBRE_IDX;
-        ritmoNombreEl.textContent = libreBtn.textContent;
-        ritmoBtns.forEach((b, j) => b.classList.toggle('activo', j === LIBRE_IDX));
-        mostrarViz(BANCO_PATRONES[LIBRE_IDX], 'Libre ✎', _libreRect, true);
+        aplicarEdicionLibre();
       });
 
       btns.appendChild(btnReset);
-      btns.appendChild(btnActualizar);
       footer.appendChild(hint);
       footer.appendChild(btns);
       ritmoViz.appendChild(footer);
     }
 
     // Posición inteligente: derecha del botón, ajustada para no salirse de pantalla
-    _vizFijo = !!editable;
-
     ritmoViz.style.visibility = 'hidden';
     ritmoViz.style.display = 'block';
     const vw  = window.innerWidth;
@@ -990,24 +975,24 @@ async function init() {
     ritmoViz.style.visibility = '';
   }
 
-  // El viz se queda visible si el mouse entra en él; se cierra al salir
-  ritmoViz.addEventListener('mouseleave', ocultarViz);
+  // El viz NUNCA se cierra solo (ni mouseleave ni clic afuera) — solo lo cierra
+  // un nuevo clic en el mismo botón que lo abrió, o el ♩.
 
-  // ♩ hover → abre viz del ritmo activo, sticky (no se cierra al mover el mouse)
+  // ♩ hover → abre viz del ritmo activo (solo si no hay otro viz abierto)
   btnRitmo.addEventListener('mouseenter', () => {
+    if (ritmoViz.style.display === 'block') return;
     const esLibre = ritmoActivoIdx === LIBRE_IDX;
     const rect = btnRitmo.getBoundingClientRect();
     if (esLibre) _libreRect = rect;
     mostrarViz(BANCO_PATRONES[ritmoActivoIdx], ritmoBtns[ritmoActivoIdx].textContent, rect, esLibre);
-    _vizFijo = true; // siempre sticky cuando se abre desde ♩
+    _vizOpener = 'rit';
   });
-  // No mouseleave en btnRitmo — el viz se queda abierto
 
   // ♩ click → si el viz está abierto: lo cierra; si está cerrado: abre el menú de ritmos
   btnRitmo.addEventListener('click', (e) => {
     e.stopPropagation();
     if (ritmoViz.style.display === 'block') {
-      ocultarViz(true);
+      ocultarViz();
       menuRitmo.classList.remove('visible');
     } else {
       menuRitmo.classList.toggle('visible');
@@ -1020,20 +1005,24 @@ async function init() {
       ritmoActivoIdx = i;
       ritmoNombreEl.textContent = btn.textContent;
       ritmoBtns.forEach((b, j) => b.classList.toggle('activo', j === i));
-      menuRitmo.classList.remove('visible');
-      ocultarViz(true);
+      // Toggle: el mismo botón que abrió el viz lo cierra; otro botón lo muestra.
+      // El menú queda abierto para poder re-clickear el mismo botón.
+      if (ritmoViz.style.display === 'block' && _vizOpener === i) {
+        ocultarViz();
+      } else {
+        const esLibre = i === LIBRE_IDX;
+        if (esLibre) _libreRect = btn.getBoundingClientRect();
+        mostrarViz(BANCO_PATRONES[i], btn.textContent, btn.getBoundingClientRect(), esLibre);
+        _vizOpener = i;
+      }
     });
     btn.addEventListener('mouseenter', () => {
+      // Hover solo abre si no hay un viz ya abierto — no pisa al editor
+      if (ritmoViz.style.display === 'block') return;
       const esLibre = i === LIBRE_IDX;
       if (esLibre) _libreRect = btn.getBoundingClientRect();
-      // mostrarViz ya setea style.display='block' — no hace falta agregar clase
       mostrarViz(BANCO_PATRONES[i], btn.textContent, btn.getBoundingClientRect(), esLibre);
-    });
-    btn.addEventListener('mouseleave', () => {
-      // Delay: si el mouse va hacia el viz, el mouseleave del viz lo cierra después
-      setTimeout(() => {
-        if (!ritmoViz.matches(':hover')) ocultarViz();
-      }, 60);
+      _vizOpener = i;
     });
   });
 
@@ -1058,9 +1047,9 @@ async function init() {
 
   document.addEventListener('click', (e) => {
     if (!guia.contains(e.target) && e.target !== btnGuia) guia.classList.remove('visible');
+    // El clic afuera cierra solo el menú — el viz queda hasta que lo cierre su botón
     if (!menuRitmo.contains(e.target) && e.target !== btnRitmo && !ritmoViz.contains(e.target)) {
       menuRitmo.classList.remove('visible');
-      ocultarViz(true);
     }
   });
 

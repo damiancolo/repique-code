@@ -88,6 +88,17 @@
       "author_url": "https://freesound.org/people/soundbytez/",
       "license": "Attribution",
       "license_url": "https://creativecommons.org/licenses/by/3.0/"
+    },
+    {
+      "file": "candombe/loop1.m4a",
+      "category": "candombe",
+      "freesound_id": null,
+      "freesound_url": "https://zenodo.org/records/6533068",
+      "name": "Candombe drumming loop — zavala.muniz.2014_46, compases 20-28 (131 BPM)",
+      "author": "L. Jure & M. Rocamora — dataset 'Uruguayan candombe drumming'",
+      "author_url": "https://zenodo.org/records/6533068",
+      "license": "Creative Commons Attribution 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/"
     }
   ]
 }

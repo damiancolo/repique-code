@@ -67,16 +67,20 @@ const BANCO_PATRONES = [
     madera:  [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
     bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
   },
-  // 7 · Candombe — chico real (silencio en 1.ª semicorchea de cada negra),
-  // madera con la clave del candombe, repique conversando, piano de base
+  // 7 · Candombe — clave 3+3+4+2+4 (5 golpes, Jure & Rocamora), chico real
+  // (silencio en 1.ª semicorchea, mano acentuada + dos palos suaves),
+  // repique conversando, piano de base. Sin bombo: el trío es chico/repique/piano.
+  // Valores ≠ 1 son velocity (acentos).
   {
-    piano:   [1,null,null,null, null,null,null,1, 1,null,null,1, null,null,null,null],
-    repique: [null,null,1,null, null,1,null,null, null,1,null,null, null,null,1,null],
-    chico:   [null,1,1,1, null,1,1,1, null,1,1,1, null,1,1,1],
+    piano:   [1,null,null,null, null,null,null,0.7, 1,null,null,0.7, null,null,null,null],
+    repique: [null,null,0.8,null, null,0.8,null,null, null,0.8,null,null, null,null,0.8,null],
+    chico:   [null,1,0.55,0.55, null,1,0.55,0.55, null,1,0.55,0.55, null,1,0.55,0.55],
     madera:  [1,null,null,1, null,null,1,null, null,null,1,null, 1,null,null,null],
-    bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
+    bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
   },
 ];
+
+const CANDOMBE_IDX = 7;
 
 let ritmoActual = 6;
 
@@ -101,6 +105,39 @@ const synthMadera = new Tone.MetalSynth({
   envelope: { attack: 0.001, decay: 0.06, release: 0.01 },
   harmonicity: 3.1, modulationIndex: 8, resonance: 5000, octaves: 0.5,
   volume: 2,
+});
+
+// ─── Clave de madera (candombe) — woodblock sintetizado, fallback de mobile ──
+// Barrido de pitch corto y agudo → "tock" seco de palo sobre madera
+const synthClave = new Tone.MembraneSynth({
+  pitchDecay: 0.008,
+  octaves: 1.5,
+  envelope: { attack: 0.0005, decay: 0.08, sustain: 0, release: 0.03 },
+  volume: 6,
+});
+
+// ─── Voces de candombe (síntesis dedicada) ───────────────────────────────────
+// No hay samples de chico — siempre fue síntesis genérica. Para candombe:
+// chico de dos tonos (mano redonda y acentuada / palo seco y agudo),
+// repique y piano como fallback de mobile con carácter de tambor de lonja.
+const synthChicoMano = new Tone.MembraneSynth({
+  pitchDecay: 0.02, octaves: 2,
+  envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.05 },
+  volume: 2,
+});
+const synthChicoPalo = new Tone.MembraneSynth({
+  pitchDecay: 0.01, octaves: 1.5,
+  envelope: { attack: 0.0005, decay: 0.07, sustain: 0, release: 0.03 },
+});
+const synthRepiqueCand = new Tone.MembraneSynth({
+  pitchDecay: 0.03, octaves: 2.5,
+  envelope: { attack: 0.001, decay: 0.22, sustain: 0, release: 0.08 },
+  volume: 1,
+});
+const synthPianoCand = new Tone.MembraneSynth({
+  pitchDecay: 0.05, octaves: 3,
+  envelope: { attack: 0.001, decay: 0.45, sustain: 0, release: 0.15 },
+  volume: 4,
 });
 
 // ─── Bombo sub-grave (bypasea filtro, siempre profundo) ────────────────────
@@ -159,6 +196,12 @@ async function cargarSamples(destino) {
     for (const s of data.samples) {
       if (!porCategoria[s.category]) porCategoria[s.category] = [];
       porCategoria[s.category].push(s.file); // ej: "madera/1.mp3"
+      // Categoría virtual 'clave': solo las maderas que son clave de verdad
+      // (madera/1 es un clap y madera/4 un cowbell — no sirven para candombe)
+      if (s.category === 'madera' && /clave/i.test(s.name || '')) {
+        if (!porCategoria.clave) porCategoria.clave = [];
+        porCategoria.clave.push(s.file);
+      }
     }
 
     const playerMap = {};
@@ -184,14 +227,14 @@ async function cargarSamples(destino) {
 
 const _rrIdx = {}; // round-robin por categoría
 
-function dispararSample(cat, time) {
+function dispararSample(cat, time, vFactor = 1) {
   const keys = samplesDisp[cat];
   if (!players || !keys?.length) return false;
 
   try {
     _rrIdx[cat] = ((_rrIdx[cat] ?? -1) + 1) % keys.length;
     const player = players.player(keys[_rrIdx[cat]]);
-    player.volume.setValueAtTime(Tone.gainToDb(0.7 + Math.random() * 0.3), time);
+    player.volume.setValueAtTime(Tone.gainToDb((0.7 + Math.random() * 0.3) * vFactor), time);
     player.start(time);
     return true;
   } catch (err) {
@@ -206,31 +249,60 @@ function _vel() {
 
 // ─── Secuenciador ─────────────────────────────────────────────────────────────
 
+let _chicoIdx = 0; // posición dentro del grupo mano-palo-palo del chico (candombe)
+
 function crearSecuencias() {
   const P = BANCO_PATRONES[ritmoActual];
+  const esCandombe = ritmoActual === CANDOMBE_IDX;
+  _chicoIdx = 0;
+  // El valor del patrón puede ser velocity (0-1); 1 o truthy genérico = golpe pleno
+  const vf = (v) => (typeof v === 'number' ? v : 1);
 
-  seqMadera = new Tone.Sequence((time) => {
+  seqMadera = new Tone.Sequence((time, v) => {
     if (!tracksActivos[0]) return;
-    if (!dispararSample('madera', time))
-      synthMadera.triggerAttackRelease('16n', time, _vel());
+    if (esCandombe) {
+      // Clave de verdad: samples de clave (categoría virtual) o woodblock sintetizado.
+      // Nunca el clap/cowbell, y bypasea el filtro — la clave siempre corta.
+      if (!dispararSample('clave', time, vf(v)))
+        synthClave.triggerAttackRelease('G5', '16n', time, 0.9 + Math.random() * 0.1);
+      return;
+    }
+    if (!dispararSample('madera', time, vf(v)))
+      synthMadera.triggerAttackRelease('16n', time, _vel() * vf(v));
   }, P.madera, '16n');
 
-  seqChico = new Tone.Sequence((time) => {
+  seqChico = new Tone.Sequence((time, v) => {
     if (!tracksActivos[1]) return;
-    if (!dispararSample('chico', time))
-      synthChico.triggerAttackRelease('C4', '16n', time, _vel());
+    if (esCandombe) {
+      // Microtiming (Jure & Rocamora): la mano cae en el pulso, los dos palos
+      // se adelantan levemente — la "contracción" característica del chico
+      const pos = _chicoIdx++ % 3;
+      if (pos === 0) {
+        synthChicoMano.triggerAttackRelease('G3', '16n', time, _vel());
+      } else {
+        const t = time - (pos === 1 ? 0.008 : 0.012);
+        synthChicoPalo.triggerAttackRelease('C4', '16n', t, _vel() * vf(v));
+      }
+      return;
+    }
+    if (!dispararSample('chico', time, vf(v)))
+      synthChico.triggerAttackRelease('C4', '16n', time, _vel() * vf(v));
   }, P.chico, '16n');
 
-  seqRepique = new Tone.Sequence((time) => {
+  seqRepique = new Tone.Sequence((time, v) => {
     if (!tracksActivos[2]) return;
-    if (!dispararSample('repique', time))
-      synthRepique.triggerAttackRelease('G2', '16n', time, _vel());
+    if (!dispararSample('repique', time, vf(v))) {
+      const s = esCandombe ? synthRepiqueCand : synthRepique;
+      s.triggerAttackRelease(esCandombe ? 'B2' : 'G2', '16n', time, _vel() * vf(v));
+    }
   }, P.repique, '16n');
 
-  seqPiano = new Tone.Sequence((time) => {
+  seqPiano = new Tone.Sequence((time, v) => {
     if (!tracksActivos[3]) return;
-    if (!dispararSample('piano', time))
-      synthPiano.triggerAttackRelease('C1', '16n', time, _vel());
+    if (!dispararSample('piano', time, vf(v))) {
+      const s = esCandombe ? synthPianoCand : synthPiano;
+      s.triggerAttackRelease(esCandombe ? 'G1' : 'C1', '16n', time, _vel() * vf(v));
+    }
   }, P.piano, '16n');
 
   seqBombo = new Tone.Sequence((time) => {
@@ -243,9 +315,16 @@ function crearSecuencias() {
   }, [...Array(16).keys()], '16n');
 }
 
+// Swing leve para los ritmos electrónicos; en candombe el feel lo pone el
+// microtiming propio del chico — el swing global correría la clave
+function _aplicarSwing() {
+  Tone.getTransport().swing = ritmoActual === CANDOMBE_IDX ? 0 : 0.08;
+}
+
 export function cambiarRitmo(idx) {
   ritmoActual = idx;
   if (!state.audioIniciado) return;
+  _aplicarSwing();
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => { s?.stop(); s?.dispose(); });
   crearSecuencias();
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s.start(0));
@@ -277,12 +356,14 @@ export async function startAudio() {
   if (!masterGain) {
     masterGain = new Tone.Gain(state.volumen);
     // Synths → filtro → distorsion → chebyshev → ganancia → salida
-    [synthPiano, synthRepique, synthChico, synthMadera].forEach(s => s.connect(filtro));
+    [synthPiano, synthRepique, synthChico, synthMadera,
+     synthChicoMano, synthChicoPalo, synthRepiqueCand, synthPianoCand].forEach(s => s.connect(filtro));
     filtro.connect(distorsion);
     distorsion.connect(chebyshev);
     chebyshev.connect(masterGain);
     masterGain.toDestination();
     synthBombo.connect(masterGain); // bypass filtro — siempre profundo
+    synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
     // Drone → droneGain → salida (bypasea el filtro de percusión)
     drone.connect(droneGain);
     droneGain.toDestination();
@@ -301,9 +382,8 @@ export async function startAudio() {
   droneFormaActual = 'rectangulo';
 
   Tone.getTransport().bpm.value = bpmInterno;
-  // Swing leve en semicorcheas — el candombe no es grid-perfect
-  Tone.getTransport().swing = 0.08;
   Tone.getTransport().swingSubdivision = '16n';
+  _aplicarSwing();
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s.start(0));
   Tone.getTransport().start();
 

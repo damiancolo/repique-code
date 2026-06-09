@@ -146,15 +146,44 @@ async function init() {
   }
 
   // ── Modo pintar ──────────────────────────────────────────────────────────────
-  const COLORES_PINCEL = ['#e63946','#4a90e2','#27ae60','#f4d03f','#ff6b35','#a855f7'];
-  const COLORES_BROCHA = [
-    'rgba(230,57,70,0.22)',
-    'rgba(74,144,226,0.22)',
-    'rgba(39,174,96,0.22)',
-    'rgba(244,208,63,0.22)',
-    'rgba(255,107,53,0.22)',
-    'rgba(168,85,247,0.22)',
+  // El orden DEBE coincidir con los botones de #fila-colores en index.html
+  const COLORES_PINCEL = [
+    '#e63946', '#ff6b35', '#f4d03f', '#a3e635', '#27ae60', '#2dd4bf',
+    '#38bdf8', '#4a90e2', '#a855f7', '#ec4899', '#ffffff', '#C44A1A',
   ];
+  // Versión translúcida para la brocha, derivada del pincel
+  const COLORES_BROCHA = COLORES_PINCEL.map(hex => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},0.22)`;
+  });
+  // Gesto de dedo → índice en la paleta (mantiene los tonos bien distintos):
+  // ☝ índice=rojo · ✌ medio=azul · 💍 anular=verde · 🤙 meñique=amarillo · 👍 pulgar=naranja
+  const DEDO_A_COLOR = [0, 7, 4, 2, 1];
+
+  // ── Estilos, tamaños y espejo ────────────────────────────────────────────────
+  const TAM_LINEA    = [3, 6, 12];   // s / m / l
+  const TAM_BROCHA   = [20, 32, 52];
+  const RADIO_SPRAY  = [12, 20, 32];
+  const RADIOS_BORRA = [16, 28, 48];
+  let estiloActual = 'linea';        // linea | neon | spray | arcoiris
+  let tamIdx       = 1;
+  let espejoModo   = 0;              // 0 = no · 1 = espejo ×2 · 2 = mandala ×6
+  let _hue         = 0;              // estado del arcoíris
+
+  // ── Deshacer (snapshots del buffer) ──────────────────────────────────────────
+  const SNAPSHOTS_MAX = 4;
+  let _snapshots = [];
+  let _borrando  = false;
+  function guardarSnapshot() {
+    const c = document.createElement('canvas');
+    c.width  = bufCanvas.width;
+    c.height = bufCanvas.height;
+    c.getContext('2d').drawImage(bufCanvas, 0, 0);
+    _snapshots.push(c);
+    if (_snapshots.length > SNAPSHOTS_MAX) _snapshots.shift();
+  }
   // Índices landmark de las puntas y articulaciones PIP de los 4 dedos
   const FINGER_TIPS = [8, 12, 16, 20]; // índice, medio, anular, meñique
   const FINGER_PIPS = [6, 10, 14, 18];
@@ -393,25 +422,96 @@ async function init() {
     const by = mano[8].y * canvas.height;
 
     if (gesture !== ultimoGesture) { ultimoPtoBuf = null; ultimoGesture = gesture; }
-    if (!ultimoPtoBuf) { ultimoPtoBuf = { x: bx, y: by }; return; }
-
-    bufCtx.beginPath();
-    bufCtx.lineCap  = 'round';
-    bufCtx.lineJoin = 'round';
-    if (gesture === 'dibujar') {
-      bufCtx.strokeStyle = COLORES_PINCEL[colorIdx];
-      bufCtx.lineWidth   = 4;
-    } else {
-      bufCtx.strokeStyle = COLORES_BROCHA[colorIdx];
-      bufCtx.lineWidth   = 32;
+    if (!ultimoPtoBuf) {
+      guardarSnapshot(); // inicio de trazo → punto de restauración para deshacer
+      ultimoPtoBuf = { x: bx, y: by };
+      return;
     }
-    bufCtx.moveTo(ultimoPtoBuf.x, ultimoPtoBuf.y);
-    bufCtx.lineTo(bx, by);
-    bufCtx.stroke();
+    trazarSegmento(ultimoPtoBuf, { x: bx, y: by }, gesture);
     ultimoPtoBuf = { x: bx, y: by };
   }
 
-  const RADIO_BORRADOR = 28;
+  function _rotar(p, cx, cy, ang) {
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const dx = p.x - cx, dy = p.y - cy;
+    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+  }
+
+  /** Replica el segmento según el modo espejo y lo dibuja con el estilo activo */
+  function trazarSegmento(p1, p2, gesture) {
+    const W = bufCanvas.width, H = bufCanvas.height;
+    const variantes = [[p1, p2]];
+    if (espejoModo === 1) {
+      variantes.push([{ x: W - p1.x, y: p1.y }, { x: W - p2.x, y: p2.y }]);
+    } else if (espejoModo === 2) {
+      const cx = W / 2, cy = H / 2;
+      for (let k = 1; k < 6; k++) {
+        const a = (k * Math.PI) / 3;
+        variantes.push([_rotar(p1, cx, cy, a), _rotar(p2, cx, cy, a)]);
+      }
+    }
+    for (const [a, b] of variantes) _segmentoBase(a, b, gesture);
+  }
+
+  function _linea(a, b) {
+    bufCtx.beginPath();
+    bufCtx.moveTo(a.x, a.y);
+    bufCtx.lineTo(b.x, b.y);
+    bufCtx.stroke();
+  }
+
+  function _segmentoBase(a, b, gesture) {
+    bufCtx.save();
+    bufCtx.lineCap  = 'round';
+    bufCtx.lineJoin = 'round';
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+
+    if (gesture === 'brocha') {
+      bufCtx.strokeStyle = COLORES_BROCHA[colorIdx];
+      bufCtx.lineWidth   = TAM_BROCHA[tamIdx];
+      _linea(a, b);
+
+    } else if (estiloActual === 'neon') {
+      const c = COLORES_PINCEL[colorIdx];
+      bufCtx.shadowColor = c;
+      bufCtx.shadowBlur  = TAM_LINEA[tamIdx] * 3;
+      bufCtx.strokeStyle = c;
+      bufCtx.lineWidth   = TAM_LINEA[tamIdx];
+      _linea(a, b);
+      // núcleo blanco encima — efecto tubo de neón
+      bufCtx.shadowBlur  = 0;
+      bufCtx.strokeStyle = 'rgba(255,255,255,0.85)';
+      bufCtx.lineWidth   = Math.max(1, TAM_LINEA[tamIdx] * 0.4);
+      _linea(a, b);
+
+    } else if (estiloActual === 'spray') {
+      const r = RADIO_SPRAY[tamIdx];
+      const n = Math.max(8, Math.round(dist * 1.6));
+      bufCtx.fillStyle = COLORES_PINCEL[colorIdx];
+      for (let i = 0; i < n; i++) {
+        const t  = i / n;
+        // Punto aleatorio en disco (sqrt para densidad uniforme)
+        const ang = Math.random() * Math.PI * 2;
+        const rad = Math.sqrt(Math.random()) * r;
+        const px = a.x + (b.x - a.x) * t + Math.cos(ang) * rad;
+        const py = a.y + (b.y - a.y) * t + Math.sin(ang) * rad;
+        bufCtx.globalAlpha = 0.2 + Math.random() * 0.3;
+        bufCtx.fillRect(px, py, 1.7, 1.7);
+      }
+
+    } else if (estiloActual === 'arcoiris') {
+      _hue = (_hue + dist * 0.45) % 360;
+      bufCtx.strokeStyle = `hsl(${_hue}, 90%, 62%)`;
+      bufCtx.lineWidth   = TAM_LINEA[tamIdx];
+      _linea(a, b);
+
+    } else { // linea
+      bufCtx.strokeStyle = COLORES_PINCEL[colorIdx];
+      bufCtx.lineWidth   = TAM_LINEA[tamIdx];
+      _linea(a, b);
+    }
+    bufCtx.restore();
+  }
 
   function aplicarBorrador(puños) {
     // Mano derecha = menor X en cámara (aparece a la derecha en pantalla espejada)
@@ -419,9 +519,10 @@ async function init() {
     const mx = (1 - manoDer[9].x) * canvas.width;
     const my = manoDer[9].y * canvas.height;
     sincBuf();
+    if (!_borrando) { guardarSnapshot(); _borrando = true; } // deshacer recupera lo borrado
     bufCtx.globalCompositeOperation = 'destination-out';
     bufCtx.beginPath();
-    bufCtx.arc(mx, my, RADIO_BORRADOR, 0, Math.PI * 2);
+    bufCtx.arc(mx, my, RADIOS_BORRA[tamIdx], 0, Math.PI * 2);
     bufCtx.fillStyle = 'rgba(0,0,0,1)';
     bufCtx.fill();
     bufCtx.globalCompositeOperation = 'source-over';
@@ -451,9 +552,9 @@ async function init() {
 
     // ── Indicador de selección de color ──────────────────────────────────────
     if (seleccionInfo) {
-      const { idx, inicio, sx, sy } = seleccionInfo;
+      const { pal, inicio, sx, sy } = seleccionInfo;
       const progress = Math.min((Date.now() - inicio) / MS_SELECCION, 1);
-      const color    = COLORES_PINCEL[idx];
+      const color    = COLORES_PINCEL[pal];
       const R        = 26;
 
       // Aro de fondo
@@ -485,7 +586,7 @@ async function init() {
     if (borrarInfo) {
       const { mx, my } = borrarInfo;
       ctxPaint.beginPath();
-      ctxPaint.arc(mx, my, RADIO_BORRADOR, 0, Math.PI * 2);
+      ctxPaint.arc(mx, my, RADIOS_BORRA[tamIdx], 0, Math.PI * 2);
       ctxPaint.strokeStyle = 'rgba(255,255,255,0.6)';
       ctxPaint.lineWidth = 2;
       ctxPaint.stroke();
@@ -503,12 +604,12 @@ async function init() {
       const sy = mano[8].y * canvas.height;
       if (gesture === 'dibujar') {
         ctxPaint.beginPath();
-        ctxPaint.arc(sx, sy, 5, 0, Math.PI * 2);
-        ctxPaint.fillStyle = COLORES_PINCEL[colorIdx];
+        ctxPaint.arc(sx, sy, Math.max(3, TAM_LINEA[tamIdx] * 0.9), 0, Math.PI * 2);
+        ctxPaint.fillStyle = estiloActual === 'arcoiris' ? `hsl(${_hue}, 90%, 62%)` : COLORES_PINCEL[colorIdx];
         ctxPaint.fill();
       } else if (gesture === 'brocha') {
         ctxPaint.beginPath();
-        ctxPaint.arc(sx, sy, 18, 0, Math.PI * 2);
+        ctxPaint.arc(sx, sy, TAM_BROCHA[tamIdx] / 2, 0, Math.PI * 2);
         ctxPaint.fillStyle = COLORES_BROCHA[colorIdx];
         ctxPaint.fill();
         ctxPaint.strokeStyle = COLORES_PINCEL[colorIdx];
@@ -545,6 +646,7 @@ async function init() {
         renderPaintCanvas(manos, null, null, borrarInfo);
 
       } else {
+        _borrando = false; // fin de la sesión de borrado
         // ── Comprobar selección de color SÓLO si hay dedo claro ───────────
         // (un puño + EXACTAMENTE un dedo reconocido en la otra mano)
         let dedoIdxSel = null;
@@ -563,14 +665,14 @@ async function init() {
           if (colorSeleccion && colorSeleccion.idx === dedoIdxSel) {
             const elapsed = Date.now() - colorSeleccion.inicio;
             if (elapsed >= MS_SELECCION) {
-              colorIdx = dedoIdxSel;
-              colorBtns.forEach((b, j) => b.classList.toggle('activo', j === dedoIdxSel));
+              colorIdx = colorSeleccion.pal;
+              colorBtns.forEach((b, j) => b.classList.toggle('activo', j === colorIdx));
               colorSeleccion = null;
             } else {
               colorSeleccion.sx = sx; colorSeleccion.sy = sy;
             }
           } else {
-            colorSeleccion = { idx: dedoIdxSel, inicio: Date.now(), sx, sy };
+            colorSeleccion = { idx: dedoIdxSel, pal: DEDO_A_COLOR[dedoIdxSel], inicio: Date.now(), sx, sy };
           }
           renderFrame(ctx, video, canvas, [], null, null);
           renderPaintCanvas(manos, null, colorSeleccion, null);
@@ -849,6 +951,7 @@ async function init() {
     if (!modoPintar) {
       ultimoPtoBuf = null;
       zoomActivo   = false;
+      _borrando    = false;
       ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
     }
   });
@@ -863,10 +966,47 @@ async function init() {
   colorBtns[0]?.classList.add('activo');
 
   btnLimpiar.addEventListener('click', () => {
+    guardarSnapshot(); // deshacer recupera el dibujo limpiado
     bufCtx.clearRect(0, 0, bufCanvas.width, bufCanvas.height);
     ultimoPtoBuf  = null;
     ultimoGesture = null;
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+  });
+
+  // ── Herramientas de pintura: estilo, tamaño, espejo, deshacer ────────────────
+  const estiloBtns  = document.querySelectorAll('.estilo-btn');
+  const tamBtns     = document.querySelectorAll('.tam-btn');
+  const btnEspejo   = document.getElementById('btn-espejo');
+  const btnDeshacer = document.getElementById('btn-deshacer');
+
+  estiloBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      estiloActual = btn.dataset.estilo;
+      estiloBtns.forEach(b => b.classList.toggle('activo', b === btn));
+    });
+  });
+
+  tamBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tamIdx = parseInt(btn.dataset.tam, 10);
+      tamBtns.forEach(b => b.classList.toggle('activo', b === btn));
+    });
+  });
+
+  const ESPEJO_LABELS = ['espejo: no', 'espejo ×2', 'mandala ×6'];
+  btnEspejo.addEventListener('click', () => {
+    espejoModo = (espejoModo + 1) % 3;
+    btnEspejo.textContent = ESPEJO_LABELS[espejoModo];
+    btnEspejo.classList.toggle('activo', espejoModo > 0);
+  });
+
+  btnDeshacer.addEventListener('click', () => {
+    const prev = _snapshots.pop();
+    if (!prev) return;
+    bufCtx.clearRect(0, 0, bufCanvas.width, bufCanvas.height);
+    bufCtx.drawImage(prev, 0, 0);
+    ultimoPtoBuf  = null;
+    ultimoGesture = null;
   });
 
   // ── Guardar el dibujo como PNG (fondo negro + trazos) ────────────────────────

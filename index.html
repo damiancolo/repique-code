@@ -170,10 +170,24 @@
 
     #paleta {
       display: none;
-      align-items: center;
-      gap: 0.55rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.45rem;
     }
     #paleta.visible { display: flex; }
+    #fila-colores {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      max-width: 240px;
+    }
+    #fila-tools, #fila-tools-2, #fila-tools-3 {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+    }
 
     .color-btn {
       width: 13px;
@@ -186,14 +200,9 @@
     }
     .color-btn:hover  { transform: scale(1.2); }
     .color-btn.activo { border-color: #fff; }
-    .color-btn[data-color="rojo"]     { background: #e63946; }
-    .color-btn[data-color="azul"]     { background: #4a90e2; }
-    .color-btn[data-color="verde"]    { background: #27ae60; }
-    .color-btn[data-color="amarillo"] { background: #f4d03f; }
-    .color-btn[data-color="naranja"]  { background: #ff6b35; }
-    .color-btn[data-color="violeta"]  { background: #a855f7; }
+    .color-btn[style*="ffffff"].activo { border-color: #e63946; }
 
-    #btn-limpiar, #btn-guardar {
+    #btn-limpiar, #btn-guardar, .tool-btn {
       background: none;
       border: 1px solid rgba(255,255,255,0.2);
       color: rgba(255,255,255,0.4);
@@ -206,7 +215,8 @@
       cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
     }
-    #btn-limpiar:hover, #btn-guardar:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
+    #btn-limpiar:hover, #btn-guardar:hover, .tool-btn:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
+    .tool-btn.activo { border-color: #e63946; color: #e63946; }
 
     #volume-wrap {
       display: flex;
@@ -707,14 +717,38 @@
       <button id="btn-paint" title="Modo pintura">✏</button>
     </div>
     <div id="paleta">
-      <button class="color-btn" data-color="rojo"     title="Rojo     ☝ índice"></button>
-      <button class="color-btn" data-color="azul"     title="Azul     ✌ medio"></button>
-      <button class="color-btn" data-color="verde"    title="Verde    💍 anular"></button>
-      <button class="color-btn" data-color="amarillo" title="Amarillo 🤙 meñique"></button>
-      <button class="color-btn" data-color="naranja"  title="Naranja"></button>
-      <button class="color-btn" data-color="violeta"  title="Violeta"></button>
-      <button id="btn-limpiar">limpiar</button>
-      <button id="btn-guardar" title="Descargar el dibujo como PNG">guardar</button>
+      <!-- El orden DEBE coincidir con COLORES_PINCEL en main.js -->
+      <div id="fila-colores">
+        <button class="color-btn" style="background:#e63946" title="Rojo — ☝ índice"></button>
+        <button class="color-btn" style="background:#ff6b35" title="Naranja — 👍 pulgar"></button>
+        <button class="color-btn" style="background:#f4d03f" title="Amarillo — 🤙 meñique"></button>
+        <button class="color-btn" style="background:#a3e635" title="Lima"></button>
+        <button class="color-btn" style="background:#27ae60" title="Verde — 💍 anular"></button>
+        <button class="color-btn" style="background:#2dd4bf" title="Turquesa"></button>
+        <button class="color-btn" style="background:#38bdf8" title="Celeste"></button>
+        <button class="color-btn" style="background:#4a90e2" title="Azul — ✌ medio"></button>
+        <button class="color-btn" style="background:#a855f7" title="Violeta"></button>
+        <button class="color-btn" style="background:#ec4899" title="Fucsia"></button>
+        <button class="color-btn" style="background:#ffffff" title="Blanco"></button>
+        <button class="color-btn" style="background:#C44A1A" title="Terracota"></button>
+      </div>
+      <div id="fila-tools">
+        <button class="tool-btn estilo-btn activo" data-estilo="linea" title="Trazo sólido">línea</button>
+        <button class="tool-btn estilo-btn" data-estilo="neon" title="Trazo con resplandor">neón</button>
+        <button class="tool-btn estilo-btn" data-estilo="spray" title="Aerosol de puntos">spray</button>
+        <button class="tool-btn estilo-btn" data-estilo="arcoiris" title="El color rota al trazar">arcoíris</button>
+      </div>
+      <div id="fila-tools-2">
+        <button class="tool-btn tam-btn" data-tam="0" title="Trazo fino">s</button>
+        <button class="tool-btn tam-btn activo" data-tam="1" title="Trazo medio">m</button>
+        <button class="tool-btn tam-btn" data-tam="2" title="Trazo grueso">l</button>
+        <button class="tool-btn" id="btn-espejo" title="Replica el trazo en espejo o mandala">espejo: no</button>
+      </div>
+      <div id="fila-tools-3">
+        <button class="tool-btn" id="btn-deshacer" title="Deshacer el último trazo">↩ deshacer</button>
+        <button id="btn-limpiar">limpiar</button>
+        <button id="btn-guardar" title="Descargar el dibujo como PNG">guardar</button>
+      </div>
     </div>
     <div id="volume-wrap">
       <span>Vol</span>

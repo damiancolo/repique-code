@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Repique Code — Estudioprompt</title>
+  <title>Repique Code 1.5 — Estudioprompt</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,6 +24,16 @@
       width: 100%;
       height: 100%;
       display: block;
+    }
+
+    #canvas-paint {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 5;
+      pointer-events: none;
     }
 
     #video {
@@ -91,12 +101,11 @@
     #panel {
       position: fixed;
       left: 1.8rem;
-      top: 50%;
-      transform: translateY(-50%);
+      top: 4.2rem;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 1rem;
+      gap: 0.7rem;
       z-index: 10;
     }
 
@@ -104,8 +113,8 @@
       background: none;
       border: 1px solid rgba(255, 255, 255, 0.35);
       color: #fff;
-      padding: 0.55rem 1.8rem;
-      font-size: 0.75rem;
+      padding: 0.35rem 1.1rem;
+      font-size: 0.65rem;
       font-family: inherit;
       font-weight: 300;
       letter-spacing: 0.12em;
@@ -118,12 +127,18 @@
     #btn-start:disabled              { opacity: 0.25; cursor: default; }
     #btn-start.activo                { border-color: #e63946; color: #e63946; }
 
+    #fila-stop {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
     #btn-stop {
       background: none;
       border: 1px solid rgba(255, 255, 255, 0.35);
       color: #fff;
-      padding: 0.55rem 1.8rem;
-      font-size: 0.75rem;
+      padding: 0.35rem 1.1rem;
+      font-size: 0.65rem;
       font-family: inherit;
       font-weight: 300;
       letter-spacing: 0.12em;
@@ -134,6 +149,64 @@
 
     #btn-stop:hover:not(:disabled) { border-color: rgba(255,255,255,0.7); }
     #btn-stop:disabled              { opacity: 0.25; cursor: default; }
+
+    #btn-paint {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: rgba(255,255,255,0.55);
+      width: 28px;
+      height: 28px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    #btn-paint:hover  { border-color: rgba(255,255,255,0.7); color: #fff; }
+    #btn-paint.activo { border-color: #fff; color: #fff; }
+
+    #paleta {
+      display: none;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    #paleta.visible { display: flex; }
+
+    .color-btn {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      padding: 0;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .color-btn:hover  { transform: scale(1.2); }
+    .color-btn.activo { border-color: #fff; }
+    .color-btn[data-color="rojo"]     { background: #e63946; }
+    .color-btn[data-color="azul"]     { background: #4a90e2; }
+    .color-btn[data-color="verde"]    { background: #27ae60; }
+    .color-btn[data-color="amarillo"] { background: #f4d03f; }
+    .color-btn[data-color="naranja"]  { background: #ff6b35; }
+    .color-btn[data-color="violeta"]  { background: #a855f7; }
+
+    #btn-limpiar {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
+      font-size: 0.58rem;
+      font-family: inherit;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #btn-limpiar:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
 
     #volume-wrap {
       display: flex;
@@ -162,29 +235,587 @@
       background: #fff;
       cursor: pointer;
     }
+
+    /* ── Botón guía ── */
+    #btn-guia {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 0.7rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    #btn-guia:hover { border-color: rgba(255,255,255,0.55); color: rgba(255,255,255,0.7); }
+
+    #guia {
+      position: fixed;
+      right: 1.8rem;
+      bottom: 1.8rem;
+      width: 310px;
+      background: rgba(8,8,8,0.3);
+      border: 1px solid rgba(255,255,255,0.07);
+      padding: 0.7rem 0.85rem;
+      font-size: 0.62rem;
+      line-height: 1.5;
+      letter-spacing: 0.03em;
+      color: rgba(255,255,255,0.5);
+      z-index: 20;
+      display: none;
+    }
+    #guia.visible { display: block; }
+    #guia h3 {
+      font-size: 0.56rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 0.5rem;
+    }
+    #guia table { border-collapse: collapse; width: 100%; }
+    #guia td { padding: 0.12rem 0; vertical-align: top; }
+    #guia td:first-child {
+      color: #e63946;
+      font-size: 0.58rem;
+      padding-right: 0.5rem;
+      white-space: nowrap;
+    }
+    #guia .sep {
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 0.4rem 0;
+    }
+    #btn-guia-detalle {
+      margin-top: 0.5rem;
+      width: 100%;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.3);
+      font-size: 0.5rem;
+      font-family: inherit;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.3rem 0;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #btn-guia-detalle:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
+
+    /* ── Guía completa (overlay) ── */
+    #guia-detalle {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #guia-detalle.visible { display: flex; }
+    #guia-detalle-panel {
+      background: rgba(10,10,10,0.97);
+      border: 1px solid rgba(255,255,255,0.09);
+      width: min(480px, 92vw);
+      max-height: 82vh;
+      overflow-y: auto;
+      padding: 1.2rem 1.4rem 1.4rem;
+      position: relative;
+      font-size: 0.6rem;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.02em;
+    }
+    #guia-detalle-panel::-webkit-scrollbar { width: 3px; }
+    #guia-detalle-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+    #btn-cerrar-detalle {
+      position: absolute;
+      top: 0.7rem;
+      right: 0.9rem;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.25);
+      font-size: 0.8rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+    }
+    #btn-cerrar-detalle:hover { color: rgba(255,255,255,0.6); }
+    #guia-detalle-panel h2 {
+      font-size: 0.52rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 1rem;
+    }
+    #guia-detalle-panel h3 {
+      font-size: 0.52rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #8b1a2c;
+      margin: 0.9rem 0 0.3rem;
+    }
+    #guia-detalle-panel p { margin: 0.15rem 0; }
+    #guia-detalle-panel strong { color: rgba(255,255,255,0.65); font-weight: 400; }
+    #guia-detalle-panel .gd-sep {
+      border-top: 1px solid rgba(255,255,255,0.05);
+      margin: 0.7rem 0;
+    }
+
+    /* ── Botón ritmo + nombre activo ── */
+    #fila-ritmo {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    #btn-ritmo {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.4);
+      width: 22px;
+      height: 22px;
+      font-size: 0.75rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    #btn-ritmo:hover { border-color: rgba(255,255,255,0.55); color: rgba(255,255,255,0.7); }
+    #ritmo-nombre {
+      font-size: 0.52rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #8b1a2c;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    #menu-ritmo {
+      position: fixed;
+      left: 1.8rem;
+      bottom: 1.8rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.35rem;
+      z-index: 20;
+    }
+    #menu-ritmo.visible { display: flex; }
+
+    #menu-ritmo-label {
+      font-size: 0.46rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 0.1rem;
+    }
+
+    .ritmo-btn {
+      background: rgba(8,8,8,0.6);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.45);
+      font-size: 0.62rem;
+      font-family: inherit;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      text-align: left;
+    }
+    .ritmo-btn:hover  { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.75); }
+    .ritmo-btn.activo { border-color: #8b1a2c; color: #8b1a2c; }
+
+    /* ── Visualizador de ritmo (tooltip hover) ── */
+    #ritmo-viz {
+      position: fixed;
+      background: rgba(6,6,6,0.94);
+      border: 1px solid rgba(255,255,255,0.09);
+      padding: 0.55rem 0.7rem 0.45rem;
+      z-index: 30;
+      display: none;
+    }
+    #ritmo-viz.editable .viz-cell {
+      cursor: pointer;
+      transition: background 0.08s, outline 0.08s;
+    }
+    #ritmo-viz.editable .viz-cell:not(.hit):hover {
+      background: rgba(255,255,255,0.2) !important;
+      outline: 1px solid rgba(255,255,255,0.25);
+    }
+    #ritmo-viz.editable .viz-cell.hit:hover {
+      opacity: 0.6;
+    }
+    #viz-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    #viz-edit-hint {
+      font-size: 0.42rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.18);
+    }
+    #viz-reset-btn, #viz-actualizar-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.3);
+      font-size: 0.46rem;
+      font-family: inherit;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.18rem 0.5rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #viz-reset-btn:hover, #viz-actualizar-btn:hover { border-color: rgba(255,255,255,0.45); color: rgba(255,255,255,0.65); }
+    #viz-footer-btns { display: flex; gap: 0.35rem; }
+    #ritmo-viz-titulo {
+      font-size: 0.48rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 0.4rem;
+    }
+    .viz-track {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.18rem;
+    }
+    .viz-label {
+      width: 20px;
+      font-size: 0.75rem;
+      text-align: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .viz-cells {
+      display: flex;
+      gap: 2px;
+    }
+    .viz-cell {
+      width: 8px;
+      height: 8px;
+      background: rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .viz-cell.hit { /* color set inline */ }
+    .viz-gap { width: 3px; flex-shrink: 0; }
+
+    /* ── Indicador de lock ── */
+    #lock-indicator {
+      position: fixed;
+      top: 1.4rem;
+      right: 1.8rem;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── Slider de tempo (potenciómetro lineal) ── */
+    #tempo-slider-wrap {
+      position: fixed;
+      top: 3.2rem;
+      right: 1.65rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      z-index: 10;
+      user-select: none;
+    }
+    #tempo-slider-track {
+      position: relative;
+      width: 3px;
+      height: 150px;
+      background: rgba(255,255,255,0.07);
+      cursor: ns-resize;
+    }
+    #tempo-slider-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #8b1a2c;
+      pointer-events: none;
+    }
+    #tempo-slider-thumb {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 13px;
+      height: 4px;
+      background: rgba(255,255,255,0.55);
+      pointer-events: none;
+      transition: background 0.1s;
+    }
+    #tempo-bpm-label {
+      font-size: 0.44rem;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.22);
+      pointer-events: none;
+    }
+
+    /* ── Botón Vínculos (gesto shaka) ── */
+    #btn-vinculos {
+      position: fixed;
+      bottom: 1.8rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.28);
+      font-size: 0.48rem;
+      font-family: inherit;
+      font-weight: 300;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.4rem;
+      cursor: pointer;
+      z-index: 25;
+      display: none;
+      transition: color 0.2s;
+    }
+    #btn-vinculos.visible {
+      display: block;
+      animation: fadeInUp 0.35s ease;
+    }
+    #btn-vinculos:hover { color: rgba(255,255,255,0.6); }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ── Overlay Vínculos ── */
+    #vinculos-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      display: none;
+    }
+    #vinculos-overlay.visible { display: block; }
+
+    #vinculos-iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    #vinculos-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #btn-cerrar-vinculos {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.45);
+      font-size: 0.85rem;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #btn-cerrar-vinculos:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
   </style>
 </head>
 <body>
   <video id="video" playsinline autoplay muted></video>
   <canvas id="canvas"></canvas>
+  <canvas id="canvas-paint"></canvas>
 
   <div id="header-app">
     <img id="logo-ep" src="logo-ep.png" alt="Estudioprompt">
     <div id="header-text">
       <div id="header-brand">Estudioprompt</div>
-      <div id="header-nombre">Repique Code</div>
+      <div id="header-nombre">Repique Code 1.5</div>
     </div>
   </div>
 
   <div id="status">Iniciando cámara…</div>
+  <div id="lock-indicator"></div>
+  <div id="tempo-slider-wrap" title="Tempo (arrastrar o gesto ☝🤞)">
+    <div id="tempo-slider-track">
+      <div id="tempo-slider-fill"></div>
+      <div id="tempo-slider-thumb"></div>
+    </div>
+    <span id="tempo-bpm-label">120</span>
+  </div>
 
   <div id="panel">
-    <button id="btn-start" disabled>Arranca</button>
-    <button id="btn-stop" disabled>&#9632;</button>
+    <button id="btn-start" disabled>Arrancar</button>
+    <div id="fila-stop">
+      <button id="btn-stop" disabled>&#9632;</button>
+      <button id="btn-paint" title="Modo pintura">✏</button>
+    </div>
+    <div id="paleta">
+      <button class="color-btn" data-color="rojo"     title="Rojo     ☝ índice"></button>
+      <button class="color-btn" data-color="azul"     title="Azul     ✌ medio"></button>
+      <button class="color-btn" data-color="verde"    title="Verde    💍 anular"></button>
+      <button class="color-btn" data-color="amarillo" title="Amarillo 🤙 meñique"></button>
+      <button class="color-btn" data-color="naranja"  title="Naranja"></button>
+      <button class="color-btn" data-color="violeta"  title="Violeta"></button>
+      <button id="btn-limpiar">limpiar</button>
+    </div>
     <div id="volume-wrap">
       <span>Vol</span>
       <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8">
     </div>
+    <div id="fila-ritmo">
+      <button id="btn-ritmo" title="Ver ritmo / cambiar">♩</button>
+      <span id="ritmo-nombre">Libre ✎</span>
+    </div>
+    <button id="btn-guia" title="Guía de gestos">?</button>
+  </div>
+
+  <div id="menu-ritmo">
+    <div id="menu-ritmo-label">Ritmos</div>
+    <button class="ritmo-btn" data-ritmo="0">house</button>
+    <button class="ritmo-btn" data-ritmo="1">Dos pulsos</button>
+    <button class="ritmo-btn" data-ritmo="2">Escalera</button>
+    <button class="ritmo-btn" data-ritmo="3">Tresillo</button>
+    <button class="ritmo-btn" data-ritmo="4">Medianoche</button>
+    <button class="ritmo-btn" data-ritmo="5">Llamada</button>
+    <button class="ritmo-btn activo" data-ritmo="6">Libre ✎</button>
+  </div>
+
+  <div id="ritmo-viz">
+    <div id="ritmo-viz-titulo"></div>
+  </div>
+
+  <div id="guia">
+    <h3>Gestos rápidos</h3>
+    <table>
+      <tr><td>✋🤚 Rectángulo</td><td>Do — drone nota base</td></tr>
+      <tr><td>🤲 / 🙌 Trapecio</td><td>Re Mi Fa Sol — según forma</td></tr>
+      <tr><td>✋👌 / 👌✋ Pinza</td><td>La / Si — una mano</td></tr>
+      <tr><td>👍👍 Pulgares ↑</td><td>Do₂</td></tr>
+      <tr><td>🤞🤞 Cruzadas</td><td>Modo Acid</td></tr>
+      <tr><td>🤏🤏 Pinza ×2</td><td>Bloquear tempo y tono</td></tr>
+      <tr><td>✌️ Victoria</td><td>Desbloquear</td></tr>
+      <tr><td>☝🤞 Puntas juntas</td><td>Slider de tempo — sobre la barra</td></tr>
+    </table>
+    <div class="sep"></div>
+    <table>
+      <tr><td>Altura cuadril.</td><td>Filtro (arriba=agudos, abajo=graves)</td></tr>
+      <tr><td>Área</td><td>Volumen drone</td></tr>
+    </table>
+    <button id="btn-guia-detalle">Guía completa →</button>
+  </div>
+
+  <div id="guia-detalle">
+    <div id="guia-detalle-panel">
+      <button id="btn-cerrar-detalle">✕</button>
+      <h2>Repique Code — Guía completa</h2>
+
+      <h3>Inicio</h3>
+      <p>Concedé acceso a la cámara cuando se solicite.</p>
+      <p>Pulsá <strong>Arrancar</strong> para iniciar el audio y el secuenciador.</p>
+      <p>Posicioná las manos frente a la cámara para interactuar.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Ritmos — botón ♩</h3>
+      <p><strong>Hover sobre ♩</strong> → abre la grilla del ritmo activo y se queda fija.</p>
+      <p><strong>Clic en ♩</strong> (con grilla abierta) → cierra la grilla.</p>
+      <p><strong>Clic en ♩</strong> (con grilla cerrada) → abre el menú de ritmos.</p>
+      <p>La grilla muestra <strong>5 instrumentos × 16 pasos</strong>: 🔔 Chico · 🥁 Repique · 🔴 Piano · 👏 Palmas · 💥 Bombo.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Libre ✎ — ritmo editable</h3>
+      <p>Hover sobre <strong>Libre ✎</strong> en el menú abre el editor en tiempo real.</p>
+      <p>Clic en cada celda → activa o desactiva ese golpe.</p>
+      <p>Los cambios suenan inmediatamente sin interrumpir el loop.</p>
+      <p><strong>↺ Limpiar</strong> → borra todas las notas del patrón.</p>
+      <p><strong>⟳ Actualizar</strong> → aplica Libre como ritmo activo si no lo estaba.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Slider de tempo</h3>
+      <p>Barra vertical en la esquina superior derecha. Rango: <strong>80–180 BPM</strong>.</p>
+      <p>Pegá la punta del <strong>mayor</strong> con la del <strong>índice</strong> de una mano.</p>
+      <p>Posicioná los dos dedos juntos sobre la barra.</p>
+      <p>Mové la mano <strong>hacia arriba</strong> → más BPM · <strong>hacia abajo</strong> → menos BPM.</p>
+      <p>Abrí los dedos para congelar el valor donde quedó.</p>
+      <p>El thumb se ilumina mientras el gesto está activo.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Cuadrilátero (dos manos)</h3>
+      <p>Formá un cuadrilátero con <strong>pulgares e índices</strong> de ambas manos.</p>
+      <p><strong>Altura del centro</strong> → filtro de tono: manos arriba = agudos (12 kHz), manos abajo = graves (200 Hz).</p>
+      <p><strong>BPM</strong> solo se controla con el slider de tempo (esquina superior derecha).</p>
+      <p><strong>Área</strong> → volumen del drone (manos juntas = silencio, abiertas = fuerte).</p>
+
+      <div class="gd-sep"></div>
+      <h3>Notas del drone</h3>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">✋🤚 Rectángulo</td><td>Do — manos simétricas</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">🤲 Trap. piso</td><td>Re — base más ancha que techo</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">🙌 Trap. techo</td><td>Mi — techo más ancho que base</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">✋🤏 Trap. izq.</td><td>Fa — lado izquierdo más largo</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">🤏✋ Trap. der.</td><td>Sol — lado derecho más largo</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">✋👌 Pinza der.</td><td>La — pulgar+índice der. unidos</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">👌✋ Pinza izq.</td><td>Si — pulgar+índice izq. unidos</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">👍👍 Pulgares ↑</td><td>Do₂ — ambos pulgares arriba del índice</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">🤞🤞 Cruzadas</td><td>Modo Acid — filtro modulado automático</td></tr>
+      </table>
+
+      <div class="gd-sep"></div>
+      <h3>Lock de tempo y tono</h3>
+      <p><strong>Dos pinzas</strong> simultáneas (≥8 frames) → bloquea BPM y nota del drone.</p>
+      <p>Indicador <em>⏸ bloqueado</em> aparece en la esquina superior derecha.</p>
+      <p>El slider de tempo <strong>sigue activo</strong> aunque esté bloqueado.</p>
+      <p><strong>✌ Victoria</strong> con una mano → desbloquea.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Modo pintura — botón ✏</h3>
+      <p>Activá/desactivá con el botón ✏ del panel.</p>
+      <p><strong>☝ Solo índice</strong> → línea fina con el color activo.</p>
+      <p><strong>🖖 Índice + medio + anular</strong> → brocha gorda semitransparente.</p>
+      <p><strong>✊ Puño + UN dedo</strong> (mantener 2 s) → seleccionar color:</p>
+      <p style="padding-left:0.8rem">Índice = rojo · Medio = azul · Anular = verde · Meñique = amarillo · Pulgar = naranja</p>
+      <p><strong>✊✊ Dos puños</strong> → borrar (goma de borrar circular).</p>
+    </div>
+  </div>
+
+  <!-- Botón Vínculos (aparece con gesto shaka 🤙) -->
+  <button id="btn-vinculos">🤙🤙 vínculos</button>
+
+  <!-- Overlay Vínculos: iframe del juego + canvas satélites encima -->
+  <div id="vinculos-overlay">
+    <iframe id="vinculos-iframe" src="" frameborder="0" allow="camera; microphone; autoplay"></iframe>
+    <canvas id="vinculos-canvas"></canvas>
+    <button id="btn-cerrar-vinculos">✕</button>
   </div>
 
   <script type="module" src="./src/main.js"></script>

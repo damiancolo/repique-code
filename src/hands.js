@@ -48,6 +48,21 @@ export function detectarDedos(manos) {
 }
 
 /**
+ * Devuelve true cuando se hace señal de victoria (✌️) con una sola mano visible:
+ * índice y medio arriba, anular y meñique abajo.
+ */
+export function detectarVictoria(manos) {
+  if (manos.length !== 1) return false;
+  const lm = manos[0];
+  if (!lm || lm.length < 21) return false;
+  const indice  = lm[8].y  < lm[6].y;
+  const medio   = lm[12].y < lm[10].y;
+  const anular  = lm[16].y < lm[14].y;
+  const menique = lm[20].y < lm[18].y;
+  return indice && medio && !anular && !menique;
+}
+
+/**
  * Devuelve true cuando todos los dedos están juntos en un punto
  * (la expansión del bounding box de las 5 puntas es pequeña).
  */
@@ -106,8 +121,39 @@ export function calcularGestos(manos) {
   const derPinza = pinzaDist(manoDer) < 0.07;
   const izqPinza = pinzaDist(manoIzq) < 0.07;
 
+  // Do₂: pulgares significativamente más altos que índices en ambas manos
+  const derPulgarArriba = manoDer[4].y < manoDer[8].y - 0.10;
+  const izqPulgarArriba = manoIzq[4].y < manoIzq[8].y - 0.10;
+
+  // Dos triángulos: cuadrilátero auto-intersectante (manos cruzadas)
+  const esCruzado = !derPinza && !izqPinza && esSelfIntersecting(puntos);
+
+  const dosPinzas = derPinza && izqPinza;
+
+  // Subtipo del modo acid (solo cuando hay dos triángulos)
+  let subtipoAcid = null;
+  if (esCruzado) {
+    const yIzq = manoIzq[0].y; // muñeca izquierda
+    const yDer = manoDer[0].y; // muñeca derecha
+    const yMin = Math.min(yIzq, yDer);
+    const yMax = Math.max(yIzq, yDer);
+    if (yMin < 0.33 && yMax > 0.67) {
+      subtipoAcid = 'split';
+    } else if (manoIzq[8].y > manoDer[8].y + 0.08) {
+      subtipoAcid = 'izq_abajo';
+    } else {
+      subtipoAcid = 'der_abajo';
+    }
+  }
+
   let forma;
-  if (derPinza && !izqPinza) {
+  if (esCruzado) {
+    forma = FORMAS.DOS_TRIANGULOS;
+  } else if (derPulgarArriba && izqPulgarArriba && !derPinza && !izqPinza) {
+    forma = FORMAS.DO_ALTO;
+  } else if (dosPinzas) {
+    forma = null; // gesto de bloqueo — se maneja en main.js
+  } else if (derPinza && !izqPinza) {
     forma = FORMAS.LA;
   } else if (izqPinza && !derPinza) {
     forma = FORMAS.SI;
@@ -115,7 +161,7 @@ export function calcularGestos(manos) {
     forma = clasificarForma(puntos);
   }
 
-  return { ancho, centroY, area, puntos, forma };
+  return { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid };
 }
 
 // ─── Clasificación geométrica ────────────────────────────────────────────────
@@ -127,8 +173,10 @@ export const FORMAS = {
   TRAPECIO_TECHO: 'trapecio_techo', // Mi
   TRAPECIO_IZQ:   'trapecio_izq',   // Fa
   TRAPECIO_DER:   'trapecio_der',   // Sol
-  LA:             'la',             // La — mano derecha girada (índice abajo)
-  SI:             'si',             // Si — mano izquierda girada (índice abajo)
+  LA:             'la',             // La — pinza mano derecha
+  SI:             'si',             // Si — pinza mano izquierda
+  DO_ALTO:        'do_alto',        // Do₂ — pulgares arriba, índices abajo (ambas manos)
+  DOS_TRIANGULOS: 'dos_triangulos', // Modo techno — cuadrilátero auto-intersectante
 };
 
 function vec(a, b)       { return { x: b.x - a.x, y: b.y - a.y }; }

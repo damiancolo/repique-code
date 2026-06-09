@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -602,9 +602,13 @@ async function init() {
         victoriaActivo = false;
       }
 
+      // Con lock global (dos pinzas) o ambos candados puestos, NADA de los
+      // gestos puede alterar cómo suena el ritmo de fondo (filtro, wow, tecno)
+      const bloqueoTotal = locked || (tempoLocked && filtroLocked);
+
       // Cuadrilátero → filtro (altura) / área / nota  [BPM solo por slider]
       if (ancho !== null) {
-        if (formaConfirmada === 'dos_triangulos') {
+        if (formaConfirmada === 'dos_triangulos' && !bloqueoTotal) {
           actualizarWow(centroY, ancho, subtipoAcid);
         } else if (!filtroLocked && !locked) {
           // Manos arriba (centroY bajo) = agudos, manos abajo (centroY alto) = graves.
@@ -676,9 +680,9 @@ async function init() {
           : 'rgba(255,255,255,0.55)';
       }
 
-      // Cambio de modo house ↔ techno
+      // Cambio de modo normal ↔ techno/acid — bloqueado con candados puestos
       if (state.audioIniciado) {
-        const tecno = formaConfirmada === 'dos_triangulos';
+        const tecno = formaConfirmada === 'dos_triangulos' && !bloqueoTotal;
         if (tecno !== enModoTecno) {
           setModoTecno(tecno);
           if (!tecno) resetNotaAcid();
@@ -915,7 +919,7 @@ async function init() {
   const ritmoViz      = document.getElementById('ritmo-viz');
   const vizTitulo     = document.getElementById('ritmo-viz-titulo');
   const ritmoNombreEl = document.getElementById('ritmo-nombre');
-  let ritmoActivoIdx  = 6;
+  let ritmoActivoIdx  = 4; // Libre ✎ por defecto
 
   const VIZ_TRACKS = [
     { key: 'chico',   label: '🪘 chico',   color: 'rgba(255,255,255,0.82)' },
@@ -925,8 +929,8 @@ async function init() {
     { key: 'bombo',   label: '💥 bombo',   color: '#4a90e2' },
   ];
 
-  const LIBRE_IDX = 6;
-  let _libreRect = null;  // posición del botón Libre, para re-renderizar desde la grilla
+  let _vizRect   = null;  // rect del botón que abrió el viz (para re-render)
+  let _vizIdx    = null;  // qué ritmo muestra el viz
   let _vizOpener = null;  // quién abrió el viz: índice de ritmo o 'rit' (♩)
 
   function ocultarViz() {
@@ -934,21 +938,24 @@ async function init() {
     _vizOpener = null;
   }
 
-  // Aplica una edición del patrón Libre en tiempo real: re-arma las secuencias
-  // (Tone.Sequence NO relee el array mutado) y activa Libre si hacía falta
-  function aplicarEdicionLibre() {
-    const libreBtn = ritmoBtns[LIBRE_IDX];
-    cambiarRitmo(LIBRE_IDX);
-    ritmoActivoIdx = LIBRE_IDX;
-    ritmoNombreEl.textContent = libreBtn.textContent;
-    ritmoBtns.forEach((b, j) => b.classList.toggle('activo', j === LIBRE_IDX));
-    mostrarViz(BANCO_PATRONES[LIBRE_IDX], 'Libre ✎', _libreRect, true);
+  // Aplica una edición de patrón en tiempo real: re-arma las secuencias
+  // (Tone.Sequence NO relee el array mutado) y activa ese ritmo para escucharlo
+  function aplicarEdicion(idx) {
+    cambiarRitmo(idx);
+    ritmoActivoIdx = idx;
+    ritmoNombreEl.textContent = ritmoBtns[idx].textContent;
+    ritmoBtns.forEach((b, j) => b.classList.toggle('activo', j === idx));
+    mostrarViz(idx, _vizRect);
   }
 
-  function mostrarViz(patron, nombre, btnRect, editable) {
-    vizTitulo.textContent = nombre;
+  function mostrarViz(idx, btnRect) {
+    const patron   = BANCO_PATRONES[idx];
+    const editable = idx !== CANDOMBE_REAL_IDX; // el loop grabado no se edita
+    _vizIdx  = idx;
+    _vizRect = btnRect;
+    vizTitulo.textContent = ritmoBtns[idx].textContent;
     while (ritmoViz.children.length > 1) ritmoViz.removeChild(ritmoViz.lastChild);
-    ritmoViz.classList.toggle('editable', !!editable);
+    ritmoViz.classList.toggle('editable', editable);
 
     VIZ_TRACKS.forEach(track => {
       const fila = document.createElement('div');
@@ -962,23 +969,23 @@ async function init() {
       const celdas = document.createElement('div');
       celdas.className = 'viz-cells';
 
-      patron[track.key].forEach((hit, idx) => {
-        if (idx > 0 && idx % 4 === 0) {
+      patron[track.key].forEach((hit, paso) => {
+        if (paso > 0 && paso % 4 === 0) {
           const gap = document.createElement('div');
           gap.className = 'viz-gap';
           celdas.appendChild(gap);
         }
         const celda = document.createElement('div');
         celda.className = 'viz-cell' + (hit ? ' hit' : '');
-        celda.dataset.step = idx;
+        celda.dataset.step = paso;
         if (hit) celda.style.background = track.color;
 
         if (editable) {
           celda.addEventListener('click', (e) => {
             e.stopPropagation();
-            BANCO_PATRONES[LIBRE_IDX][track.key][idx] = hit ? null : 1;
+            BANCO_PATRONES[idx][track.key][paso] = hit ? null : 1;
             // En tiempo real: re-arma las secuencias y suena en la próxima pasada
-            aplicarEdicionLibre();
+            aplicarEdicion(idx);
           });
         }
 
@@ -1006,9 +1013,9 @@ async function init() {
       btnReset.addEventListener('click', (e) => {
         e.stopPropagation();
         ['piano', 'repique', 'chico', 'madera', 'bombo'].forEach(key => {
-          BANCO_PATRONES[LIBRE_IDX][key].fill(null);
+          BANCO_PATRONES[idx][key].fill(null);
         });
-        aplicarEdicionLibre();
+        aplicarEdicion(idx);
       });
 
       btns.appendChild(btnReset);
@@ -1038,10 +1045,7 @@ async function init() {
   // ♩ hover → abre viz del ritmo activo (solo si no hay otro viz abierto)
   btnRitmo.addEventListener('mouseenter', () => {
     if (ritmoViz.style.display === 'block') return;
-    const esLibre = ritmoActivoIdx === LIBRE_IDX;
-    const rect = btnRitmo.getBoundingClientRect();
-    if (esLibre) _libreRect = rect;
-    mostrarViz(BANCO_PATRONES[ritmoActivoIdx], ritmoBtns[ritmoActivoIdx].textContent, rect, esLibre);
+    mostrarViz(ritmoActivoIdx, btnRitmo.getBoundingClientRect());
     _vizOpener = 'rit';
   });
 
@@ -1067,18 +1071,14 @@ async function init() {
       if (ritmoViz.style.display === 'block' && _vizOpener === i) {
         ocultarViz();
       } else {
-        const esLibre = i === LIBRE_IDX;
-        if (esLibre) _libreRect = btn.getBoundingClientRect();
-        mostrarViz(BANCO_PATRONES[i], btn.textContent, btn.getBoundingClientRect(), esLibre);
+        mostrarViz(i, btn.getBoundingClientRect());
         _vizOpener = i;
       }
     });
     btn.addEventListener('mouseenter', () => {
       // Hover solo abre si no hay un viz ya abierto — no pisa al editor
       if (ritmoViz.style.display === 'block') return;
-      const esLibre = i === LIBRE_IDX;
-      if (esLibre) _libreRect = btn.getBoundingClientRect();
-      mostrarViz(BANCO_PATRONES[i], btn.textContent, btn.getBoundingClientRect(), esLibre);
+      mostrarViz(i, btn.getBoundingClientRect());
       _vizOpener = i;
     });
   });

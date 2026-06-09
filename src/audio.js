@@ -9,9 +9,9 @@
 import * as Tone from 'tone';
 import { state } from './state.js';
 
-// ─── Bancos de patrones ──────────────────────────────────────────────────────
+// ─── Bancos de patrones (todos editables en tiempo real desde el viz) ────────
 const BANCO_PATRONES = [
-  // 0 · House — kick 4/4, snare 2+4, hihat corcheas, perc offbeat
+  // 0 · El cualca — kick 4/4, snare 2+4, hihat corcheas, perc offbeat
   {
     piano:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
     repique: [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
@@ -19,7 +19,16 @@ const BANCO_PATRONES = [
     madera:  [null,null,1,null, null,null,1,null, null,null,1,null, null,null,1,null],
     bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
   },
-  // 1 · Dos pulsos — T1=T3 (kick+sub), T2=T4 (snare), hihat constante
+  // 1 · House — four-on-the-floor de verdad: kick 4/4, hihat en contratiempo
+  // (el "ts" del offbeat), clap/snare en 2 y 4, percusión sutil en las "a"
+  {
+    piano:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
+    repique: [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
+    chico:   [null,null,1,null, null,null,1,null, null,null,1,null, null,null,1,null],
+    madera:  [null,null,null,0.6, null,null,null,0.6, null,null,null,0.6, null,null,null,0.6],
+    bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
+  },
+  // 2 · Dos pulsos — T1=T3 (kick+sub), T2=T4 (snare), hihat constante
   {
     piano:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
     repique: [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
@@ -27,7 +36,7 @@ const BANCO_PATRONES = [
     madera:  [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
     bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
   },
-  // 2 · Escalera — piano:1, repique:2, chico:3, madera:4 por cada tiempo
+  // 3 · Escalera — piano:1, repique:2, chico:3, madera:4 por cada tiempo
   {
     piano:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
     repique: [null,1,null,null, null,1,null,null, null,1,null,null, null,1,null,null],
@@ -35,31 +44,7 @@ const BANCO_PATRONES = [
     madera:  [null,null,null,1, null,null,null,1, null,null,null,1, null,null,null,1],
     bombo:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
   },
-  // 3 · Tresillo — división 3-3-2, groove afrolatino sincopado
-  {
-    piano:   [1,null,null,1, null,null,1,null, null,null,null,1, null,null,1,null],
-    repique: [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
-    chico:   [1,null,1,null, 1,null,1,null, 1,null,1,null, 1,null,1,null],
-    madera:  [null,1,null,null, null,null,null,1, null,null,null,null, null,null,null,null],
-    bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
-  },
-  // 4 · Medianoche — medio tiempo, muy abierto, golpes mínimos
-  {
-    piano:   [1,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
-    repique: [null,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
-    chico:   [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
-    madera:  [null,1,null,null, null,1,null,null, null,1,null,null, null,1,null,null],
-    bombo:   [1,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
-  },
-  // 5 · Llamada — chico constante, repique con llamada, bombo en tiempos
-  {
-    piano:   [1,null,null,null, null,null,1,null, null,null,null,null, null,1,null,null],
-    repique: [1,null,1,null, null,1,null,null, 1,null,null,1, null,null,null,null],
-    chico:   [1,null,1,null, 1,null,1,null, 1,null,1,null, 1,null,1,null],
-    madera:  [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
-    bombo:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
-  },
-  // 6 · Libre — patrón editable por el usuario (empieza con kick+snare simple)
+  // 4 · Libre — patrón editable que arranca casi vacío (default al cargar)
   {
     piano:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
     repique: [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
@@ -67,7 +52,7 @@ const BANCO_PATRONES = [
     madera:  [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
     bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
   },
-  // 7 · Candombe — clave 3+3+4+2+4 (5 golpes, Jure & Rocamora), chico real
+  // 5 · Candombe — clave 3+3+4+2+4 (5 golpes, Jure & Rocamora), chico real
   // (silencio en 1.ª semicorchea, mano acentuada + dos palos suaves),
   // repique conversando, piano de base. Sin bombo: el trío es chico/repique/piano.
   // Valores ≠ 1 son velocity (acentos).
@@ -78,7 +63,7 @@ const BANCO_PATRONES = [
     madera:  [1,null,null,1, null,null,1,null, null,null,1,null, 1,null,null,null],
     bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
   },
-  // 8 · Candombe real — loop grabado (dataset Jure & Rocamora, CC-BY 4.0).
+  // 6 · Candombe real — loop grabado (dataset Jure & Rocamora, CC-BY 4.0).
   // Patrón vacío: suena el Tone.Player con la grabación, no el secuenciador.
   {
     piano:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
@@ -89,10 +74,10 @@ const BANCO_PATRONES = [
   },
 ];
 
-const CANDOMBE_IDX      = 7;
-const CANDOMBE_REAL_IDX = 8;
+const CANDOMBE_IDX      = 5;
+export const CANDOMBE_REAL_IDX = 6;
 
-let ritmoActual = 6;
+let ritmoActual = 4; // arranca en Libre ✎
 
 // Alias para compatibilidad interna
 const PATRONES = BANCO_PATRONES[0]; // solo usado en la inicialización
@@ -117,13 +102,14 @@ const synthMadera = new Tone.MetalSynth({
   volume: 2,
 });
 
-// ─── Clave de madera (candombe) — woodblock sintetizado, fallback de mobile ──
-// Barrido de pitch corto y agudo → "tock" seco de palo sobre madera
+// ─── Clave de madera (candombe) — woodblock sintetizado ─────────────────────
+// Los samples de Freesound no convencieron (clap, claves genéricas) — síntesis
+// controlada: "toc" muy corto, seco y agudo, de palo sobre el casco del tambor
 const synthClave = new Tone.MembraneSynth({
-  pitchDecay: 0.008,
-  octaves: 1.5,
-  envelope: { attack: 0.0005, decay: 0.08, sustain: 0, release: 0.03 },
-  volume: 6,
+  pitchDecay: 0.004,
+  octaves: 1.2,
+  envelope: { attack: 0.0005, decay: 0.05, sustain: 0, release: 0.02 },
+  volume: 5,
 });
 
 // ─── Voces de candombe (síntesis dedicada) ───────────────────────────────────
@@ -208,14 +194,6 @@ async function cargarSamples(destino) {
       if (s.category === 'candombe') continue;
       if (!porCategoria[s.category]) porCategoria[s.category] = [];
       porCategoria[s.category].push(s.file); // ej: "madera/1.mp3"
-      // Categoría virtual 'clave': solo las maderas que son clave de verdad
-      // (madera/1 es un clap y madera/4 un cowbell — no sirven para candombe).
-      // claves_hit07 va primero: es la madera del candombe sintetizado.
-      if (s.category === 'madera' && /clave/i.test(s.name || '')) {
-        if (!porCategoria.clave) porCategoria.clave = [];
-        if (/claves_hit/i.test(s.name)) porCategoria.clave.unshift(s.file);
-        else porCategoria.clave.push(s.file);
-      }
     }
 
     const playerMap = {};
@@ -275,10 +253,8 @@ function crearSecuencias() {
   seqMadera = new Tone.Sequence((time, v) => {
     if (!tracksActivos[0]) return;
     if (esCandombe) {
-      // Clave de verdad: samples de clave (categoría virtual) o woodblock sintetizado.
-      // Nunca el clap/cowbell, y bypasea el filtro — la clave siempre corta.
-      if (!dispararSample('clave', time, vf(v)))
-        synthClave.triggerAttackRelease('G5', '16n', time, 0.9 + Math.random() * 0.1);
+      // Woodblock sintetizado siempre — bypasea el filtro, la clave corta
+      synthClave.triggerAttackRelease('A5', '16n', time, 0.9 + Math.random() * 0.1);
       return;
     }
     if (!dispararSample('madera', time, vf(v)))

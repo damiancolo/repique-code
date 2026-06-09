@@ -657,7 +657,7 @@ async function init() {
       const vy = prev && dt > 0 ? (y - prev.y) / dt : 0;
       const trail = prev ? prev.trail : [];
       trail.push({ x, y });
-      if (trail.length > 30) trail.shift();
+      if (trail.length > 42) trail.shift();
       next.push({ x, y, vx, vy, speed: Math.hypot(vx, vy), trail });
     }
     // Manos perdidas: la estela se consume sola en vez de cortarse de golpe
@@ -673,7 +673,7 @@ async function init() {
 
   function _emitPart(x, y, vx, vy, hue, life, sz) {
     _parts.push({ x, y, vx, vy, age: 0, life, hue, sz });
-    if (_parts.length > 420) _parts.shift();
+    if (_parts.length > 520) _parts.shift();
   }
 
   /** Avanza y dibuja todas las partículas (modo aditivo) */
@@ -705,8 +705,8 @@ async function init() {
       for (let i = 1; i < n; i++) {
         const t = i / n; // 0 = cola vieja → 1 = mano
         const a = h.trail[i - 1], b = h.trail[i];
-        ctxPaint.strokeStyle = `hsla(${(_hueBaile + i * 5) % 360}, 95%, 62%, ${(t * 0.7).toFixed(3)})`;
-        ctxPaint.lineWidth = 1 + t * (9 + _pulse * 10);
+        ctxPaint.strokeStyle = `hsla(${(_hueBaile + i * 5) % 360}, 95%, 62%, ${(t * 0.75).toFixed(3)})`;
+        ctxPaint.lineWidth = 2 + t * (18 + _pulse * 16);
         ctxPaint.beginPath();
         ctxPaint.moveTo(a.x, a.y);
         ctxPaint.lineTo(b.x, b.y);
@@ -729,7 +729,7 @@ async function init() {
         const a = h.trail[i - 1], b = h.trail[i];
         // Cabeza esmeralda (160), cola dorada (45)
         const hue = 45 + t * 115;
-        const ancho = (2 + 10 * t) * (1 + 0.45 * Math.sin(i * 0.7)) * (1 + _pulse * 0.5);
+        const ancho = (3 + 19 * t) * (1 + 0.45 * Math.sin(i * 0.7)) * (1 + _pulse * 0.5);
         ctxPaint.strokeStyle = `hsla(${hue}, 90%, 55%, ${(t * 0.8).toFixed(3)})`;
         ctxPaint.lineWidth = ancho;
         ctxPaint.beginPath();
@@ -741,9 +741,9 @@ async function init() {
           const dx = b.x - a.x, dy = b.y - a.y;
           const len = Math.hypot(dx, dy) || 1;
           const nx = -dy / len, ny = dx / len;
-          const pluma = (7 + 16 * t) * (1 + 0.4 * Math.sin(i * 1.3));
-          ctxPaint.strokeStyle = `hsla(${hue + 20}, 95%, 62%, ${(t * 0.45).toFixed(3)})`;
-          ctxPaint.lineWidth = 1.6;
+          const pluma = (12 + 30 * t) * (1 + 0.4 * Math.sin(i * 1.3));
+          ctxPaint.strokeStyle = `hsla(${hue + 20}, 95%, 62%, ${(t * 0.5).toFixed(3)})`;
+          ctxPaint.lineWidth = 2.4;
           ctxPaint.beginPath();
           ctxPaint.moveTo(b.x - nx * pluma, b.y - ny * pluma);
           ctxPaint.lineTo(b.x + nx * pluma, b.y + ny * pluma);
@@ -757,23 +757,23 @@ async function init() {
   /** Partículas — chispas que salen disparadas con el movimiento */
   function fxParticulas(dt) {
     for (const h of _baileHands) {
-      const n = Math.min(8, Math.round(h.speed / 130));
+      const n = Math.min(10, Math.round(h.speed / 110));
       for (let i = 0; i < n; i++) {
         _emitPart(
           h.x, h.y,
-          h.vx * 0.25 + (Math.random() * 2 - 1) * 90,
-          h.vy * 0.25 + (Math.random() * 2 - 1) * 90,
+          h.vx * 0.25 + (Math.random() * 2 - 1) * 120,
+          h.vy * 0.25 + (Math.random() * 2 - 1) * 120,
           (_hueBaile + h.speed * 0.04 + Math.random() * 40) % 360,
-          0.6 + Math.random() * 0.6,
-          2 + Math.random() * 3
+          0.7 + Math.random() * 0.7,
+          4 + Math.random() * 5.5
         );
       }
       if (_beatBaile) {
         // Explosión radial en cada beat
-        for (let i = 0; i < 16; i++) {
-          const a = (i / 16) * Math.PI * 2;
-          _emitPart(h.x, h.y, Math.cos(a) * 260, Math.sin(a) * 260,
-            (_hueBaile + i * 8) % 360, 0.7, 3);
+        for (let i = 0; i < 22; i++) {
+          const a = (i / 22) * Math.PI * 2;
+          _emitPart(h.x, h.y, Math.cos(a) * 330, Math.sin(a) * 330,
+            (_hueBaile + i * 8) % 360, 0.8, 5.5);
         }
       }
     }
@@ -784,22 +784,22 @@ async function init() {
   /** Fuego — llamas que suben desde las manos */
   function fxFuego(dt) {
     for (const h of _baileHands) {
-      const n = 4 + Math.min(6, Math.round(h.speed / 200));
+      const n = 6 + Math.min(8, Math.round(h.speed / 170));
       for (let i = 0; i < n; i++) {
         _emitPart(
-          h.x + (Math.random() * 2 - 1) * 14, h.y,
-          h.vx * 0.15 + (Math.random() * 2 - 1) * 45,
-          -(110 + Math.random() * 190),
+          h.x + (Math.random() * 2 - 1) * 24, h.y,
+          h.vx * 0.15 + (Math.random() * 2 - 1) * 60,
+          -(140 + Math.random() * 240),
           10 + Math.random() * 40,
-          0.45 + Math.random() * 0.4,
-          3 + Math.random() * 3.5
+          0.55 + Math.random() * 0.5,
+          5.5 + Math.random() * 6
         );
       }
       if (_beatBaile) {
-        for (let i = 0; i < 20; i++) {
-          _emitPart(h.x + (Math.random() * 2 - 1) * 26, h.y,
-            (Math.random() * 2 - 1) * 120, -(220 + Math.random() * 220),
-            10 + Math.random() * 45, 0.8, 4.5);
+        for (let i = 0; i < 28; i++) {
+          _emitPart(h.x + (Math.random() * 2 - 1) * 40, h.y,
+            (Math.random() * 2 - 1) * 160, -(280 + Math.random() * 280),
+            10 + Math.random() * 45, 0.95, 7.5);
         }
       }
     }
@@ -819,7 +819,7 @@ async function init() {
     }
     pts.push({ x: x2, y: y2 });
     // Glow celeste + núcleo blanco
-    for (const [w, estilo] of [[5, 'rgba(120,200,255,0.3)'], [1.5, 'rgba(255,255,255,0.9)']]) {
+    for (const [w, estilo] of [[10, 'rgba(120,200,255,0.32)'], [2.6, 'rgba(255,255,255,0.92)']]) {
       ctxPaint.strokeStyle = estilo;
       ctxPaint.lineWidth = w;
       ctxPaint.beginPath();
@@ -838,14 +838,14 @@ async function init() {
     if (_baileHands.length >= 2) {
       const [a, b] = _baileHands;
       const dist = Math.hypot(b.x - a.x, b.y - a.y);
-      const amp = (8 + dist * 0.07) * (1 + _pulse * 0.8);
+      const amp = (14 + dist * 0.1) * (1 + _pulse * 0.8);
       for (let i = 0; i < boltN; i++) _drawBolt(a.x, a.y, b.x, b.y, amp);
     } else if (_baileHands.length === 1) {
       const h = _baileHands[0];
       for (let i = 0; i < boltN + 1; i++) {
         const a = Math.random() * Math.PI * 2;
-        const r = 70 + Math.random() * 110 * (1 + _pulse);
-        _drawBolt(h.x, h.y, h.x + Math.cos(a) * r, h.y + Math.sin(a) * r, 14);
+        const r = 120 + Math.random() * 180 * (1 + _pulse);
+        _drawBolt(h.x, h.y, h.x + Math.cos(a) * r, h.y + Math.sin(a) * r, 22);
       }
     }
     ctxPaint.restore();
@@ -854,11 +854,11 @@ async function init() {
   /** Ondas — círculos que nacen con cada beat y con movimientos rápidos */
   function fxOndas(dt) {
     if (_beatBaile) {
-      for (const h of _baileHands) _ondas.push({ x: h.x, y: h.y, r: 12, v: 420, alpha: 0.85 });
+      for (const h of _baileHands) _ondas.push({ x: h.x, y: h.y, r: 16, v: 560, alpha: 0.9 });
     }
     for (const h of _baileHands) {
-      if (h.speed > 950 && Math.random() < 0.3) {
-        _ondas.push({ x: h.x, y: h.y, r: 6, v: 260, alpha: 0.5 });
+      if (h.speed > 850 && Math.random() < 0.35) {
+        _ondas.push({ x: h.x, y: h.y, r: 8, v: 340, alpha: 0.6 });
       }
     }
     if (_ondas.length > 40) _ondas.splice(0, _ondas.length - 40);
@@ -867,9 +867,9 @@ async function init() {
     _ondas = _ondas.filter(o => o.alpha > 0.02);
     for (const o of _ondas) {
       o.r += o.v * dt;
-      o.alpha -= dt * 0.55;
+      o.alpha -= dt * 0.45;
       ctxPaint.strokeStyle = `hsla(${(_hueBaile + o.r * 0.15) % 360}, 90%, 62%, ${Math.max(0, o.alpha).toFixed(3)})`;
-      ctxPaint.lineWidth = 2.5;
+      ctxPaint.lineWidth = 5;
       ctxPaint.beginPath();
       ctxPaint.arc(o.x, o.y, o.r, 0, Math.PI * 2);
       ctxPaint.stroke();

@@ -19,13 +19,13 @@ const BANCO_PATRONES = [
     madera:  [null,null,1,null, null,null,1,null, null,null,1,null, null,null,1,null],
     bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
   },
-  // 1 · House — four-on-the-floor de verdad: kick 4/4, hihat en contratiempo
-  // (el "ts" del offbeat), clap/snare en 2 y 4, percusión sutil en las "a"
+  // 1 · House — kick 4/4, hihat con bombeo (suave al tiempo, ACENTO abierto en
+  // el contratiempo: el "ts" clásico), snare + clap apilados en 2 y 4
   {
     piano:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
     repique: [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
-    chico:   [null,null,1,null, null,null,1,null, null,null,1,null, null,null,1,null],
-    madera:  [null,null,null,0.6, null,null,null,0.6, null,null,null,0.6, null,null,null,0.6],
+    chico:   [0.45,null,1,null, 0.45,null,1,null, 0.45,null,1,null, 0.45,null,1,null],
+    madera:  [null,null,null,null, 1,null,null,null, null,null,null,null, 1,null,null,null],
     bombo:   [1,null,null,null, null,null,null,null, 1,null,null,null, null,null,null,null],
   },
   // 2 · Dos pulsos — T1=T3 (kick+sub), T2=T4 (snare), hihat constante

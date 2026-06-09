@@ -160,6 +160,9 @@ async function init() {
   const FINGER_PIPS = [6, 10, 14, 18];
   let modoPintar     = false;
   let colorIdx       = 0;
+  // Pintura viva: el dibujo late con el beat del secuenciador
+  let _pulse         = 0;  // envolvente 1→0 que dispara cada negra
+  let _lastStepPulse = -2;
   let ultimoPtoBuf   = null;
   let ultimoGesture  = null;
   let colorSeleccion = null; // { idx, inicio, sx, sy }
@@ -428,7 +431,23 @@ async function init() {
   function renderPaintCanvas(manos, gestureMano, seleccionInfo, borrarInfo) {
     sincBuf();
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
-    ctxPaint.drawImage(bufCanvas, 0, 0);
+
+    // ── Pintura viva: el dibujo respira con el beat ───────────────────────────
+    if (_pulse > 0.01) {
+      const s = 1 + _pulse * 0.014;
+      const W = canvasPaint.width;
+      const H = canvasPaint.height;
+      ctxPaint.save();
+      ctxPaint.translate(W / 2, H / 2);
+      ctxPaint.scale(s, s);
+      ctxPaint.translate(-W / 2, -H / 2);
+      ctxPaint.shadowColor = 'rgba(255,255,255,0.55)';
+      ctxPaint.shadowBlur  = 16 * _pulse;
+      ctxPaint.drawImage(bufCanvas, 0, 0);
+      ctxPaint.restore();
+    } else {
+      ctxPaint.drawImage(bufCanvas, 0, 0);
+    }
 
     // ── Indicador de selección de color ──────────────────────────────────────
     if (seleccionInfo) {
@@ -762,6 +781,13 @@ async function init() {
       }
     }
 
+    // ── Pulso del beat (pintura viva) — dispara en cada negra ───────────────
+    if (state.step !== _lastStepPulse) {
+      _lastStepPulse = state.step;
+      if (state.step >= 0 && state.step % 4 === 0) _pulse = 1;
+    }
+    if (_pulse > 0) _pulse = Math.max(0, _pulse - dt * 4); // decae en ~0.25 s
+
     // ── Indicador de paso actual en el viz de ritmo ─────────────────────────
     if (ritmoViz.style.display === 'block' && _vizStep !== state.step) {
       _vizStep = state.step;
@@ -841,6 +867,22 @@ async function init() {
     ultimoPtoBuf  = null;
     ultimoGesture = null;
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+  });
+
+  // ── Guardar el dibujo como PNG (fondo negro + trazos) ────────────────────────
+  const btnGuardar = document.getElementById('btn-guardar');
+  btnGuardar.addEventListener('click', () => {
+    const out = document.createElement('canvas');
+    out.width  = bufCanvas.width;
+    out.height = bufCanvas.height;
+    const octx = out.getContext('2d');
+    octx.fillStyle = '#000';
+    octx.fillRect(0, 0, out.width, out.height);
+    octx.drawImage(bufCanvas, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'repique-code-pintura.png';
+    a.href = out.toDataURL('image/png');
+    a.click();
   });
 
   // ── Slider lineal de tempo ────────────────────────────────────────────────────

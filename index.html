@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Repique Code 1.7 — Estudioprompt</title>
+  <title>Repique Code 1.8β — Estudioprompt</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -193,7 +193,7 @@
     .color-btn[data-color="naranja"]  { background: #ff6b35; }
     .color-btn[data-color="violeta"]  { background: #a855f7; }
 
-    #btn-limpiar {
+    #btn-limpiar, #btn-guardar {
       background: none;
       border: 1px solid rgba(255,255,255,0.2);
       color: rgba(255,255,255,0.4);
@@ -206,7 +206,7 @@
       cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
     }
-    #btn-limpiar:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
+    #btn-limpiar:hover, #btn-guardar:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
 
     #volume-wrap {
       display: flex;
@@ -677,7 +677,7 @@
     <img id="logo-ep" src="logo-ep.png" alt="Estudioprompt">
     <div id="header-text">
       <div id="header-brand">Estudioprompt</div>
-      <div id="header-nombre">Repique Code 1.7</div>
+      <div id="header-nombre">Repique Code 1.8β</div>
     </div>
   </div>
 
@@ -714,6 +714,7 @@
       <button class="color-btn" data-color="naranja"  title="Naranja"></button>
       <button class="color-btn" data-color="violeta"  title="Violeta"></button>
       <button id="btn-limpiar">limpiar</button>
+      <button id="btn-guardar" title="Descargar el dibujo como PNG">guardar</button>
     </div>
     <div id="volume-wrap">
       <span>Vol</span>

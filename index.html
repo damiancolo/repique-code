@@ -331,28 +331,28 @@
     }
     #btn-guia-detalle:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
 
-    /* ── Guía completa (overlay) ── */
+    /* ── Guía completa: panel lateral translúcido, se lee mientras jugás ── */
     #guia-detalle {
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      z-index: 50;
+      top: 3rem;
+      right: 5.4rem;
+      width: min(300px, 80vw);
+      z-index: 40;
       display: none;
-      align-items: center;
-      justify-content: center;
     }
-    #guia-detalle.visible { display: flex; }
+    #guia-detalle.visible { display: block; }
     #guia-detalle-panel {
-      background: rgba(10,10,10,0.97);
-      border: 1px solid rgba(255,255,255,0.09);
-      width: min(480px, 92vw);
-      max-height: 82vh;
+      background: rgba(8,8,8,0.34);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      border: 1px solid rgba(255,255,255,0.08);
+      max-height: calc(100vh - 5.5rem);
       overflow-y: auto;
-      padding: 1.2rem 1.4rem 1.4rem;
+      padding: 0.9rem 1rem 1rem;
       position: relative;
       font-size: 0.6rem;
       line-height: 1.65;
-      color: rgba(255,255,255,0.45);
+      color: rgba(255,255,255,0.5);
       letter-spacing: 0.02em;
     }
     #guia-detalle-panel::-webkit-scrollbar { width: 3px; }
@@ -813,9 +813,10 @@
       <tr><td>✋👌 / 👌✋ Pinza</td><td>La / Si — una mano</td></tr>
       <tr><td>👍👍 Pulgares ↑</td><td>Do₂</td></tr>
       <tr><td>🤞🤞 Cruzadas</td><td>Modo Acid</td></tr>
-      <tr><td>🤏🤏 Pinza ×2</td><td>Bloquear tempo y tono</td></tr>
+      <tr><td>🤏🤏 Pinza ×2</td><td>Bloquear tempo y graves</td></tr>
       <tr><td>✌️ Victoria</td><td>Desbloquear</td></tr>
-      <tr><td>☝🤞 Puntas juntas</td><td>Slider de tempo — sobre la barra</td></tr>
+      <tr><td>☝🤞 Puntas juntas</td><td>Sliders tempo/graves — sobre la barra</td></tr>
+      <tr><td>🕺 Modo baile</td><td>Movimientos = efectos y sonidos</td></tr>
     </table>
     <div class="sep"></div>
     <table>
@@ -837,33 +838,28 @@
 
       <div class="gd-sep"></div>
       <h3>Ritmos — botón ♩</h3>
-      <p><strong>Hover sobre ♩</strong> → abre la grilla del ritmo activo y se queda fija.</p>
-      <p><strong>Clic en ♩</strong> (con grilla abierta) → cierra la grilla.</p>
-      <p><strong>Clic en ♩</strong> (con grilla cerrada) → abre el menú de ritmos.</p>
-      <p>La grilla muestra <strong>5 instrumentos × 16 pasos</strong>: 🔔 Chico · 🥁 Repique · 🔴 Piano · 👏 Palmas · 💥 Bombo.</p>
+      <p>Menú: <strong>El cualca · House · Dos pulsos · Escalera · Libre ✎ · Candombe · Candombe 🎧 · Techno</strong>.</p>
+      <p><strong>Candombe 🎧</strong> es una grabación real de tambores (Jure &amp; Rocamora, CC-BY).</p>
+      <p>La grilla muestra <strong>5 instrumentos × 16 pasos</strong>: 🪘 chico · 🥁 repique · 🛢 piano · 🥢 madera · 💥 bombo, con el paso actual resaltado.</p>
+      <p>La grilla solo se cierra re-clickeando el botón que la abrió, o el ♩.</p>
 
       <div class="gd-sep"></div>
-      <h3>Libre ✎ — ritmo editable</h3>
-      <p>Hover sobre <strong>Libre ✎</strong> en el menú abre el editor en tiempo real.</p>
-      <p>Clic en cada celda → activa o desactiva ese golpe.</p>
-      <p>Los cambios suenan inmediatamente sin interrumpir el loop.</p>
-      <p><strong>↺ Limpiar</strong> → borra todas las notas del patrón.</p>
-      <p><strong>⟳ Actualizar</strong> → aplica Libre como ritmo activo si no lo estaba.</p>
+      <h3>Editor en tiempo real</h3>
+      <p><strong>Todos los ritmos son editables</strong> (salvo Candombe 🎧): clic en una celda activa o desactiva ese golpe y suena en la próxima pasada.</p>
+      <p><strong>↺ Limpiar</strong> → vacía el patrón. Los presets vuelven a su estado al recargar la página.</p>
 
       <div class="gd-sep"></div>
-      <h3>Slider de tempo</h3>
-      <p>Barra vertical en la esquina superior derecha. Rango: <strong>80–180 BPM</strong>.</p>
-      <p>Pegá la punta del <strong>mayor</strong> con la del <strong>índice</strong> de una mano.</p>
-      <p>Posicioná los dos dedos juntos sobre la barra.</p>
-      <p>Mové la mano <strong>hacia arriba</strong> → más BPM · <strong>hacia abajo</strong> → menos BPM.</p>
-      <p>Abrí los dedos para congelar el valor donde quedó.</p>
-      <p>El thumb se ilumina mientras el gesto está activo.</p>
+      <h3>Sliders y candados</h3>
+      <p>Dos barras a la derecha: <strong>tempo</strong> (80–180 BPM) y <strong>graves/agudos</strong>.</p>
+      <p>Se mueven con el mouse o con el gesto <strong>☝🤞 puntas juntas</strong> sobre la barra (arriba = más).</p>
+      <p>El filtro también responde a la <strong>altura de tus manos</strong> con el cuadrilátero.</p>
+      <p>Candados <strong>🔓/🔒</strong>: bloquean los gestos de ese slider (el mouse sigue andando).</p>
+      <p><strong>🤏🤏 Dos pinzas</strong> → bloquea tempo + graves de una (las notas siguen libres). <strong>✌ Victoria</strong> → desbloquea.</p>
 
       <div class="gd-sep"></div>
       <h3>Cuadrilátero (dos manos)</h3>
       <p>Formá un cuadrilátero con <strong>pulgares e índices</strong> de ambas manos.</p>
-      <p><strong>Altura del centro</strong> → filtro de tono: manos arriba = agudos (12 kHz), manos abajo = graves (200 Hz).</p>
-      <p><strong>BPM</strong> solo se controla con el slider de tempo (esquina superior derecha).</p>
+      <p><strong>Altura del centro</strong> → filtro: manos arriba = agudos, abajo = graves.</p>
       <p><strong>Área</strong> → volumen del drone (manos juntas = silencio, abiertas = fuerte).</p>
 
       <div class="gd-sep"></div>
@@ -881,20 +877,39 @@
       </table>
 
       <div class="gd-sep"></div>
-      <h3>Lock de tempo y tono</h3>
-      <p><strong>Dos pinzas</strong> simultáneas (≥8 frames) → bloquea BPM y nota del drone.</p>
-      <p>Indicador <em>⏸ bloqueado</em> aparece en la esquina superior derecha.</p>
-      <p>El slider de tempo <strong>sigue activo</strong> aunque esté bloqueado.</p>
-      <p><strong>✌ Victoria</strong> con una mano → desbloquea.</p>
+      <h3>Modo pintura — botón ✏</h3>
+      <p><strong>☝ Solo índice</strong> → traza con el estilo activo.</p>
+      <p><strong>🖖 Índice + medio + anular</strong> → brocha gorda semitransparente.</p>
+      <p><strong>✊ Puño + UN dedo</strong> (mantener 2 s) → seleccionar color por gesto:</p>
+      <p style="padding-left:0.8rem">Índice = rojo · Medio = azul · Anular = verde · Meñique = amarillo · Pulgar = naranja</p>
+      <p><strong>✊✊ Dos puños</strong> → borrador circular (escala con el tamaño).</p>
+      <p>Paleta: <strong>12 colores</strong> · estilos <strong>línea / neón / spray / arcoíris</strong> · tamaños <strong>s / m / l</strong>.</p>
+      <p><strong>Espejo ×2 / mandala ×6</strong> → cada trazo se replica reflejado o rotado.</p>
+      <p><strong>↩ Deshacer</strong> (hasta 4 pasos) · <strong>limpiar</strong> · <strong>guardar</strong> → descarga tu dibujo en PNG.</p>
+      <p>El dibujo <strong>late con el beat</strong> mientras suena la música.</p>
 
       <div class="gd-sep"></div>
-      <h3>Modo pintura — botón ✏</h3>
-      <p>Activá/desactivá con el botón ✏ del panel.</p>
-      <p><strong>☝ Solo índice</strong> → línea fina con el color activo.</p>
-      <p><strong>🖖 Índice + medio + anular</strong> → brocha gorda semitransparente.</p>
-      <p><strong>✊ Puño + UN dedo</strong> (mantener 2 s) → seleccionar color:</p>
-      <p style="padding-left:0.8rem">Índice = rojo · Medio = azul · Anular = verde · Meñique = amarillo · Pulgar = naranja</p>
-      <p><strong>✊✊ Dos puños</strong> → borrar (goma de borrar circular).</p>
+      <h3>Modo baile — botón 🕺</h3>
+      <p>Tus manos generan efectos visuales que brotan <strong>delante de las palmas</strong>.</p>
+      <p>Efectos: <strong>estela</strong> (cometa) · <strong>quetzal</strong> (serpiente emplumada) · <strong>partículas</strong> · <strong>fuego</strong> · <strong>rayo</strong> (entre las dos manos) · <strong>ondas</strong> · <strong>orbe</strong> · <strong>galaxia</strong>.</p>
+      <p>Si pintaste algo antes, queda de fondo latiendo bajo los efectos.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Bailar la música 🎛</h3>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">Mano izq. CAE</td><td>Drop descendente</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">Mano der. SUBE</td><td>Riser (tensión que crece)</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">Mano izq. SUBE</td><td>Arpegio del acorde actual</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">Mano der. CAE</td><td>Láser en picada con eco</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">ABRIR brazos</td><td>Acorde — avanza la progresión</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">JUNTAR manos</td><td>Impacto sub profundo</td></tr>
+        <tr><td style="color:#8b1a2c;padding-right:0.6rem;white-space:nowrap">Manos al CIELO</td><td>Shimmer celestial (sostener)</td></tr>
+      </table>
+      <p>Los movimientos verticales tienen que ser <strong>rápidos y amplios</strong> (de un tercio de la pantalla al otro). Cada gesto deja un halo de su color.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Vínculos — 🤙🤙</h3>
+      <p>Shaka con las dos manos (sostener) → aparece el botón <strong>Vínculos</strong>: una obra de estrellas donde tu índice lanza satélites.</p>
     </div>
   </div>
 

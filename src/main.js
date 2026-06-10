@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -201,6 +201,9 @@ async function init() {
   let _baileHands  = [];       // [{x, y, vx, vy, speed, trail:[{x,y}]}]
   let _parts       = [];       // partículas vivas
   let _ondas       = [];       // círculos en expansión
+  // Gesto-efecto: swipe brusco de mano izquierda arriba→abajo = drop techno
+  let _lastDropTime = 0;
+  let _dropFlash    = 0;       // flash visual del drop (envolvente 1→0)
   let ultimoPtoBuf   = null;
   let ultimoGesture  = null;
   let colorSeleccion = null; // { idx, inicio, sx, sy }
@@ -862,6 +865,13 @@ async function init() {
       }
     }
     if (_ondas.length > 40) _ondas.splice(0, _ondas.length - 40);
+    dibujarOndas(dt);
+    _hueBaile = (_hueBaile + 0.6) % 360;
+  }
+
+  /** Dibuja y avanza las ondas vivas (también las del drop, en cualquier efecto) */
+  function dibujarOndas(dt) {
+    if (!_ondas.length) return;
     ctxPaint.save();
     ctxPaint.globalCompositeOperation = 'lighter';
     _ondas = _ondas.filter(o => o.alpha > 0.02);
@@ -875,7 +885,33 @@ async function init() {
       ctxPaint.stroke();
     }
     ctxPaint.restore();
-    _hueBaile = (_hueBaile + 0.6) % 360;
+  }
+
+  /**
+   * Gesto-efecto: la mano del lado izquierdo cae MUY rápido del tercio
+   * superior al tercio inferior → drop techno (sonido + flash + onda)
+   */
+  function detectarSwipeDrop() {
+    const H = canvas.height, W = canvas.width;
+    const ahora = performance.now();
+    if (ahora - _lastDropTime < 1200) return; // cooldown
+    for (const h of _baileHands) {
+      if (h.x > W / 2) continue;        // solo la mano del lado izquierdo
+      if (h.y < H * 0.66) continue;     // tiene que haber llegado al tercio inferior
+      if (h.vy < 1300) continue;        // bajando muy rápido (px/s)
+      // ¿Estuvo hace muy poco en el tercio superior? (~0.45 s de estela)
+      const t = h.trail;
+      let arriba = false;
+      for (let i = Math.max(0, t.length - 28); i < t.length; i++) {
+        if (t[i].y < H * 0.33) { arriba = true; break; }
+      }
+      if (!arriba) continue;
+      _lastDropTime = ahora;
+      _dropFlash = 1;
+      _ondas.push({ x: h.x, y: h.y, r: 20, v: 900, alpha: 1 }); // onda expansiva
+      efectoTechnoDrop();
+      break;
+    }
   }
 
   function renderBaile(dt) {
@@ -888,6 +924,14 @@ async function init() {
       case 'rayo':       fxRayo();          break;
       case 'ondas':      fxOndas(dt);       break;
       default:           fxEstela();
+    }
+    // Las ondas del drop se ven en cualquier efecto
+    if (efectoActual !== 'ondas') dibujarOndas(dt);
+    // Flash blanco del drop techno
+    if (_dropFlash > 0.01) {
+      ctxPaint.fillStyle = `rgba(255,255,255,${(_dropFlash * 0.45).toFixed(3)})`;
+      ctxPaint.fillRect(0, 0, canvasPaint.width, canvasPaint.height);
+      _dropFlash = Math.max(0, _dropFlash - dt * 3.2);
     }
     _beatBaile = false; // flanco consumido
   }
@@ -964,6 +1008,7 @@ async function init() {
     } else if (modoBaile) {
       // ── Modo baile: las manos generan efectos, no controlan la música ──────
       trackBaileHands(manos, dt);
+      detectarSwipeDrop();
       renderFrame(ctx, video, canvas, [], null, null);
       renderBaile(dt);
     } else {

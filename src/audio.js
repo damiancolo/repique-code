@@ -72,6 +72,15 @@ const BANCO_PATRONES = [
     madera:  [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
     bombo:   [null,null,null,null, null,null,null,null, null,null,null,null, null,null,null,null],
   },
+  // 7 · Techno — kick+bombo pesados en los 4 tiempos, hihat en contratiempo,
+  // ticks suaves de semicorchea, clap escaso al final de la frase
+  {
+    piano:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
+    repique: [null,null,null,null, null,null,null,null, null,null,null,null, 1,null,null,0.6],
+    chico:   [null,null,1,null, null,null,1,null, null,null,1,null, null,null,1,null],
+    madera:  [null,0.4,null,0.4, null,0.4,null,0.4, null,0.4,null,0.4, null,0.4,null,0.4],
+    bombo:   [1,null,null,null, 1,null,null,null, 1,null,null,null, 1,null,null,null],
+  },
 ];
 
 const CANDOMBE_IDX      = 5;
@@ -135,6 +144,35 @@ const synthPianoCand = new Tone.MembraneSynth({
   envelope: { attack: 0.001, decay: 0.45, sustain: 0, release: 0.15 },
   volume: 4,
 });
+
+// ─── Drop techno (gesto de baile: swipe de mano izquierda) ──────────────────
+// Barrido de ruido blanco con filtro cayendo + zap de sierra descendente
+const dropFilter = new Tone.Filter({ type: 'lowpass', frequency: 8000, Q: 10 });
+const dropNoise = new Tone.NoiseSynth({
+  noise: { type: 'white' },
+  envelope: { attack: 0.005, decay: 0.55, sustain: 0, release: 0.1 },
+  volume: -6,
+});
+const dropZap = new Tone.Synth({
+  oscillator: { type: 'sawtooth' },
+  envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.1 },
+  volume: -8,
+});
+dropNoise.connect(dropFilter);
+dropZap.connect(dropFilter);
+
+export function efectoTechnoDrop() {
+  if (!state.audioIniciado) return;
+  const now = Tone.now();
+  // Filtro barre de agudo a grave — el "whoosh" descendente del techno
+  dropFilter.frequency.cancelScheduledValues(now);
+  dropFilter.frequency.setValueAtTime(9000, now);
+  dropFilter.frequency.exponentialRampToValueAtTime(110, now + 0.55);
+  dropNoise.triggerAttackRelease(0.5, now);
+  // Zap: sierra que cae una octava y media
+  dropZap.triggerAttackRelease(620, 0.5, now);
+  dropZap.frequency.exponentialRampToValueAtTime(50, now + 0.45);
+}
 
 // ─── Bombo sub-grave (bypasea filtro, siempre profundo) ────────────────────
 const synthBombo = new Tone.MembraneSynth({
@@ -384,6 +422,7 @@ export async function startAudio() {
     masterGain.toDestination();
     synthBombo.connect(masterGain); // bypass filtro — siempre profundo
     synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
+    dropFilter.connect(masterGain); // efecto drop techno (gesto de baile)
     // Drone → droneGain → salida (bypasea el filtro de percusión)
     drone.connect(droneGain);
     droneGain.toDestination();

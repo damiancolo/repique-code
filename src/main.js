@@ -205,8 +205,7 @@ async function init() {
   // Gestos-efecto: movimientos de baile que disparan sonidos electrónicos
   let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0 };
   let _cieloFrames   = 0;             // frames con las dos manos al cielo
-  let _dropFlash     = 0;             // flash visual (envolvente 1→0)
-  let _flashColor    = '255,255,255'; // color RGB del flash según el gesto
+  let _halos         = [];            // anillos localizados al disparar un gesto
   let _distManosPrev = null;          // distancia entre palmas en el frame anterior
   let ultimoPtoBuf   = null;
   let ultimoGesture  = null;
@@ -961,11 +960,27 @@ async function init() {
     return false;
   }
 
+  // Feedback sutil y localizado: un anillo que se expande ~110px y se va
   function _gestoDisparado(tipo, color, pos) {
     _coolGesto[tipo] = performance.now();
-    _dropFlash = 1;
-    _flashColor = color;
-    if (pos) _ondas.push({ x: pos.x, y: pos.y, r: 20, v: 900, alpha: 1 });
+    if (pos) _halos.push({ x: pos.x, y: pos.y, r: 16, rMax: 110, color, alpha: 1 });
+  }
+
+  function dibujarHalos(dt) {
+    if (!_halos.length) return;
+    ctxPaint.save();
+    ctxPaint.globalCompositeOperation = 'lighter';
+    _halos = _halos.filter(o => o.alpha > 0.03);
+    for (const o of _halos) {
+      o.r += (o.rMax - o.r) * Math.min(1, dt * 9); // expansión con freno
+      o.alpha -= dt * 2.2;                          // se va en ~0.45 s
+      ctxPaint.strokeStyle = `rgba(${o.color},${Math.max(0, o.alpha * 0.55).toFixed(3)})`;
+      ctxPaint.lineWidth = 1.8;
+      ctxPaint.beginPath();
+      ctxPaint.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+      ctxPaint.stroke();
+    }
+    ctxPaint.restore();
   }
 
   /**
@@ -1029,9 +1044,9 @@ async function init() {
       _cieloFrames++;
       if (_cieloFrames >= 10 && !enCool('cielo', 2500)) {
         _coolGesto.cielo = ahora;
-        _dropFlash = 1;
-        _flashColor = '255,215,120';
-        for (const h of _baileHands) _ondas.push({ x: h.x, y: h.y, r: 14, v: 500, alpha: 0.8 });
+        for (const h of _baileHands) {
+          _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '255,215,120', alpha: 1 });
+        }
         efectoShimmer();
       }
     } else {
@@ -1045,9 +1060,8 @@ async function init() {
       if (_distManosPrev !== null && dt > 0) {
         const vel = (dist - _distManosPrev) / dt; // px/s (+ separa, − junta)
         if (!enCool('stab') && vel > 1400 && dist > W * 0.4) {
-          _gestoDisparado('stab', '190,130,255', null);
-          _ondas.push({ x: a.x, y: a.y, r: 16, v: 700, alpha: 0.9 });
-          _ondas.push({ x: b.x, y: b.y, r: 16, v: 700, alpha: 0.9 });
+          _gestoDisparado('stab', '190,130,255', a);
+          _halos.push({ x: b.x, y: b.y, r: 16, rMax: 110, color: '190,130,255', alpha: 1 });
           efectoStab();
         } else if (!enCool('impact') && vel < -1400 && dist < W * 0.22) {
           _gestoDisparado('impact', '255,130,60', { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
@@ -1138,14 +1152,9 @@ async function init() {
       case 'galaxia':    fxGalaxia(dt);     break;
       default:           fxEstela(dt);
     }
-    // Las ondas del drop se ven en cualquier efecto
+    // Las ondas restantes (del efecto ondas) y los halos de gestos
     if (efectoActual !== 'ondas') dibujarOndas(dt);
-    // Flash del gesto (color según el efecto disparado)
-    if (_dropFlash > 0.01) {
-      ctxPaint.fillStyle = `rgba(${_flashColor},${(_dropFlash * 0.45).toFixed(3)})`;
-      ctxPaint.fillRect(0, 0, canvasPaint.width, canvasPaint.height);
-      _dropFlash = Math.max(0, _dropFlash - dt * 3.2);
-    }
+    dibujarHalos(dt);
     _beatBaile = false; // flanco consumido
   }
 
@@ -1489,6 +1498,7 @@ async function init() {
     _parts      = [];
     _ondas      = [];
     _estrellas  = [];
+    _halos      = [];
   }
 
   btnPaint.addEventListener('click', () => {

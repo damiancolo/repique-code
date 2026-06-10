@@ -145,8 +145,15 @@ const synthPianoCand = new Tone.MembraneSynth({
   volume: 4,
 });
 
-// ─── Drop techno (gesto de baile: swipe de mano izquierda) ──────────────────
-// Barrido de ruido blanco con filtro cayendo + zap de sierra descendente
+// ─── Sonidos de gestos de baile (estética The Blaze: aire, espacio, sub) ─────
+// Bus compartido: delay con feedback → reverb grande → master
+const fxDelay = new Tone.FeedbackDelay('8n.', 0.3);
+fxDelay.wet.value = 0.24;
+const fxVerb = new Tone.Freeverb({ roomSize: 0.88, dampening: 1900 });
+fxVerb.wet.value = 0.42;
+fxDelay.connect(fxVerb);
+
+// 1 · Drop descendente (mano izquierda cae): ruido + filtro cayendo + zap
 const dropFilter = new Tone.Filter({ type: 'lowpass', frequency: 8000, Q: 10 });
 const dropNoise = new Tone.NoiseSynth({
   noise: { type: 'white' },
@@ -160,6 +167,7 @@ const dropZap = new Tone.Synth({
 });
 dropNoise.connect(dropFilter);
 dropZap.connect(dropFilter);
+dropFilter.connect(fxDelay);
 
 export function efectoTechnoDrop() {
   if (!state.audioIniciado) return;
@@ -172,6 +180,76 @@ export function efectoTechnoDrop() {
   // Zap: sierra que cae una octava y media
   dropZap.triggerAttackRelease(620, 0.5, now);
   dropZap.frequency.exponentialRampToValueAtTime(50, now + 0.45);
+}
+
+// 2 · Riser (mano derecha sube): ruido + bandpass subiendo + tono ascendente
+const riserFilter = new Tone.Filter({ type: 'bandpass', frequency: 300, Q: 3 });
+const riserNoise = new Tone.NoiseSynth({
+  noise: { type: 'white' },
+  envelope: { attack: 0.25, decay: 0.55, sustain: 0, release: 0.2 },
+  volume: -9,
+});
+const riserTone = new Tone.Synth({
+  oscillator: { type: 'sawtooth' },
+  envelope: { attack: 0.05, decay: 0.7, sustain: 0, release: 0.15 },
+  volume: -13,
+});
+riserNoise.connect(riserFilter);
+riserTone.connect(riserFilter);
+riserFilter.connect(fxDelay);
+
+export function efectoRiser() {
+  if (!state.audioIniciado) return;
+  const now = Tone.now();
+  riserFilter.frequency.cancelScheduledValues(now);
+  riserFilter.frequency.setValueAtTime(250, now);
+  riserFilter.frequency.exponentialRampToValueAtTime(7500, now + 0.8);
+  riserNoise.triggerAttackRelease(0.8, now);
+  riserTone.triggerAttackRelease(140, 0.8, now);
+  riserTone.frequency.exponentialRampToValueAtTime(880, now + 0.75);
+}
+
+// 3 · Stab de acorde (manos se separan): fatsaw cálido, menor con novena,
+// rotando por una progresión emotiva — el sello The Blaze
+const stabSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsawtooth', count: 3, spread: 24 },
+  envelope: { attack: 0.012, decay: 0.42, sustain: 0.12, release: 0.9 },
+  volume: -10,
+});
+const stabFilter = new Tone.Filter({ type: 'lowpass', frequency: 2600, Q: 1 });
+stabSynth.connect(stabFilter);
+stabFilter.connect(fxDelay);
+const STAB_CHORDS = [
+  ['A3', 'C4', 'E4', 'B4'],   // Am add9
+  ['F3', 'A3', 'C4', 'G4'],   // F add9
+  ['C4', 'Eb4', 'G4', 'D5'],  // Cm add9
+  ['G3', 'Bb3', 'D4', 'A4'],  // Gm add9
+];
+let _stabIdx = 0;
+
+export function efectoStab() {
+  if (!state.audioIniciado) return;
+  stabSynth.triggerAttackRelease(STAB_CHORDS[_stabIdx], '8n');
+  _stabIdx = (_stabIdx + 1) % STAB_CHORDS.length;
+}
+
+// 4 · Impacto sub (manos se juntan): boom 808 profundo + soplo de aire
+const impactSub = new Tone.MembraneSynth({
+  pitchDecay: 0.12, octaves: 5,
+  envelope: { attack: 0.001, decay: 1.1, sustain: 0, release: 0.4 },
+  volume: 5,
+});
+const impactAir = new Tone.NoiseSynth({
+  noise: { type: 'pink' },
+  envelope: { attack: 0.001, decay: 0.35, sustain: 0, release: 0.1 },
+  volume: -10,
+});
+impactAir.connect(fxDelay);
+
+export function efectoImpacto() {
+  if (!state.audioIniciado) return;
+  impactSub.triggerAttackRelease('A0', '2n');
+  impactAir.triggerAttackRelease(0.3);
 }
 
 // ─── Bombo sub-grave (bypasea filtro, siempre profundo) ────────────────────
@@ -422,7 +500,8 @@ export async function startAudio() {
     masterGain.toDestination();
     synthBombo.connect(masterGain); // bypass filtro — siempre profundo
     synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
-    dropFilter.connect(masterGain); // efecto drop techno (gesto de baile)
+    fxVerb.connect(masterGain);     // bus de efectos de gestos (delay → reverb)
+    impactSub.connect(masterGain);  // el sub del impacto va limpio, sin reverb
     // Drone → droneGain → salida (bypasea el filtro de percusión)
     drone.connect(droneGain);
     droneGain.toDestination();

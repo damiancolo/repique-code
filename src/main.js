@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -201,9 +201,11 @@ async function init() {
   let _baileHands  = [];       // [{x, y, vx, vy, speed, trail:[{x,y}]}]
   let _parts       = [];       // partículas vivas
   let _ondas       = [];       // círculos en expansión
-  // Gesto-efecto: swipe brusco de mano izquierda arriba→abajo = drop techno
-  let _lastDropTime = 0;
-  let _dropFlash    = 0;       // flash visual del drop (envolvente 1→0)
+  // Gestos-efecto: movimientos de baile que disparan sonidos electrónicos
+  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0 };
+  let _dropFlash     = 0;             // flash visual (envolvente 1→0)
+  let _flashColor    = '255,255,255'; // color RGB del flash según el gesto
+  let _distManosPrev = null;          // distancia entre palmas en el frame anterior
   let ultimoPtoBuf   = null;
   let ultimoGesture  = null;
   let colorSeleccion = null; // { idx, inicio, sx, sy }
@@ -933,30 +935,75 @@ async function init() {
     ctxPaint.restore();
   }
 
+  /** ¿La mano estuvo en una zona dada en los últimos ~0.55 s de estela? */
+  function _estuvoEn(h, pred) {
+    const t = h.trail;
+    for (let i = Math.max(0, t.length - 34); i < t.length; i++) {
+      if (pred(t[i])) return true;
+    }
+    return false;
+  }
+
+  function _gestoDisparado(tipo, color, pos) {
+    _coolGesto[tipo] = performance.now();
+    _dropFlash = 1;
+    _flashColor = color;
+    if (pos) _ondas.push({ x: pos.x, y: pos.y, r: 20, v: 900, alpha: 1 });
+  }
+
   /**
-   * Gesto-efecto: la mano del lado izquierdo cae MUY rápido del tercio
-   * superior al tercio inferior → drop techno (sonido + flash + onda)
+   * Gestos-efecto del baile (estética The Blaze):
+   *  · mano IZQ cae arriba→abajo rápido  → drop descendente (flash blanco)
+   *  · mano DER sube abajo→arriba rápido → riser ascendente (flash celeste)
+   *  · dos manos se SEPARAN de golpe     → stab de acorde (flash violeta)
+   *  · dos manos se JUNTAN de golpe      → impacto sub (flash naranja)
    */
-  function detectarSwipeDrop() {
+  function detectarGestosMusica(dt) {
     const H = canvas.height, W = canvas.width;
     const ahora = performance.now();
-    if (ahora - _lastDropTime < 1200) return; // cooldown
-    for (const h of _baileHands) {
-      if (h.x > W / 2) continue;        // solo la mano del lado izquierdo
-      if (h.y < H * 0.66) continue;     // tiene que haber llegado al tercio inferior
-      if (h.vy < 1300) continue;        // bajando muy rápido (px/s)
-      // ¿Estuvo hace muy poco en el tercio superior? (~0.45 s de estela)
-      const t = h.trail;
-      let arriba = false;
-      for (let i = Math.max(0, t.length - 28); i < t.length; i++) {
-        if (t[i].y < H * 0.33) { arriba = true; break; }
+    const enCool = (tipo) => ahora - _coolGesto[tipo] < 900;
+
+    // Mano izquierda cae → drop
+    if (!enCool('drop')) {
+      for (const h of _baileHands) {
+        if (h.x > W / 2 || h.y < H * 0.6 || h.vy < 900) continue;
+        if (!_estuvoEn(h, p => p.y < H * 0.36)) continue;
+        _gestoDisparado('drop', '255,255,255', h);
+        efectoTechnoDrop();
+        break;
       }
-      if (!arriba) continue;
-      _lastDropTime = ahora;
-      _dropFlash = 1;
-      _ondas.push({ x: h.x, y: h.y, r: 20, v: 900, alpha: 1 }); // onda expansiva
-      efectoTechnoDrop();
-      break;
+    }
+
+    // Mano derecha sube → riser
+    if (!enCool('riser')) {
+      for (const h of _baileHands) {
+        if (h.x < W / 2 || h.y > H * 0.4 || h.vy > -900) continue;
+        if (!_estuvoEn(h, p => p.y > H * 0.64)) continue;
+        _gestoDisparado('riser', '120,210,255', h);
+        efectoRiser();
+        break;
+      }
+    }
+
+    // Dos manos: separarse de golpe → acorde · juntarse de golpe → impacto
+    if (_baileHands.length >= 2) {
+      const [a, b] = _baileHands;
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (_distManosPrev !== null && dt > 0) {
+        const vel = (dist - _distManosPrev) / dt; // px/s (+ separa, − junta)
+        if (!enCool('stab') && vel > 1400 && dist > W * 0.4) {
+          _gestoDisparado('stab', '190,130,255', null);
+          _ondas.push({ x: a.x, y: a.y, r: 16, v: 700, alpha: 0.9 });
+          _ondas.push({ x: b.x, y: b.y, r: 16, v: 700, alpha: 0.9 });
+          efectoStab();
+        } else if (!enCool('impact') && vel < -1400 && dist < W * 0.22) {
+          _gestoDisparado('impact', '255,130,60', { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+          efectoImpacto();
+        }
+      }
+      _distManosPrev = dist;
+    } else {
+      _distManosPrev = null;
     }
   }
 
@@ -973,9 +1020,9 @@ async function init() {
     }
     // Las ondas del drop se ven en cualquier efecto
     if (efectoActual !== 'ondas') dibujarOndas(dt);
-    // Flash blanco del drop techno
+    // Flash del gesto (color según el efecto disparado)
     if (_dropFlash > 0.01) {
-      ctxPaint.fillStyle = `rgba(255,255,255,${(_dropFlash * 0.45).toFixed(3)})`;
+      ctxPaint.fillStyle = `rgba(${_flashColor},${(_dropFlash * 0.45).toFixed(3)})`;
       ctxPaint.fillRect(0, 0, canvasPaint.width, canvasPaint.height);
       _dropFlash = Math.max(0, _dropFlash - dt * 3.2);
     }
@@ -1054,7 +1101,7 @@ async function init() {
     } else if (modoBaile) {
       // ── Modo baile: las manos generan efectos, no controlan la música ──────
       trackBaileHands(manos, dt);
-      detectarSwipeDrop();
+      detectarGestosMusica(dt);
       renderFrame(ctx, video, canvas, [], null, null);
       renderBaile(dt);
     } else {

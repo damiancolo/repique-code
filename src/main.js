@@ -644,15 +644,15 @@ async function init() {
 
   // ═══ MODO BAILE — efectos reactivos al movimiento ═══════════════════════════
 
-  /** Sigue la palma de cada mano, un poco por encima de los nudillos:
-   *  extrapola la línea muñeca(0)→nudillo medio(9) un 35% más allá,
-   *  siguiendo la orientación real de la mano */
+  /** Sigue el CENTRO de la palma (superpoder): centroide de la muñeca (0)
+   *  y las bases de los cuatro dedos (5, 9, 13, 17) — el medio de la palma
+   *  abierta, donde nace el rayo de un repulsor */
   function trackBaileHands(manos, dt) {
     const next = [];
     const usadas = new Set();
     for (const m of manos) {
-      const px = m[9].x + (m[9].x - m[0].x) * 0.35;
-      const py = m[9].y + (m[9].y - m[0].y) * 0.35;
+      const px = (m[0].x + m[5].x + m[9].x + m[13].x + m[17].x) / 5;
+      const py = (m[0].y + m[5].y + m[9].y + m[13].y + m[17].y) / 5;
       const x = (1 - px) * canvas.width;
       const y = py * canvas.height;
       let prev = null, best = canvas.width * 0.25;

@@ -642,13 +642,13 @@ async function init() {
 
   // ═══ MODO BAILE — efectos reactivos al movimiento ═══════════════════════════
 
-  /** Sigue la punta del índice de cada mano con velocidad y estela de posiciones */
+  /** Sigue la PALMA de cada mano (landmark 9) con velocidad y estela de posiciones */
   function trackBaileHands(manos, dt) {
     const next = [];
     const usadas = new Set();
     for (const m of manos) {
-      const x = (1 - m[8].x) * canvas.width;
-      const y = m[8].y * canvas.height;
+      const x = (1 - m[9].x) * canvas.width;
+      const y = m[9].y * canvas.height;
       let prev = null, best = canvas.width * 0.25;
       for (const h of _baileHands) {
         if (usadas.has(h)) continue;
@@ -698,43 +698,79 @@ async function init() {
     ctxPaint.restore();
   }
 
-  /** Estela — cometa de colores que sigue la mano */
-  function fxEstela() {
+  /** Estela — COMETA: núcleo incandescente en la palma, cola que se enfría
+   *  hacia el color y chispas que se desprenden. Bien distinto del quetzal. */
+  function fxEstela(dt) {
     ctxPaint.save();
     ctxPaint.globalCompositeOperation = 'lighter';
     ctxPaint.lineCap = 'round';
     for (const h of _baileHands) {
       const n = h.trail.length;
+      // Cola: color frío atrás → blanco caliente cerca del núcleo
       for (let i = 1; i < n; i++) {
-        const t = i / n; // 0 = cola vieja → 1 = mano
+        const t = i / n;
         const a = h.trail[i - 1], b = h.trail[i];
-        ctxPaint.strokeStyle = `hsla(${(_hueBaile + i * 5) % 360}, 95%, 62%, ${(t * 0.75).toFixed(3)})`;
-        ctxPaint.lineWidth = 2 + t * (18 + _pulse * 16);
+        const luz = 50 + t * 45; // 50% → 95% de luminosidad
+        ctxPaint.strokeStyle = `hsla(${_hueBaile}, 100%, ${luz.toFixed(0)}%, ${(t * 0.8).toFixed(3)})`;
+        ctxPaint.lineWidth = 1 + t * (15 + _pulse * 13);
         ctxPaint.beginPath();
         ctxPaint.moveTo(a.x, a.y);
         ctxPaint.lineTo(b.x, b.y);
         ctxPaint.stroke();
       }
+      // Núcleo incandescente en la palma
+      const R = 22 + _pulse * 18;
+      const g = ctxPaint.createRadialGradient(h.x, h.y, 0, h.x, h.y, R);
+      g.addColorStop(0, 'rgba(255,255,255,0.95)');
+      g.addColorStop(0.35, `hsla(${_hueBaile}, 95%, 65%, 0.75)`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctxPaint.fillStyle = g;
+      ctxPaint.beginPath();
+      ctxPaint.arc(h.x, h.y, R, 0, Math.PI * 2);
+      ctxPaint.fill();
+      // Chispas que se desprenden de la cola
+      if (h.speed > 130 && Math.random() < 0.65 && n > 4) {
+        const tp = h.trail[Math.max(0, n - 1 - Math.floor(Math.random() * 9))];
+        _emitPart(tp.x, tp.y,
+          (Math.random() * 2 - 1) * 70 - h.vx * 0.1,
+          (Math.random() * 2 - 1) * 70 - h.vy * 0.1,
+          _hueBaile, 0.5 + Math.random() * 0.5, 3);
+      }
     }
     ctxPaint.restore();
-    _hueBaile = (_hueBaile + 1.4) % 360;
+    _stepParts(dt, 70);
+    _hueBaile = (_hueBaile + 1.0) % 360;
   }
 
-  /** Quetzal — serpiente emplumada: cinta esmeralda→oro con plumas laterales */
+  /** Quetzal — serpiente emplumada que SERPENTEA: el cuerpo ondula con una
+   *  sinusoide viajera alrededor del camino de la mano, esmeralda→oro,
+   *  con plumas laterales y cabeza brillante */
   function fxQuetzal() {
+    const ahora = performance.now() / 1000;
     ctxPaint.save();
     ctxPaint.globalCompositeOperation = 'lighter';
     ctxPaint.lineCap = 'round';
     for (const h of _baileHands) {
       const n = h.trail.length;
-      for (let i = 1; i < n; i++) {
+      if (n < 3) continue;
+      // Cuerpo serpenteado: offset senoidal perpendicular que viaja en el tiempo
+      const pts = [];
+      for (let i = 0; i < n; i++) {
         const t = i / n;
-        const a = h.trail[i - 1], b = h.trail[i];
-        // Cabeza esmeralda (160), cola dorada (45)
+        const p = h.trail[i];
+        const q = h.trail[Math.min(i + 1, n - 1)];
+        const dx = q.x - p.x, dy = q.y - p.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const off = Math.sin(i * 0.55 + ahora * 7) * 18 * t * (1 + _pulse * 0.4);
+        pts.push({ x: p.x + (-dy / len) * off, y: p.y + (dx / len) * off, t });
+      }
+      for (let i = 1; i < pts.length; i++) {
+        const { t } = pts[i];
+        const a = pts[i - 1], b = pts[i];
+        // Cola dorada (45) → cabeza esmeralda (160)
         const hue = 45 + t * 115;
-        const ancho = (3 + 19 * t) * (1 + 0.45 * Math.sin(i * 0.7)) * (1 + _pulse * 0.5);
-        ctxPaint.strokeStyle = `hsla(${hue}, 90%, 55%, ${(t * 0.8).toFixed(3)})`;
-        ctxPaint.lineWidth = ancho;
+        ctxPaint.strokeStyle = `hsla(${hue}, 90%, 55%, ${(t * 0.85).toFixed(3)})`;
+        ctxPaint.lineWidth = (3 + 19 * t) * (1 + _pulse * 0.5);
         ctxPaint.beginPath();
         ctxPaint.moveTo(a.x, a.y);
         ctxPaint.lineTo(b.x, b.y);
@@ -753,6 +789,16 @@ async function init() {
           ctxPaint.stroke();
         }
       }
+      // Cabeza: esmeralda brillante con corona dorada
+      const cab = pts[pts.length - 1];
+      const gr = ctxPaint.createRadialGradient(cab.x, cab.y, 0, cab.x, cab.y, 18);
+      gr.addColorStop(0, 'hsla(160, 95%, 80%, 0.95)');
+      gr.addColorStop(0.5, 'hsla(160, 90%, 50%, 0.55)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      ctxPaint.fillStyle = gr;
+      ctxPaint.beginPath();
+      ctxPaint.arc(cab.x, cab.y, 18, 0, Math.PI * 2);
+      ctxPaint.fill();
     }
     ctxPaint.restore();
   }
@@ -790,19 +836,19 @@ async function init() {
       const n = 6 + Math.min(8, Math.round(h.speed / 170));
       for (let i = 0; i < n; i++) {
         _emitPart(
-          h.x + (Math.random() * 2 - 1) * 24, h.y,
-          h.vx * 0.15 + (Math.random() * 2 - 1) * 60,
-          -(140 + Math.random() * 240),
+          h.x + (Math.random() * 2 - 1) * 44, h.y,
+          h.vx * 0.15 + (Math.random() * 2 - 1) * 70,
+          -(150 + Math.random() * 260),
           10 + Math.random() * 40,
-          0.55 + Math.random() * 0.5,
-          5.5 + Math.random() * 6
+          0.6 + Math.random() * 0.55,
+          16 + Math.random() * 18
         );
       }
       if (_beatBaile) {
         for (let i = 0; i < 28; i++) {
-          _emitPart(h.x + (Math.random() * 2 - 1) * 40, h.y,
-            (Math.random() * 2 - 1) * 160, -(280 + Math.random() * 280),
-            10 + Math.random() * 45, 0.95, 7.5);
+          _emitPart(h.x + (Math.random() * 2 - 1) * 70, h.y,
+            (Math.random() * 2 - 1) * 180, -(300 + Math.random() * 300),
+            10 + Math.random() * 45, 1.0, 22);
         }
       }
     }
@@ -923,7 +969,7 @@ async function init() {
       case 'fuego':      fxFuego(dt);       break;
       case 'rayo':       fxRayo();          break;
       case 'ondas':      fxOndas(dt);       break;
-      default:           fxEstela();
+      default:           fxEstela(dt);
     }
     // Las ondas del drop se ven en cualquier efecto
     if (efectoActual !== 'ondas') dibujarOndas(dt);

@@ -233,6 +233,53 @@ export function efectoStab() {
   _stabIdx = (_stabIdx + 1) % STAB_CHORDS.length;
 }
 
+// 5 · Arpegio pluck ascendente (mano izquierda sube) — usa el acorde actual
+// de la progresión, una octava arriba: siempre suena afinado con los stabs
+const arpSynth = new Tone.Synth({
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.002, decay: 0.18, sustain: 0, release: 0.12 },
+  volume: -6,
+});
+arpSynth.connect(fxDelay);
+
+export function efectoArpegio() {
+  if (!state.audioIniciado) return;
+  const now = Tone.now();
+  const notas = STAB_CHORDS[_stabIdx].map(n => Tone.Frequency(n).transpose(12).toNote());
+  notas.forEach((nota, i) => arpSynth.triggerAttackRelease(nota, '16n', now + i * 0.07));
+}
+
+// 6 · Láser con eco (mano derecha cae): square resonante cayendo en picada,
+// el delay del bus lo repite — raro y lindo
+const laser = new Tone.Synth({
+  oscillator: { type: 'square' },
+  envelope: { attack: 0.005, decay: 0.26, sustain: 0, release: 0.08 },
+  volume: -11,
+});
+laser.connect(fxDelay);
+
+export function efectoLaser() {
+  if (!state.audioIniciado) return;
+  const now = Tone.now();
+  laser.triggerAttackRelease(1300, 0.28, now);
+  laser.frequency.exponentialRampToValueAtTime(85, now + 0.26);
+}
+
+// 7 · Shimmer celestial (las dos manos al cielo): pad brillante de ataque
+// lento en registro alto, el acorde actual flotando en la reverb
+const shimmer = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsine', count: 3, spread: 18 },
+  envelope: { attack: 0.5, decay: 1.4, sustain: 0.18, release: 2.4 },
+  volume: -12,
+});
+shimmer.connect(fxDelay);
+
+export function efectoShimmer() {
+  if (!state.audioIniciado) return;
+  const notas = STAB_CHORDS[_stabIdx].map(n => Tone.Frequency(n).transpose(24).toNote());
+  shimmer.triggerAttackRelease(notas, '2n');
+}
+
 // 4 · Impacto sub (manos se juntan): boom 808 profundo + soplo de aire
 const impactSub = new Tone.MembraneSynth({
   pitchDecay: 0.12, octaves: 5,

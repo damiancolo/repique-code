@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -201,8 +201,10 @@ async function init() {
   let _baileHands  = [];       // [{x, y, vx, vy, speed, trail:[{x,y}]}]
   let _parts       = [];       // partículas vivas
   let _ondas       = [];       // círculos en expansión
+  let _estrellas   = [];       // estrellas de la galaxia
   // Gestos-efecto: movimientos de baile que disparan sonidos electrónicos
-  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0 };
+  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0 };
+  let _cieloFrames   = 0;             // frames con las dos manos al cielo
   let _dropFlash     = 0;             // flash visual (envolvente 1→0)
   let _flashColor    = '255,255,255'; // color RGB del flash según el gesto
   let _distManosPrev = null;          // distancia entre palmas en el frame anterior
@@ -644,17 +646,28 @@ async function init() {
 
   // ═══ MODO BAILE — efectos reactivos al movimiento ═══════════════════════════
 
-  /** Sigue el CENTRO de la palma (superpoder): centroide de la muñeca (0)
-   *  y las bases de los cuatro dedos (5, 9, 13, 17) — el medio de la palma
-   *  abierta, donde nace el rayo de un repulsor */
+  /** Punto de emisión del superpoder: centro de la palma DESPLAZADO unos
+   *  centímetros hacia adelante por la NORMAL 3D de la palma (producto cruz
+   *  con la z de MediaPipe). Palma hacia arriba → el efecto flota encima;
+   *  palma a la cámara → queda sobre el centro de la palma. */
   function trackBaileHands(manos, dt) {
     const next = [];
     const usadas = new Set();
+    const OFF = 85; // ≈ 2 pulgadas en pantalla
     for (const m of manos) {
       const px = (m[0].x + m[5].x + m[9].x + m[13].x + m[17].x) / 5;
       const py = (m[0].y + m[5].y + m[9].y + m[13].y + m[17].y) / 5;
-      const x = (1 - px) * canvas.width;
-      const y = py * canvas.height;
+      // Normal de la palma: (5−0) × (17−0) en 3D
+      const ax = m[5].x - m[0].x,  ay = m[5].y - m[0].y,  az = (m[5].z || 0) - (m[0].z || 0);
+      const bx = m[17].x - m[0].x, by = m[17].y - m[0].y, bz = (m[17].z || 0) - (m[0].z || 0);
+      let nx = ay * bz - az * by;
+      let ny = az * bx - ax * bz;
+      let nz = ax * by - ay * bx;
+      // Siempre hacia el lado visible de la mano (el que mira a la cámara)
+      if (nz > 0) { nx = -nx; ny = -ny; nz = -nz; }
+      const n3 = Math.hypot(nx, ny, nz) || 1;
+      const x = (1 - px) * canvas.width - (nx / n3) * OFF;
+      const y = py * canvas.height + (ny / n3) * OFF;
       let prev = null, best = canvas.width * 0.25;
       for (const h of _baileHands) {
         if (usadas.has(h)) continue;
@@ -965,7 +978,7 @@ async function init() {
   function detectarGestosMusica(dt) {
     const H = canvas.height, W = canvas.width;
     const ahora = performance.now();
-    const enCool = (tipo) => ahora - _coolGesto[tipo] < 900;
+    const enCool = (tipo, ms = 900) => ahora - _coolGesto[tipo] < ms;
 
     // Mano izquierda cae → drop
     if (!enCool('drop')) {
@@ -987,6 +1000,42 @@ async function init() {
         efectoRiser();
         break;
       }
+    }
+
+    // Mano izquierda sube → arpegio pluck ascendente
+    if (!enCool('arp')) {
+      for (const h of _baileHands) {
+        if (h.x > W / 2 || h.y > H * 0.4 || h.vy > -900) continue;
+        if (!_estuvoEn(h, p => p.y > H * 0.64)) continue;
+        _gestoDisparado('arp', '170,255,120', h);
+        efectoArpegio();
+        break;
+      }
+    }
+
+    // Mano derecha cae → láser en picada con eco
+    if (!enCool('laser')) {
+      for (const h of _baileHands) {
+        if (h.x < W / 2 || h.y < H * 0.6 || h.vy < 900) continue;
+        if (!_estuvoEn(h, p => p.y < H * 0.36)) continue;
+        _gestoDisparado('laser', '255,80,80', h);
+        efectoLaser();
+        break;
+      }
+    }
+
+    // Las dos manos al cielo (sostenidas ~10 frames) → shimmer celestial
+    if (_baileHands.length >= 2 && _baileHands.every(h => h.y < H * 0.24)) {
+      _cieloFrames++;
+      if (_cieloFrames >= 10 && !enCool('cielo', 2500)) {
+        _coolGesto.cielo = ahora;
+        _dropFlash = 1;
+        _flashColor = '255,215,120';
+        for (const h of _baileHands) _ondas.push({ x: h.x, y: h.y, r: 14, v: 500, alpha: 0.8 });
+        efectoShimmer();
+      }
+    } else {
+      _cieloFrames = 0;
     }
 
     // Dos manos: separarse de golpe → acorde · juntarse de golpe → impacto
@@ -1011,6 +1060,71 @@ async function init() {
     }
   }
 
+  /** Orbe — bola de energía pulsante con arcos orbitando, flotando ante la palma */
+  function fxOrbe() {
+    const ahora = performance.now() / 1000;
+    ctxPaint.save();
+    ctxPaint.globalCompositeOperation = 'lighter';
+    ctxPaint.lineCap = 'round';
+    for (const h of _baileHands) {
+      const R = 30 + _pulse * 26 + Math.min(26, h.speed * 0.02);
+      // Núcleo incandescente
+      const g = ctxPaint.createRadialGradient(h.x, h.y, 0, h.x, h.y, R);
+      g.addColorStop(0, 'rgba(255,255,255,0.95)');
+      g.addColorStop(0.4, `hsla(${_hueBaile}, 95%, 62%, 0.7)`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctxPaint.fillStyle = g;
+      ctxPaint.beginPath();
+      ctxPaint.arc(h.x, h.y, R, 0, Math.PI * 2);
+      ctxPaint.fill();
+      // Tres arcos orbitando a distinta velocidad
+      for (let k = 0; k < 3; k++) {
+        const a0 = ahora * (2.2 + k * 1.1) + k * 2.1;
+        ctxPaint.strokeStyle = `hsla(${(_hueBaile + k * 35) % 360}, 95%, 65%, 0.75)`;
+        ctxPaint.lineWidth = 3;
+        ctxPaint.beginPath();
+        ctxPaint.arc(h.x, h.y, R + 10 + k * 11, a0, a0 + Math.PI * 1.25);
+        ctxPaint.stroke();
+      }
+    }
+    ctxPaint.restore();
+    _hueBaile = (_hueBaile + 0.9) % 360;
+  }
+
+  /** Galaxia — estrellas que orbitan en espiral creciente desde las palmas */
+  function fxGalaxia(dt) {
+    for (const h of _baileHands) {
+      if (Math.random() < 0.6) {
+        _estrellas.push({
+          cx: h.x, cy: h.y,
+          ang: Math.random() * Math.PI * 2,
+          rad: 12 + Math.random() * 18,
+          vel: 1.6 + Math.random() * 2.6,
+          hue: (_hueBaile + Math.random() * 70) % 360,
+          age: 0, life: 1.7 + Math.random() * 0.8,
+        });
+      }
+    }
+    if (_estrellas.length > 240) _estrellas.splice(0, _estrellas.length - 240);
+    ctxPaint.save();
+    ctxPaint.globalCompositeOperation = 'lighter';
+    _estrellas = _estrellas.filter(e => e.age < e.life);
+    for (const e of _estrellas) {
+      e.age += dt;
+      e.ang += e.vel * dt;
+      e.rad += 36 * dt; // espiral hacia afuera
+      const k = 1 - e.age / e.life;
+      const x = e.cx + Math.cos(e.ang) * e.rad;
+      const y = e.cy + Math.sin(e.ang) * e.rad * 0.55; // órbita achatada, galáctica
+      ctxPaint.fillStyle = `hsla(${e.hue}, 95%, 72%, ${(k * 0.9).toFixed(3)})`;
+      ctxPaint.beginPath();
+      ctxPaint.arc(x, y, 1.6 + k * 2.4, 0, Math.PI * 2);
+      ctxPaint.fill();
+    }
+    ctxPaint.restore();
+    _hueBaile = (_hueBaile + 0.5) % 360;
+  }
+
   function renderBaile(dt) {
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
     drawBufConPulso(); // si hay un dibujo pintado, queda de fondo latiendo
@@ -1020,6 +1134,8 @@ async function init() {
       case 'fuego':      fxFuego(dt);       break;
       case 'rayo':       fxRayo();          break;
       case 'ondas':      fxOndas(dt);       break;
+      case 'orbe':       fxOrbe();          break;
+      case 'galaxia':    fxGalaxia(dt);     break;
       default:           fxEstela(dt);
     }
     // Las ondas del drop se ven en cualquier efecto
@@ -1372,6 +1488,7 @@ async function init() {
     _baileHands = [];
     _parts      = [];
     _ondas      = [];
+    _estrellas  = [];
   }
 
   btnPaint.addEventListener('click', () => {
@@ -1410,7 +1527,7 @@ async function init() {
     btn.addEventListener('click', () => {
       efectoActual = btn.dataset.efecto;
       efectoBtns.forEach(b => b.classList.toggle('activo', b === btn));
-      _parts = []; _ondas = []; // no mezclar partículas de efectos distintos
+      _parts = []; _ondas = []; _estrellas = []; // no mezclar partículas de efectos distintos
     });
   });
 

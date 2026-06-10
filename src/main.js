@@ -644,13 +644,17 @@ async function init() {
 
   // ═══ MODO BAILE — efectos reactivos al movimiento ═══════════════════════════
 
-  /** Sigue la PALMA de cada mano (landmark 9) con velocidad y estela de posiciones */
+  /** Sigue la palma de cada mano, un poco por encima de los nudillos:
+   *  extrapola la línea muñeca(0)→nudillo medio(9) un 35% más allá,
+   *  siguiendo la orientación real de la mano */
   function trackBaileHands(manos, dt) {
     const next = [];
     const usadas = new Set();
     for (const m of manos) {
-      const x = (1 - m[9].x) * canvas.width;
-      const y = m[9].y * canvas.height;
+      const px = m[9].x + (m[9].x - m[0].x) * 0.35;
+      const py = m[9].y + (m[9].y - m[0].y) * 0.35;
+      const x = (1 - px) * canvas.width;
+      const y = py * canvas.height;
       let prev = null, best = canvas.width * 0.25;
       for (const h of _baileHands) {
         if (usadas.has(h)) continue;

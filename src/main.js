@@ -1662,12 +1662,25 @@ async function init() {
   // ── Guardar el dibujo como PNG (fondo negro + trazos) ────────────────────────
   const btnGuardar = document.getElementById('btn-guardar');
   btnGuardar.addEventListener('click', () => {
-    const out = document.createElement('canvas');
-    out.width  = bufCanvas.width;
-    out.height = bufCanvas.height;
+    const W = canvas.width, H = canvas.height;
+    const out  = document.createElement('canvas');
+    out.width  = W;
+    out.height = H;
     const octx = out.getContext('2d');
     octx.fillStyle = '#000';
-    octx.fillRect(0, 0, out.width, out.height);
+    octx.fillRect(0, 0, W, H);
+    // Fondo: la escena de la cámara espejada en gris (como en pantalla, pero a
+    // plena vista) para que la imagen quede completa, no solo los trazos
+    try {
+      octx.save();
+      octx.scale(-1, 1);
+      octx.translate(-W, 0);
+      octx.filter = 'grayscale(1)';
+      octx.drawImage(video, 0, 0, W, H);
+      octx.restore();
+      octx.filter = 'none';
+    } catch (_) { /* sin cámara: queda el fondo negro */ }
+    // El dibujo completo encima
     octx.drawImage(bufCanvas, 0, 0);
     const a = document.createElement('a');
     a.download = 'repique-code-pintura.png';

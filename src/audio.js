@@ -173,14 +173,17 @@ export function efectoTechnoDrop(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('drop');
   const now = time ?? Tone.now();
-  // Filtro barre de agudo a grave — el "whoosh" descendente del techno
+  // Whoosh descendente de ruido (la tensión antes del impacto)
   dropFilter.frequency.cancelScheduledValues(now);
   dropFilter.frequency.setValueAtTime(9000, now);
-  dropFilter.frequency.exponentialRampToValueAtTime(110, now + 0.55);
-  dropNoise.triggerAttackRelease(0.5, now);
-  // Zap: sierra que cae una octava y media
-  dropZap.triggerAttackRelease(620, 0.5, now);
-  dropZap.frequency.exponentialRampToValueAtTime(50, now + 0.45);
+  dropFilter.frequency.exponentialRampToValueAtTime(180, now + 0.5);
+  dropNoise.triggerAttackRelease(0.45, now);
+  // El drop ATERRIZA en la raíz del acorde: sierra que cae hasta la nota + sub
+  const rootHz = Tone.Frequency(_acordeRoot()).transpose(-12).toFrequency();
+  dropZap.triggerAttackRelease(rootHz * 4, 0.5, now);
+  dropZap.frequency.exponentialRampToValueAtTime(rootHz, now + 0.42);
+  impactSub.triggerAttackRelease(
+    Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '4n', now + 0.3);
 }
 
 // 2 · Riser (mano derecha sube): ruido + bandpass subiendo + tono ascendente
@@ -228,6 +231,8 @@ const STAB_CHORDS = [
   ['G3', 'Bb3', 'D4', 'A4'],  // Gm add9
 ];
 let _stabIdx = 0;
+// Raíz del acorde actual de la progresión — afina los efectos tonales al groove
+function _acordeRoot() { return STAB_CHORDS[_stabIdx][0]; }
 
 export function efectoStab(time) {
   if (!state.audioIniciado) return;
@@ -253,21 +258,25 @@ export function efectoArpegio(time) {
   notas.forEach((nota, i) => arpSynth.triggerAttackRelease(nota, '16n', now + i * 0.07));
 }
 
-// 6 · Láser con eco (mano derecha cae): square resonante cayendo en picada,
-// el delay del bus lo repite — raro y lindo
-const laser = new Tone.Synth({
-  oscillator: { type: 'square' },
-  envelope: { attack: 0.005, decay: 0.26, sustain: 0, release: 0.08 },
-  volume: -11,
+// 6 · Acid blip (mano derecha cae): squelch tipo TB-303 — sierra resonante con
+// envolvente de filtro rápida, afinado a la raíz del acorde actual, con eco
+const acidSynth = new Tone.MonoSynth({
+  oscillator: { type: 'sawtooth' },
+  filter: { type: 'lowpass', rolloff: -24, Q: 7 },
+  envelope: { attack: 0.005, decay: 0.22, sustain: 0, release: 0.12 },
+  filterEnvelope: {
+    attack: 0.005, decay: 0.2, sustain: 0.05, release: 0.12,
+    baseFrequency: 220, octaves: 4.5, exponent: 2,
+  },
+  volume: -7,
 });
-laser.connect(fxDelay);
+acidSynth.connect(fxDelay);
 
 export function efectoLaser(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('laser');
-  const now = time ?? Tone.now();
-  laser.triggerAttackRelease(1300, 0.28, now);
-  laser.frequency.exponentialRampToValueAtTime(85, now + 0.26);
+  const nota = Tone.Frequency(_acordeRoot()).transpose(12).toNote(); // raíz +1 octava
+  acidSynth.triggerAttackRelease(nota, '8n', time);
 }
 
 // 7 · Shimmer celestial (las dos manos al cielo): pad brillante de ataque
@@ -286,24 +295,80 @@ export function efectoShimmer(time) {
   shimmer.triggerAttackRelease(notas, '2n', time);
 }
 
-// 4 · Impacto sub (manos se juntan): boom 808 profundo + soplo de aire
+// 4 · Reese sub (manos se juntan): bajo electrónico sostenido y detunado a la
+// raíz del acorde + sub sinusoidal de refuerzo + soplo de aire en la reverb.
+// Antes era un boom 808 seco (golpe); ahora es un bajo de música electrónica.
+const reeseBass = new Tone.MonoSynth({
+  oscillator: { type: 'fatsawtooth', count: 2, spread: 32 },
+  filter: { type: 'lowpass', rolloff: -24, Q: 2 },
+  envelope: { attack: 0.012, decay: 0.5, sustain: 0.35, release: 0.6 },
+  filterEnvelope: {
+    attack: 0.02, decay: 0.5, sustain: 0.25, release: 0.5,
+    baseFrequency: 90, octaves: 3.2, exponent: 2,
+  },
+  volume: -9,
+});
+reeseBass.connect(fxDelay);
 const impactSub = new Tone.MembraneSynth({
-  pitchDecay: 0.12, octaves: 5,
-  envelope: { attack: 0.001, decay: 1.1, sustain: 0, release: 0.4 },
-  volume: 5,
+  pitchDecay: 0.12, octaves: 4,
+  envelope: { attack: 0.001, decay: 0.9, sustain: 0, release: 0.4 },
+  volume: 3,
 });
 const impactAir = new Tone.NoiseSynth({
   noise: { type: 'pink' },
   envelope: { attack: 0.001, decay: 0.35, sustain: 0, release: 0.1 },
-  volume: -10,
+  volume: -12,
 });
 impactAir.connect(fxDelay);
 
 export function efectoImpacto(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('impacto');
-  impactSub.triggerAttackRelease('A0', '2n', time);
+  const sub  = Tone.Frequency(_acordeRoot()).transpose(-24).toNote(); // raíz −2 oct
+  const bajo = Tone.Frequency(_acordeRoot()).transpose(-12).toNote(); // raíz −1 oct
+  reeseBass.triggerAttackRelease(bajo, '4n', time);
+  impactSub.triggerAttackRelease(sub, '2n', time);
   impactAir.triggerAttackRelease(0.3, time);
+}
+
+// 8 · Pluck melódico con delay (swipe horizontal de la mano derecha): nota
+// brillante de la 3.ª del acorde, una octava arriba, rebotando en el delay
+// punteado del bus — el "topline" de festival
+const pluckSynth = new Tone.Synth({
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.002, decay: 0.22, sustain: 0, release: 0.25 },
+  volume: -6,
+});
+const pluckShaper = new Tone.Filter({ type: 'highpass', frequency: 300 });
+pluckSynth.connect(pluckShaper);
+pluckShaper.connect(fxDelay);
+
+export function efectoPluck(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('pluck');
+  const nota = Tone.Frequency(STAB_CHORDS[_stabIdx][1]).transpose(12).toNote();
+  pluckSynth.triggerAttackRelease(nota, '16n', time);
+}
+
+// 9 · Uplifter / sweep (swipe horizontal de la mano izquierda): barrido de ruido
+// con bandpass subiendo — la transición "whoosh" clásica del EDM
+const sweepNoise = new Tone.NoiseSynth({
+  noise: { type: 'white' },
+  envelope: { attack: 0.18, decay: 0.32, sustain: 0, release: 0.12 },
+  volume: -11,
+});
+const sweepFilter = new Tone.Filter({ type: 'bandpass', frequency: 400, Q: 2 });
+sweepNoise.connect(sweepFilter);
+sweepFilter.connect(fxDelay);
+
+export function efectoSweep(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('sweep');
+  const now = time ?? Tone.now();
+  sweepFilter.frequency.cancelScheduledValues(now);
+  sweepFilter.frequency.setValueAtTime(350, now);
+  sweepFilter.frequency.exponentialRampToValueAtTime(8500, now + 0.45);
+  sweepNoise.triggerAttackRelease(0.45, now);
 }
 
 // ─── Looper de efectos de baile ──────────────────────────────────────────────
@@ -325,6 +390,8 @@ const FX_FUNCS = {
   laser:   efectoLaser,
   shimmer: efectoShimmer,
   impacto: efectoImpacto,
+  pluck:   efectoPluck,
+  sweep:   efectoSweep,
 };
 
 const COMPASES_LOOP = 2;        // graba 2 compases enteros

@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -203,7 +203,7 @@ async function init() {
   let _ondas       = [];       // círculos en expansión
   let _estrellas   = [];       // estrellas de la galaxia
   // Gestos-efecto: movimientos de baile que disparan sonidos electrónicos
-  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0 };
+  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0, pluck: 0, sweep: 0 };
   let _cieloFrames   = 0;             // frames con las dos manos al cielo
   let _halos         = [];            // anillos localizados al disparar un gesto
   let _distManosPrev = null;          // distancia entre palmas en el frame anterior
@@ -1035,6 +1035,28 @@ async function init() {
         if (!_estuvoEn(h, p => p.y < H * 0.36)) continue;
         _gestoDisparado('laser', '255,80,80', h);
         efectoLaser();
+        break;
+      }
+    }
+
+    // Swipe horizontal de la mano DERECHA → pluck melódico con delay
+    if (!enCool('pluck', 700)) {
+      for (const h of _baileHands) {
+        if (h.x < W / 2) continue;
+        if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;
+        _gestoDisparado('pluck', '120,255,200', h);
+        efectoPluck();
+        break;
+      }
+    }
+
+    // Swipe horizontal de la mano IZQUIERDA → uplifter / sweep (whoosh EDM)
+    if (!enCool('sweep', 700)) {
+      for (const h of _baileHands) {
+        if (h.x > W / 2) continue;
+        if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;
+        _gestoDisparado('sweep', '255,200,120', h);
+        efectoSweep();
         break;
       }
     }

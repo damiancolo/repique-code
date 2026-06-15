@@ -327,6 +327,8 @@ const FX_FUNCS = {
   impacto: efectoImpacto,
 };
 
+const COMPASES_LOOP = 2;        // graba 2 compases enteros
+
 let _looperEstado   = 'idle';   // 'idle' | 'armado' | 'rec' | 'loop'
 let _grabados       = [];       // [{ nombre, tick }] relativos a _recInicioTick
 let _recInicioTick  = 0;
@@ -339,52 +341,51 @@ function _setEstado(e) {
   _onLooperEstado?.(e);
 }
 
+// El PRIMER efecto define el arranque: la grabación empieza en el downbeat del
+// compás donde cae ese primer efecto y dura COMPASES_LOOP compases enteros.
+// En estado 'armado' esperamos sin límite hasta ese primer efecto.
 function _registrarFx(nombre) {
+  const T = Tone.getTransport();
+  if (_looperEstado === 'armado') {
+    const ticksCompas = T.PPQ * 4;
+    _recInicioTick = Math.floor(T.ticks / ticksCompas) * ticksCompas;
+    const gen = _looperGen;
+    _setEstado('rec');
+    T.scheduleOnce(() => _cerrarGrabacion(gen),
+                   (_recInicioTick + ticksCompas * COMPASES_LOOP) + 'i');
+  }
   if (_looperEstado !== 'rec') return;
-  _grabados.push({ nombre, tick: Tone.getTransport().ticks - _recInicioTick });
+  _grabados.push({ nombre, tick: T.ticks - _recInicioTick });
 }
 
 function _cerrarGrabacion(gen) {
   if (gen !== _looperGen || _looperEstado !== 'rec') return;
   if (_grabados.length === 0) { _setEstado('idle'); return; }
   const T = Tone.getTransport();
-  const ticksCompas = T.PPQ * 4;          // 4/4
-  const ticks16n    = ticksCompas / 16;
+  const ticksLoop = T.PPQ * 4 * COMPASES_LOOP;
+  const ticks16n  = (T.PPQ * 4) / 16;
   const eventos = _grabados.map(g => {
     const q = Math.round(g.tick / ticks16n) * ticks16n;       // cuantiza a 16n
-    const enLoop = ((q % ticksCompas) + ticksCompas) % ticksCompas;
+    const enLoop = ((q % ticksLoop) + ticksLoop) % ticksLoop;
     return { time: enLoop + 'i', nombre: g.nombre };
   });
   const part = new Tone.Part((time, ev) => {
     FX_FUNCS[ev.nombre]?.(time);          // pasa time → agenda en grilla, no re-graba
   }, eventos);
   part.loop    = true;
-  part.loopEnd = '1m';
-  // El loop arranca en el compás que termina la grabación → sin compás vacío
-  part.start((_recInicioTick + ticksCompas) + 'i');
+  part.loopEnd = COMPASES_LOOP + 'm';
+  // arranca justo donde terminó la grabación → loop sin silencio intermedio
+  part.start((_recInicioTick + ticksLoop) + 'i');
   _looperPart = part;
   _setEstado('loop');
 }
 
-// Ticks de transport del próximo inicio de compás (estrictamente futuro)
-function _proxCompasTicks() {
-  const T = Tone.getTransport();
-  const ticksCompas = T.PPQ * 4;
-  return Math.ceil((T.ticks + 1) / ticksCompas) * ticksCompas;
-}
-
 export function armarLooper() {
   if (!state.audioIniciado || _looperEstado !== 'idle') return;
-  const gen = ++_looperGen;
-  const T   = Tone.getTransport();
-  const ticksCompas = T.PPQ * 4;
-  const inicio = _proxCompasTicks();      // tick (transport) del próximo downbeat
-  _recInicioTick = inicio;
+  _looperGen++;
   _grabados = [];
-  _setEstado('armado');
-  // scheduleOnce y Part.start usan TIEMPO DE TRANSPORT (ticks), no AudioContext
-  T.scheduleOnce(() => { if (gen === _looperGen) _setEstado('rec'); }, inicio + 'i');
-  T.scheduleOnce(() => _cerrarGrabacion(gen), (inicio + ticksCompas) + 'i');
+  _recInicioTick = 0;
+  _setEstado('armado');                   // espera (sin límite) al primer efecto
 }
 
 export function pararLooper() {

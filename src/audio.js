@@ -360,21 +360,31 @@ function _cerrarGrabacion(gen) {
   }, eventos);
   part.loop    = true;
   part.loopEnd = '1m';
-  part.start(T.nextSubdivision('1m'));    // arranca alineado al próximo compás
+  // El loop arranca en el compás que termina la grabación → sin compás vacío
+  part.start((_recInicioTick + ticksCompas) + 'i');
   _looperPart = part;
   _setEstado('loop');
+}
+
+// Ticks de transport del próximo inicio de compás (estrictamente futuro)
+function _proxCompasTicks() {
+  const T = Tone.getTransport();
+  const ticksCompas = T.PPQ * 4;
+  return Math.ceil((T.ticks + 1) / ticksCompas) * ticksCompas;
 }
 
 export function armarLooper() {
   if (!state.audioIniciado || _looperEstado !== 'idle') return;
   const gen = ++_looperGen;
   const T   = Tone.getTransport();
-  const t0  = T.nextSubdivision('1m');    // próximo inicio de compás (seg. de transport)
-  _recInicioTick = Tone.Time(t0).toTicks();
+  const ticksCompas = T.PPQ * 4;
+  const inicio = _proxCompasTicks();      // tick (transport) del próximo downbeat
+  _recInicioTick = inicio;
   _grabados = [];
   _setEstado('armado');
-  T.scheduleOnce(() => { if (gen === _looperGen) _setEstado('rec'); }, t0);
-  T.scheduleOnce(() => _cerrarGrabacion(gen), t0 + Tone.Time('1m').toSeconds());
+  // scheduleOnce y Part.start usan TIEMPO DE TRANSPORT (ticks), no AudioContext
+  T.scheduleOnce(() => { if (gen === _looperGen) _setEstado('rec'); }, inicio + 'i');
+  T.scheduleOnce(() => _cerrarGrabacion(gen), (inicio + ticksCompas) + 'i');
 }
 
 export function pararLooper() {

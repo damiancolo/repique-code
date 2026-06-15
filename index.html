@@ -233,6 +233,12 @@
     #btn-limpiar:hover, #btn-guardar:hover, .tool-btn:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
     .tool-btn.activo { border-color: #e63946; color: #e63946; }
 
+    #fila-loop { display: flex; align-items: center; gap: 0.3rem; }
+    #btn-loop.armado { border-color: #f4a259; color: #f4a259; }
+    #btn-loop.rec    { border-color: #e63946; color: #e63946; animation: loopBlink 0.5s steps(1) infinite; }
+    #btn-loop.loop   { border-color: #4ade80; color: #4ade80; }
+    @keyframes loopBlink { 50% { opacity: 0.2; } }
+
     #volume-wrap {
       display: flex;
       align-items: center;
@@ -776,6 +782,9 @@
         <button class="tool-btn efecto-btn" data-efecto="ondas" title="Círculos que nacen con cada beat">ondas</button>
         <button class="tool-btn efecto-btn" data-efecto="orbe" title="Bola de energía flotando sobre tu palma">orbe</button>
         <button class="tool-btn efecto-btn" data-efecto="galaxia" title="Estrellas en espiral desde tus manos">galaxia</button>
+      </div>
+      <div id="fila-loop">
+        <button id="btn-loop" class="tool-btn" title="Graba los efectos de un compás y los deja sonando en loop con el ritmo">🔁 loop</button>
       </div>
     </div>
     <div id="volume-wrap">

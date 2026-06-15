@@ -169,9 +169,10 @@ dropNoise.connect(dropFilter);
 dropZap.connect(dropFilter);
 dropFilter.connect(fxDelay);
 
-export function efectoTechnoDrop() {
+export function efectoTechnoDrop(time) {
   if (!state.audioIniciado) return;
-  const now = Tone.now();
+  if (time === undefined) _registrarFx('drop');
+  const now = time ?? Tone.now();
   // Filtro barre de agudo a grave — el "whoosh" descendente del techno
   dropFilter.frequency.cancelScheduledValues(now);
   dropFilter.frequency.setValueAtTime(9000, now);
@@ -198,9 +199,10 @@ riserNoise.connect(riserFilter);
 riserTone.connect(riserFilter);
 riserFilter.connect(fxDelay);
 
-export function efectoRiser() {
+export function efectoRiser(time) {
   if (!state.audioIniciado) return;
-  const now = Tone.now();
+  if (time === undefined) _registrarFx('riser');
+  const now = time ?? Tone.now();
   riserFilter.frequency.cancelScheduledValues(now);
   riserFilter.frequency.setValueAtTime(250, now);
   riserFilter.frequency.exponentialRampToValueAtTime(7500, now + 0.8);
@@ -227,9 +229,10 @@ const STAB_CHORDS = [
 ];
 let _stabIdx = 0;
 
-export function efectoStab() {
+export function efectoStab(time) {
   if (!state.audioIniciado) return;
-  stabSynth.triggerAttackRelease(STAB_CHORDS[_stabIdx], '8n');
+  if (time === undefined) _registrarFx('stab');
+  stabSynth.triggerAttackRelease(STAB_CHORDS[_stabIdx], '8n', time);
   _stabIdx = (_stabIdx + 1) % STAB_CHORDS.length;
 }
 
@@ -242,9 +245,10 @@ const arpSynth = new Tone.Synth({
 });
 arpSynth.connect(fxDelay);
 
-export function efectoArpegio() {
+export function efectoArpegio(time) {
   if (!state.audioIniciado) return;
-  const now = Tone.now();
+  if (time === undefined) _registrarFx('arp');
+  const now = time ?? Tone.now();
   const notas = STAB_CHORDS[_stabIdx].map(n => Tone.Frequency(n).transpose(12).toNote());
   notas.forEach((nota, i) => arpSynth.triggerAttackRelease(nota, '16n', now + i * 0.07));
 }
@@ -258,9 +262,10 @@ const laser = new Tone.Synth({
 });
 laser.connect(fxDelay);
 
-export function efectoLaser() {
+export function efectoLaser(time) {
   if (!state.audioIniciado) return;
-  const now = Tone.now();
+  if (time === undefined) _registrarFx('laser');
+  const now = time ?? Tone.now();
   laser.triggerAttackRelease(1300, 0.28, now);
   laser.frequency.exponentialRampToValueAtTime(85, now + 0.26);
 }
@@ -274,10 +279,11 @@ const shimmer = new Tone.PolySynth(Tone.Synth, {
 });
 shimmer.connect(fxDelay);
 
-export function efectoShimmer() {
+export function efectoShimmer(time) {
   if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('shimmer');
   const notas = STAB_CHORDS[_stabIdx].map(n => Tone.Frequency(n).transpose(24).toNote());
-  shimmer.triggerAttackRelease(notas, '2n');
+  shimmer.triggerAttackRelease(notas, '2n', time);
 }
 
 // 4 · Impacto sub (manos se juntan): boom 808 profundo + soplo de aire
@@ -293,11 +299,93 @@ const impactAir = new Tone.NoiseSynth({
 });
 impactAir.connect(fxDelay);
 
-export function efectoImpacto() {
+export function efectoImpacto(time) {
   if (!state.audioIniciado) return;
-  impactSub.triggerAttackRelease('A0', '2n');
-  impactAir.triggerAttackRelease(0.3);
+  if (time === undefined) _registrarFx('impacto');
+  impactSub.triggerAttackRelease('A0', '2n', time);
+  impactAir.triggerAttackRelease(0.3, time);
 }
+
+// ─── Looper de efectos de baile ──────────────────────────────────────────────
+// Graba CUÁNDO se disparó cada efecto durante un compás (no el audio) y lo
+// reprograma en un Tone.Part que loopea cada compás, cuantizado a la grilla de
+// 16n del secuenciador → los efectos quedan sonando "en clave" con el ritmo.
+//
+// Estados: idle → armado (espera el próximo downbeat) → rec (graba 1 compás)
+//          → loop (reproduce). Volver a tocar el botón en cualquier estado = idle.
+//
+// El registro solo ocurre en disparos EN VIVO (time === undefined): el replay
+// pasa un `time` agendado, así nunca se auto-graba (no hay bucle infinito).
+
+const FX_FUNCS = {
+  drop:    efectoTechnoDrop,
+  riser:   efectoRiser,
+  stab:    efectoStab,
+  arp:     efectoArpegio,
+  laser:   efectoLaser,
+  shimmer: efectoShimmer,
+  impacto: efectoImpacto,
+};
+
+let _looperEstado   = 'idle';   // 'idle' | 'armado' | 'rec' | 'loop'
+let _grabados       = [];       // [{ nombre, tick }] relativos a _recInicioTick
+let _recInicioTick  = 0;
+let _looperPart     = null;
+let _looperGen      = 0;        // invalida callbacks pendientes al parar/re-armar
+let _onLooperEstado = null;     // callback para la UI
+
+function _setEstado(e) {
+  _looperEstado = e;
+  _onLooperEstado?.(e);
+}
+
+function _registrarFx(nombre) {
+  if (_looperEstado !== 'rec') return;
+  _grabados.push({ nombre, tick: Tone.getTransport().ticks - _recInicioTick });
+}
+
+function _cerrarGrabacion(gen) {
+  if (gen !== _looperGen || _looperEstado !== 'rec') return;
+  if (_grabados.length === 0) { _setEstado('idle'); return; }
+  const T = Tone.getTransport();
+  const ticksCompas = T.PPQ * 4;          // 4/4
+  const ticks16n    = ticksCompas / 16;
+  const eventos = _grabados.map(g => {
+    const q = Math.round(g.tick / ticks16n) * ticks16n;       // cuantiza a 16n
+    const enLoop = ((q % ticksCompas) + ticksCompas) % ticksCompas;
+    return { time: enLoop + 'i', nombre: g.nombre };
+  });
+  const part = new Tone.Part((time, ev) => {
+    FX_FUNCS[ev.nombre]?.(time);          // pasa time → agenda en grilla, no re-graba
+  }, eventos);
+  part.loop    = true;
+  part.loopEnd = '1m';
+  part.start(T.nextSubdivision('1m'));    // arranca alineado al próximo compás
+  _looperPart = part;
+  _setEstado('loop');
+}
+
+export function armarLooper() {
+  if (!state.audioIniciado || _looperEstado !== 'idle') return;
+  const gen = ++_looperGen;
+  const T   = Tone.getTransport();
+  const t0  = T.nextSubdivision('1m');    // próximo inicio de compás (seg. de transport)
+  _recInicioTick = Tone.Time(t0).toTicks();
+  _grabados = [];
+  _setEstado('armado');
+  T.scheduleOnce(() => { if (gen === _looperGen) _setEstado('rec'); }, t0);
+  T.scheduleOnce(() => _cerrarGrabacion(gen), t0 + Tone.Time('1m').toSeconds());
+}
+
+export function pararLooper() {
+  _looperGen++;                           // cancela callbacks armado/rec pendientes
+  if (_looperPart) { _looperPart.stop(); _looperPart.dispose(); _looperPart = null; }
+  _grabados = [];
+  if (_looperEstado !== 'idle') _setEstado('idle');
+}
+
+export function onLooperEstado(cb) { _onLooperEstado = cb; }
+export function getLooperEstado()  { return _looperEstado; }
 
 // ─── Bombo sub-grave (bypasea filtro, siempre profundo) ────────────────────
 const synthBombo = new Tone.MembraneSynth({
@@ -577,6 +665,7 @@ export async function startAudio() {
 }
 
 export function stopAudio() {
+  pararLooper();
   drone.triggerRelease();
   droneGain.gain.rampTo(0, 0.3);
   Tone.getTransport().stop();

@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -1494,6 +1494,7 @@ async function init() {
     modoBaile = false;
     btnBaile.classList.remove('activo');
     paletaBaile.classList.remove('visible');
+    pararLooper();
     _baileHands = [];
     _parts      = [];
     _ondas      = [];
@@ -1540,6 +1541,22 @@ async function init() {
       _parts = []; _ondas = []; _estrellas = []; // no mezclar partículas de efectos distintos
     });
   });
+
+  // ── Looper de efectos: graba un compás de efectos y los deja en loop ──────────
+  const btnLoop = document.getElementById('btn-loop');
+  if (btnLoop) {
+    btnLoop.addEventListener('click', () => {
+      if (getLooperEstado() === 'idle') armarLooper();
+      else pararLooper();
+    });
+    onLooperEstado((e) => {
+      btnLoop.classList.remove('armado', 'rec', 'loop');
+      if (e === 'armado')   { btnLoop.classList.add('armado'); btnLoop.textContent = '● espera'; }
+      else if (e === 'rec') { btnLoop.classList.add('rec');    btnLoop.textContent = '● rec'; }
+      else if (e === 'loop'){ btnLoop.classList.add('loop');   btnLoop.textContent = '■ loop'; }
+      else                  { btnLoop.textContent = '🔁 loop'; }
+    });
+  }
 
   colorBtns.forEach((btn, i) => {
     btn.addEventListener('click', () => {

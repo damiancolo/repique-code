@@ -371,6 +371,32 @@ export function efectoSweep(time) {
   sweepNoise.triggerAttackRelease(0.45, now);
 }
 
+// 10 · Escalerita (las dos manos abajo, sostenidas): corrida veloz de notas en
+// La menor pentatónica (pega con toda la progresión), alternando subida y
+// bajada cada vez — sierra con eco, tipo riff de synth electrónico
+const ESCALERA_NOTAS = ['A2','C3','D3','E3','G3','A3','C4','D4','E4','G4','A4','C5'];
+const escaleraSynth = new Tone.Synth({
+  oscillator: { type: 'sawtooth' },
+  envelope: { attack: 0.002, decay: 0.16, sustain: 0, release: 0.1 },
+  volume: -9,
+});
+const escaleraFiltro = new Tone.Filter({ type: 'lowpass', frequency: 3200, Q: 1 });
+escaleraSynth.connect(escaleraFiltro);
+escaleraFiltro.connect(fxDelay);
+let _escaleraDir = 0; // 0 = sube, 1 = baja
+
+export function efectoEscalera(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('escalera');
+  const now = time ?? Tone.now();
+  const N = 8, sube = _escaleraDir === 0;
+  for (let i = 0; i < N; i++) {
+    const idx = sube ? i : (N - 1 - i);
+    escaleraSynth.triggerAttackRelease(ESCALERA_NOTAS[idx], '16n', now + i * 0.055);
+  }
+  _escaleraDir = (_escaleraDir + 1) % 2;
+}
+
 // ─── Looper de efectos de baile ──────────────────────────────────────────────
 // Graba CUÁNDO se disparó cada efecto durante un compás (no el audio) y lo
 // reprograma en un Tone.Part que loopea cada compás, cuantizado a la grilla de
@@ -392,6 +418,7 @@ const FX_FUNCS = {
   impacto: efectoImpacto,
   pluck:   efectoPluck,
   sweep:   efectoSweep,
+  escalera: efectoEscalera,
 };
 
 const COMPASES_LOOP = 2;        // graba 2 compases enteros

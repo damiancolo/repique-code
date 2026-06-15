@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscalera, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -203,8 +203,9 @@ async function init() {
   let _ondas       = [];       // círculos en expansión
   let _estrellas   = [];       // estrellas de la galaxia
   // Gestos-efecto: movimientos de baile que disparan sonidos electrónicos
-  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0, pluck: 0, sweep: 0 };
+  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0, pluck: 0, sweep: 0, escalera: 0 };
   let _cieloFrames   = 0;             // frames con las dos manos al cielo
+  let _sueloFrames   = 0;             // frames con las dos manos abajo (escalerita)
   let _halos         = [];            // anillos localizados al disparar un gesto
   let _distManosPrev = null;          // distancia entre palmas en el frame anterior
   let ultimoPtoBuf   = null;
@@ -1075,6 +1076,20 @@ async function init() {
       _cieloFrames = 0;
     }
 
+    // Las dos manos abajo (sostenidas ~8 frames) → escalerita (corrida de notas)
+    if (_baileHands.length >= 2 && _baileHands.every(h => h.y > H * 0.74)) {
+      _sueloFrames++;
+      if (_sueloFrames >= 8 && !enCool('escalera', 1400)) {
+        _coolGesto.escalera = ahora;
+        for (const h of _baileHands) {
+          _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '180,140,255', alpha: 1 });
+        }
+        efectoEscalera();
+      }
+    } else {
+      _sueloFrames = 0;
+    }
+
     // Dos manos: separarse de golpe → acorde · juntarse de golpe → impacto
     if (_baileHands.length >= 2) {
       const [a, b] = _baileHands;
@@ -1516,12 +1531,25 @@ async function init() {
     modoBaile = false;
     btnBaile.classList.remove('activo');
     paletaBaile.classList.remove('visible');
-    pararLooper();
+    // Un loop ya sonando SIGUE aunque salgas del baile (a dibujar, etc.); solo
+    // se corta con el botón verde. Si estaba armando/grabando, se cancela.
+    if (getLooperEstado() !== 'loop') pararLooper();
     _baileHands = [];
     _parts      = [];
     _ondas      = [];
     _estrellas  = [];
     _halos      = [];
+  }
+
+  // Refleja el estado del looper en el botón (hoisteada: la usan varios handlers)
+  function pintarLoop(e) {
+    const b = document.getElementById('btn-loop');
+    if (!b) return;
+    b.classList.remove('armado', 'rec', 'loop');
+    if (e === 'armado')   { b.classList.add('armado'); b.textContent = '● espera'; }
+    else if (e === 'rec') { b.classList.add('rec');    b.textContent = '● rec'; }
+    else if (e === 'loop'){ b.classList.add('loop');   b.textContent = '■ loop'; }
+    else                  { b.textContent = '🔁 loop'; }
   }
 
   btnPaint.addEventListener('click', () => {
@@ -1553,6 +1581,7 @@ async function init() {
     modoBaile = true;
     btnBaile.classList.add('activo');
     paletaBaile.classList.add('visible');
+    pintarLoop(getLooperEstado()); // si un loop quedó sonando, el botón verde lo refleja
   });
 
   const efectoBtns = document.querySelectorAll('.efecto-btn');
@@ -1564,20 +1593,14 @@ async function init() {
     });
   });
 
-  // ── Looper de efectos: graba un compás de efectos y los deja en loop ──────────
+  // ── Looper de efectos: graba 2 compases de efectos y los deja en loop ─────────
   const btnLoop = document.getElementById('btn-loop');
   if (btnLoop) {
     btnLoop.addEventListener('click', () => {
       if (getLooperEstado() === 'idle') armarLooper();
       else pararLooper();
     });
-    onLooperEstado((e) => {
-      btnLoop.classList.remove('armado', 'rec', 'loop');
-      if (e === 'armado')   { btnLoop.classList.add('armado'); btnLoop.textContent = '● espera'; }
-      else if (e === 'rec') { btnLoop.classList.add('rec');    btnLoop.textContent = '● rec'; }
-      else if (e === 'loop'){ btnLoop.classList.add('loop');   btnLoop.textContent = '■ loop'; }
-      else                  { btnLoop.textContent = '🔁 loop'; }
-    });
+    onLooperEstado(pintarLoop);
   }
 
   colorBtns.forEach((btn, i) => {

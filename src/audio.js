@@ -158,12 +158,12 @@ const dropFilter = new Tone.Filter({ type: 'lowpass', frequency: 8000, Q: 10 });
 const dropNoise = new Tone.NoiseSynth({
   noise: { type: 'white' },
   envelope: { attack: 0.005, decay: 0.55, sustain: 0, release: 0.1 },
-  volume: -6,
+  volume: -12,
 });
 const dropZap = new Tone.Synth({
   oscillator: { type: 'sawtooth' },
   envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.1 },
-  volume: -8,
+  volume: -13,
 });
 dropNoise.connect(dropFilter);
 dropZap.connect(dropFilter);
@@ -183,7 +183,7 @@ export function efectoTechnoDrop(time) {
   dropZap.triggerAttackRelease(rootHz * 4, 0.5, now);
   dropZap.frequency.exponentialRampToValueAtTime(rootHz, now + 0.42);
   impactSub.triggerAttackRelease(
-    Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '4n', now + 0.3);
+    Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '4n', now + 0.3, 0.45);
 }
 
 // 2 · Riser (mano derecha sube): ruido + bandpass subiendo + tono ascendente
@@ -246,7 +246,7 @@ export function efectoStab(time) {
 const arpSynth = new Tone.Synth({
   oscillator: { type: 'triangle' },
   envelope: { attack: 0.002, decay: 0.18, sustain: 0, release: 0.12 },
-  volume: -6,
+  volume: -12,
 });
 arpSynth.connect(fxDelay);
 
@@ -355,7 +355,7 @@ export function efectoPluck(time) {
 const sweepNoise = new Tone.NoiseSynth({
   noise: { type: 'white' },
   envelope: { attack: 0.18, decay: 0.32, sustain: 0, release: 0.12 },
-  volume: -11,
+  volume: -15,
 });
 const sweepFilter = new Tone.Filter({ type: 'bandpass', frequency: 400, Q: 2 });
 sweepNoise.connect(sweepFilter);
@@ -371,9 +371,9 @@ export function efectoSweep(time) {
   sweepNoise.triggerAttackRelease(0.45, now);
 }
 
-// 10 · Escalerita (las dos manos abajo, sostenidas): corrida veloz de notas en
-// La menor pentatónica (pega con toda la progresión), alternando subida y
-// bajada cada vez — sierra con eco, tipo riff de synth electrónico
+// 10 · Escalerita (las dos manos suben o bajan juntas): corrida veloz de notas
+// en La menor pentatónica (pega con toda la progresión). Dos manos hacia ARRIBA
+// = ascendente; hacia ABAJO = descendente. Sierra con eco, tipo riff de synth.
 const ESCALERA_NOTAS = ['A2','C3','D3','E3','G3','A3','C4','D4','E4','G4','A4','C5'];
 const escaleraSynth = new Tone.Synth({
   oscillator: { type: 'sawtooth' },
@@ -383,18 +383,26 @@ const escaleraSynth = new Tone.Synth({
 const escaleraFiltro = new Tone.Filter({ type: 'lowpass', frequency: 3200, Q: 1 });
 escaleraSynth.connect(escaleraFiltro);
 escaleraFiltro.connect(fxDelay);
-let _escaleraDir = 0; // 0 = sube, 1 = baja
 
-export function efectoEscalera(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('escalera');
+function _runEscalera(sube, time) {
   const now = time ?? Tone.now();
-  const N = 8, sube = _escaleraDir === 0;
+  const N = 8;
   for (let i = 0; i < N; i++) {
     const idx = sube ? i : (N - 1 - i);
     escaleraSynth.triggerAttackRelease(ESCALERA_NOTAS[idx], '16n', now + i * 0.055);
   }
-  _escaleraDir = (_escaleraDir + 1) % 2;
+}
+
+export function efectoEscaleraSube(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('escaleraSube');
+  _runEscalera(true, time);
+}
+
+export function efectoEscaleraBaja(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('escaleraBaja');
+  _runEscalera(false, time);
 }
 
 // ─── Looper de efectos de baile ──────────────────────────────────────────────
@@ -418,7 +426,8 @@ const FX_FUNCS = {
   impacto: efectoImpacto,
   pluck:   efectoPluck,
   sweep:   efectoSweep,
-  escalera: efectoEscalera,
+  escaleraSube: efectoEscaleraSube,
+  escaleraBaja: efectoEscaleraBaja,
 };
 
 const COMPASES_LOOP = 2;        // graba 2 compases enteros

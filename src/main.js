@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscalera, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -205,7 +205,6 @@ async function init() {
   // Gestos-efecto: movimientos de baile que disparan sonidos electrónicos
   let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0, pluck: 0, sweep: 0, escalera: 0 };
   let _cieloFrames   = 0;             // frames con las dos manos al cielo
-  let _sueloFrames   = 0;             // frames con las dos manos abajo (escalerita)
   let _halos         = [];            // anillos localizados al disparar un gesto
   let _distManosPrev = null;          // distancia entre palmas en el frame anterior
   let ultimoPtoBuf   = null;
@@ -996,8 +995,25 @@ async function init() {
     const ahora = performance.now();
     const enCool = (tipo, ms = 900) => ahora - _coolGesto[tipo] < ms;
 
+    // ── Escalerita: las DOS manos suben o bajan juntas. Tiene PRIORIDAD sobre los
+    //    gestos de una sola mano (drop/riser/arp/láser) para que no se solapen ──
+    let dobleVert = false;
+    if (_baileHands.length >= 2 && !enCool('escalera')) {
+      const subenTodas = _baileHands.every(h => h.vy < -800);
+      const bajanTodas = _baileHands.every(h => h.vy > 800);
+      if (subenTodas && _baileHands.every(h => _estuvoEn(h, p => p.y > H * 0.5))) {
+        _coolGesto.escalera = ahora; dobleVert = true;
+        for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '180,140,255', alpha: 1 });
+        efectoEscaleraSube();
+      } else if (bajanTodas && _baileHands.every(h => _estuvoEn(h, p => p.y < H * 0.5))) {
+        _coolGesto.escalera = ahora; dobleVert = true;
+        for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '140,180,255', alpha: 1 });
+        efectoEscaleraBaja();
+      }
+    }
+
     // Mano izquierda cae → drop
-    if (!enCool('drop')) {
+    if (!dobleVert && !enCool('drop')) {
       for (const h of _baileHands) {
         if (h.x > W / 2 || h.y < H * 0.6 || h.vy < 900) continue;
         if (!_estuvoEn(h, p => p.y < H * 0.36)) continue;
@@ -1008,7 +1024,7 @@ async function init() {
     }
 
     // Mano derecha sube → riser
-    if (!enCool('riser')) {
+    if (!dobleVert && !enCool('riser')) {
       for (const h of _baileHands) {
         if (h.x < W / 2 || h.y > H * 0.4 || h.vy > -900) continue;
         if (!_estuvoEn(h, p => p.y > H * 0.64)) continue;
@@ -1019,7 +1035,7 @@ async function init() {
     }
 
     // Mano izquierda sube → arpegio pluck ascendente
-    if (!enCool('arp')) {
+    if (!dobleVert && !enCool('arp')) {
       for (const h of _baileHands) {
         if (h.x > W / 2 || h.y > H * 0.4 || h.vy > -900) continue;
         if (!_estuvoEn(h, p => p.y > H * 0.64)) continue;
@@ -1030,7 +1046,7 @@ async function init() {
     }
 
     // Mano derecha cae → láser en picada con eco
-    if (!enCool('laser')) {
+    if (!dobleVert && !enCool('laser')) {
       for (const h of _baileHands) {
         if (h.x < W / 2 || h.y < H * 0.6 || h.vy < 900) continue;
         if (!_estuvoEn(h, p => p.y < H * 0.36)) continue;
@@ -1076,19 +1092,6 @@ async function init() {
       _cieloFrames = 0;
     }
 
-    // Las dos manos abajo (sostenidas ~8 frames) → escalerita (corrida de notas)
-    if (_baileHands.length >= 2 && _baileHands.every(h => h.y > H * 0.74)) {
-      _sueloFrames++;
-      if (_sueloFrames >= 8 && !enCool('escalera', 1400)) {
-        _coolGesto.escalera = ahora;
-        for (const h of _baileHands) {
-          _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '180,140,255', alpha: 1 });
-        }
-        efectoEscalera();
-      }
-    } else {
-      _sueloFrames = 0;
-    }
 
     // Dos manos: separarse de golpe → acorde · juntarse de golpe → impacto
     if (_baileHands.length >= 2) {

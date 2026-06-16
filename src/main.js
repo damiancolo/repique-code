@@ -998,17 +998,25 @@ async function init() {
     // ── Escalerita: las DOS manos suben o bajan juntas. Tiene PRIORIDAD sobre los
     //    gestos de una sola mano (drop/riser/arp/láser) para que no se solapen ──
     let dobleVert = false;
-    if (_baileHands.length >= 2 && !enCool('escalera')) {
+    if (_baileHands.length >= 2) {
       const subenTodas = _baileHands.every(h => h.vy < -800);
       const bajanTodas = _baileHands.every(h => h.vy > 800);
-      if (subenTodas && _baileHands.every(h => _estuvoEn(h, p => p.y > H * 0.5))) {
-        _coolGesto.escalera = ahora; dobleVert = true;
-        for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '180,140,255', alpha: 1 });
-        efectoEscaleraSube();
-      } else if (bajanTodas && _baileHands.every(h => _estuvoEn(h, p => p.y < H * 0.5))) {
-        _coolGesto.escalera = ahora; dobleVert = true;
-        for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '140,180,255', alpha: 1 });
-        efectoEscaleraBaja();
+      // Si las dos manos van juntas en vertical SUPRIME los efectos de una sola
+      // mano (drop/riser/arp/láser) AUNQUE la escalera esté en cooldown: así al
+      // subir o bajar ambas manos suena sólo la escalera, sin sonidos solapados.
+      if (subenTodas || bajanTodas) {
+        dobleVert = true;
+        if (!enCool('escalera')) {
+          if (subenTodas && _baileHands.every(h => _estuvoEn(h, p => p.y > H * 0.5))) {
+            _coolGesto.escalera = ahora;
+            for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '180,140,255', alpha: 1 });
+            efectoEscaleraSube();
+          } else if (bajanTodas && _baileHands.every(h => _estuvoEn(h, p => p.y < H * 0.5))) {
+            _coolGesto.escalera = ahora;
+            for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '140,180,255', alpha: 1 });
+            efectoEscaleraBaja();
+          }
+        }
       }
     }
 
@@ -1204,6 +1212,7 @@ async function init() {
   function loop(timestamp) {
     const dt = _lastFrameTime ? Math.min((timestamp - _lastFrameTime) / 1000, 0.05) : 0.016;
     _lastFrameTime = timestamp;
+    try {
     const manos = detectarManos(video);
 
     if (modoPintar) {
@@ -1477,6 +1486,11 @@ async function init() {
       });
     }
 
+    } catch (err) {
+      // Un frame que falla (p. ej. colisión de timing en Tone.js) NO debe matar
+      // el loop: se ignora ese frame y se sigue, así la app nunca se congela.
+      console.error('[Repique Code] frame ignorado:', err);
+    }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

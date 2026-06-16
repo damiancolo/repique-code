@@ -1764,7 +1764,7 @@ async function init() {
   const ritmoViz      = document.getElementById('ritmo-viz');
   const vizTitulo     = document.getElementById('ritmo-viz-titulo');
   const ritmoNombreEl = document.getElementById('ritmo-nombre');
-  let ritmoActivoIdx  = 4; // Libre ✎ por defecto
+  let ritmoActivoIdx  = 5; // CANDOMByte por defecto
 
   const VIZ_TRACKS = [
     { key: 'chico',   label: '🪘 chico',   color: 'rgba(255,255,255,0.82)' },

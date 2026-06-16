@@ -86,7 +86,7 @@ const BANCO_PATRONES = [
 const CANDOMBE_IDX      = 5;
 export const CANDOMBE_REAL_IDX = 6;
 
-let ritmoActual = 4; // arranca en Libre ✎
+let ritmoActual = 5; // arranca en CANDOMByte
 
 // Alias para compatibilidad interna
 const PATRONES = BANCO_PATRONES[0]; // solo usado en la inicialización

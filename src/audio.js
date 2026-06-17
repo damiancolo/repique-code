@@ -606,6 +606,46 @@ export function gLa(time)  { if (!state.audioIniciado) return; if (time === unde
 export function gSi(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gSi');  _organNota('B3', time); }
 export function gDo2(time) { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gDo2'); _organNota('C4', time); }
 
+// Efectos de Mate (mismo órgano espacial): acordes y corridas de la escala
+function _organAcorde(notas, dur, time) {
+  const now = time ?? Tone.now();
+  organSynth.triggerAttackRelease(notas, dur, now);
+  organHi.triggerAttackRelease(notas.map(n => Tone.Frequency(n).transpose(12).toNote()), dur, now);
+}
+const ESCALA_ORGANO = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4'];
+function _organRun(sube, time) {
+  const now = time ?? Tone.now();
+  for (let i = 0; i < ESCALA_ORGANO.length; i++) {
+    const nota = sube ? ESCALA_ORGANO[i] : ESCALA_ORGANO[ESCALA_ORGANO.length - 1 - i];
+    organSynth.triggerAttackRelease(nota, '16n', now + i * 0.06);
+  }
+}
+export function gAcordeDo(time) { // acorde de Do mayor (C-E-G)
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gAcordeDo');
+  _organAcorde(['C3', 'E3', 'G3'], '2n', time);
+}
+export function gPadOrgano(time) { // pad sostenido (para "al cielo")
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gPadOrgano');
+  _organAcorde(['C3', 'G3', 'C4', 'E4'], '1n', time);
+}
+export function gOrganoSube(time) { // corrida ascendente de la escala
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gOrganoSube');
+  _organRun(true, time);
+}
+export function gOrganoBaja(time) { // corrida descendente
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gOrganoBaja');
+  _organRun(false, time);
+}
+export function gOrganoHit(time) { // acento brillante (aplauso de órgano)
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gOrganoHit');
+  _organAcorde(['C4', 'E4', 'G4'], '8n', time);
+}
+
 // ═══ Familia AGUDA — timbres brillantes, cristalinos, altos ══════════════════
 const aBellSynth = new Tone.FMSynth({
   harmonicity: 3.5, modulationIndex: 12,
@@ -725,6 +765,8 @@ const FX_FUNCS = {
   cowbell: sfxCowbell, tom: sfxTom, rim: sfxRim, sub: sfxSub,
   bell: sfxBell, zap: sfxZap, chord: sfxChord,
   gDo: gDo, gRe: gRe, gMi: gMi, gFa: gFa, gSol: gSol, gLa: gLa, gSi: gSi, gDo2: gDo2,
+  gAcordeDo: gAcordeDo, gPadOrgano: gPadOrgano, gOrganoSube: gOrganoSube,
+  gOrganoBaja: gOrganoBaja, gOrganoHit: gOrganoHit,
   aBell: aBell, aGlass: aGlass, aChime: aChime, aSpark: aSpark,
   aBlip: aBlip, aCrystal: aCrystal, aZapHi: aZapHi,
 };
@@ -848,6 +890,11 @@ export const BIBLIOTECAS = {
     { id: 'gLa',  nombre: 'La',  emoji: '🎹' },
     { id: 'gSi',  nombre: 'Si',  emoji: '🎹' },
     { id: 'gDo2', nombre: 'Do↑', emoji: '🎹' },
+    { id: 'gAcordeDo',  nombre: 'Do mayor',  emoji: '🎶' },
+    { id: 'gOrganoSube', nombre: 'Órgano ↑', emoji: '⬆️' },
+    { id: 'gOrganoBaja', nombre: 'Órgano ↓', emoji: '⬇️' },
+    { id: 'gOrganoHit',  nombre: 'Acento',   emoji: '👏' },
+    { id: 'gPadOrgano',  nombre: 'Pad',      emoji: '🌫' },
   ],
   aguda: [
     { id: 'aBell',    nombre: 'Campana',    emoji: '🛎' },
@@ -862,15 +909,17 @@ export const BIBLIOTECAS = {
 
 // Las "ranuras": cada gesto del baile
 export const GESTOS_BAILE = [
-  { slot: 'izqCae',     nombre: 'Izq. cae ↓' },
   { slot: 'derSube',    nombre: 'Der. sube ↑' },
-  { slot: 'izqSube',    nombre: 'Izq. sube ↑' },
   { slot: 'derCae',     nombre: 'Der. cae ↓' },
+  { slot: 'derDer',     nombre: 'Der. → a la derecha' },
+  { slot: 'derIzq',     nombre: 'Der. → a la izquierda' },
+  { slot: 'izqSube',    nombre: 'Izq. sube ↑' },
+  { slot: 'izqCae',     nombre: 'Izq. cae ↓' },
+  { slot: 'izqDer',     nombre: 'Izq. → a la derecha' },
+  { slot: 'izqIzq',     nombre: 'Izq. → a la izquierda' },
   { slot: 'separar',    nombre: 'Separar ↔' },
-  { slot: 'juntar',     nombre: 'Juntar ><' },
+  { slot: 'juntar',     nombre: 'Juntar / aplaudir' },
   { slot: 'cielo',      nombre: 'Al cielo ☁' },
-  { slot: 'swipeDer',   nombre: 'Swipe der. →' },
-  { slot: 'swipeIzq',   nombre: 'Swipe izq. ←' },
   { slot: 'ambasSuben', nombre: 'Ambas suben ↑↑' },
   { slot: 'ambasBajan', nombre: 'Ambas bajan ↓↓' },
 ];
@@ -879,20 +928,22 @@ export const GESTOS_BAILE = [
 const _defaults = {
   crazy: {
     izqCae: 'drop', derSube: 'riser', izqSube: 'arp', derCae: 'laser',
+    derDer: 'pluck', derIzq: 'pluck', izqDer: 'sweep', izqIzq: 'sweep',
     separar: 'stab', juntar: 'impacto', cielo: 'shimmer',
-    swipeDer: 'pluck', swipeIzq: 'sweep',
     ambasSuben: 'escaleraSube', ambasBajan: 'escaleraBaja',
   },
+  // Mate: notas Do-Re-Mi-Fa-Sol-La-Si-Do↑ en los 8 gestos de una mano (pedido del
+  // owner) + acorde de Do mayor al subir ambas, y efectos de órgano en el resto
   grave: {
-    izqCae: 'gDo', derSube: 'gLa', izqSube: 'gSol', derCae: 'gMi',
-    separar: 'gFa', juntar: 'gRe', cielo: 'gDo2',
-    swipeDer: 'gSi', swipeIzq: 'gMi',
-    ambasSuben: 'gSol', ambasBajan: 'gDo',
+    derSube: 'gDo', derIzq: 'gRe', derDer: 'gMi', derCae: 'gFa',
+    izqSube: 'gSol', izqDer: 'gLa', izqIzq: 'gSi', izqCae: 'gDo2',
+    ambasSuben: 'gAcordeDo', ambasBajan: 'gOrganoBaja',
+    separar: 'gOrganoSube', juntar: 'gOrganoHit', cielo: 'gPadOrgano',
   },
   aguda: {
     izqCae: 'aBlip', derSube: 'aSpark', izqSube: 'aChime', derCae: 'aZapHi',
+    derDer: 'aGlass', derIzq: 'aGlass', izqDer: 'aSpark', izqIzq: 'aSpark',
     separar: 'aCrystal', juntar: 'aGlass', cielo: 'aBell',
-    swipeDer: 'aGlass', swipeIzq: 'aSpark',
     ambasSuben: 'aChime', ambasBajan: 'aBell',
   },
 };

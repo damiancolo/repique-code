@@ -95,7 +95,9 @@ En el modo Libre ✎ el footer del viz tiene dos botones: **↺ limpiar** (borra
 
 En modo baile los gestos de movimiento disparan efectos de audio (además de los visuales). El flujo: `main.js:detectarGestosMusica(dt)` detecta el gesto → llama `dispararGesto(slot)` (audio.js) → resuelve el sonido asignado vía `FX_FUNCS[id]`.
 
-**Ranuras de gesto** (`GESTOS_BAILE`, 11 slots): `izqCae`, `derSube`, `izqSube`, `derCae`, `separar`, `juntar`, `cielo`, `swipeDer`, `swipeIzq`, `ambasSuben`, `ambasBajan`.
+**Ranuras de gesto** (`GESTOS_BAILE`, 13 slots): 8 de una mano — `derSube`, `derCae`, `derDer` (swipe a la derecha), `derIzq` (swipe a la izquierda), `izqSube`, `izqCae`, `izqDer`, `izqIzq` — + 5 de dos manos: `separar`, `juntar` (aplaudir), `cielo`, `ambasSuben`, `ambasBajan`. Los swipes distinguen dirección por el signo de `h.vx` (canvas espejado: vx>0 = a la derecha). 
+
+**Audio se autoarranca al entrar a baile**: el handler de `btn-baile` (main.js) es async, llama `resumeContextSync()` y `startAudio()` si `!state.audioIniciado` → el baile suena sin tocar "Arrancar".
 
 **Anti-solapamiento** (clave — gestos de dos manos tienen prioridad y suprimen los de una):
 - `dobleVert`: si ambas manos van juntas en vertical → suena sólo la escalera (suprime drop/riser/arp/láser), aunque la escalera esté en cooldown.
@@ -103,7 +105,7 @@ En modo baile los gestos de movimiento disparan efectos de audio (además de los
 
 **Familias** (`FAMILIAS`, `BIBLIOTECAS`): tres sets de timbres, cada uno con su paleta y su mapeo por gesto propio:
 - `crazy` → "Crazy": efectos electrónicos originales (drop, riser, stab, láser, shimmer, pluck, sweep, escalera, + percusión kick/clap/hat/snare/etc.).
-- `grave` → "Mate": **8 NOTAS FIJAS de la escala** (gDo='C3', gRe='D3', gMi='E3', gFa='F3', gSol='G3', gLa='A3', gSi='B3', gDo2='C4') con timbre de **órgano de iglesia electrónico/espacial** (`organSynth` fatsine + `organHi` capa de octava suave → `organFilter` → fxDelay/reverb = "del espacio"), vía helper `_organNota(nota, time)`. A diferencia de Crazy/Butiá, estas notas son FIJAS (no siguen `_acordeRoot`) → identificables, se puede "tocar" una melodía. **Familia por defecto** (`let _familia = 'grave'`). Iteró mucho (jun 2026): notas largas → techno percusivo → órgano armónico → **notas fijas Do-Re-Mi de órgano espacial** (pedido del owner).
+- `grave` → "Mate": **8 NOTAS FIJAS de la escala** (gDo='C3', gRe='D3', gMi='E3', gFa='F3', gSol='G3', gLa='A3', gSi='B3', gDo2='C4') con timbre de **órgano de iglesia electrónico/espacial** (`organSynth` fatsine + `organHi` capa de octava suave → `organFilter` → fxDelay/reverb = "del espacio"), vía helper `_organNota(nota, time)`. A diferencia de Crazy/Butiá, estas notas son FIJAS (no siguen `_acordeRoot`) → identificables, se puede "tocar" una melodía. Mapeo Mate (pedido del owner): derSube=Do, derIzq=Re, derDer=Mi, derCae=Fa, izqSube=Sol, izqDer=La, izqIzq=Si, izqCae=Do↑; ambas suben=acorde Do mayor (`gAcordeDo`), separar=`gOrganoSube`, ambas bajan=`gOrganoBaja`, juntar/aplaudir=`gOrganoHit`, al cielo=`gPadOrgano` (todos efectos del mismo órgano). **Familia por defecto** (`let _familia = 'grave'`). Iteró mucho (jun 2026): notas largas → techno percusivo → órgano armónico → **notas fijas Do-Re-Mi de órgano espacial** (pedido del owner).
 - `aguda` → "Butiá": timbres brillantes (aBell, aGlass, aChime, aSpark, aBlip, aCrystal, aZapHi).
 
 API audio.js: `getFamilia()`/`setFamilia(id)`, `getBiblioteca()` (paleta de la familia activa), `getAsignaciones()`/`setAsignacion(slot,id)` (mapa de la familia activa), `dispararGesto`, `previewSonido(id)`, `exportarConfig()`/`importarConfig(cfg)` (persistencia). Todos los sonidos son funciones `(time)` que se auto-registran en el looper si `time===undefined`, y están en `FX_FUNCS`.

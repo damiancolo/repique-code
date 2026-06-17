@@ -203,7 +203,7 @@ async function init() {
   let _ondas       = [];       // círculos en expansión
   let _estrellas   = [];       // estrellas de la galaxia
   // Gestos-efecto: movimientos de baile que disparan sonidos electrónicos
-  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0, pluck: 0, sweep: 0, escalera: 0 };
+  let _coolGesto     = { drop: 0, riser: 0, stab: 0, impact: 0, arp: 0, laser: 0, cielo: 0, escalera: 0, derDer: 0, derIzq: 0, izqDer: 0, izqIzq: 0 };
   let _cieloFrames   = 0;             // frames con las dos manos al cielo
   let _halos         = [];            // anillos localizados al disparar un gesto
   let _distManosPrev = null;          // distancia entre palmas en el frame anterior
@@ -1074,24 +1074,35 @@ async function init() {
       if (Math.abs(a.vx) > 900 && Math.abs(b.vx) > 900 && a.vx * b.vx < 0) dobleHoriz = true;
     }
 
-    // Swipe horizontal de la mano DERECHA → pluck melódico con delay
-    if (!dobleHoriz && !enCool('pluck', 700)) {
+    // Swipe horizontal de la mano DERECHA — distingue dirección (vx>0 = a la
+    // derecha; vx<0 = a la izquierda; el canvas está espejado)
+    if (!dobleHoriz) {
       for (const h of _baileHands) {
         if (h.x < W / 2) continue;
         if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;
-        _gestoDisparado('pluck', '120,255,200', h);
-        dispararGesto('swipeDer');
+        if (h.vx > 0 && !enCool('derDer', 700)) {
+          _gestoDisparado('derDer', '120,255,200', h);
+          dispararGesto('derDer');
+        } else if (h.vx < 0 && !enCool('derIzq', 700)) {
+          _gestoDisparado('derIzq', '120,255,170', h);
+          dispararGesto('derIzq');
+        }
         break;
       }
     }
 
-    // Swipe horizontal de la mano IZQUIERDA → uplifter / sweep (whoosh EDM)
-    if (!dobleHoriz && !enCool('sweep', 700)) {
+    // Swipe horizontal de la mano IZQUIERDA — distingue dirección
+    if (!dobleHoriz) {
       for (const h of _baileHands) {
         if (h.x > W / 2) continue;
         if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;
-        _gestoDisparado('sweep', '255,200,120', h);
-        dispararGesto('swipeIzq');
+        if (h.vx > 0 && !enCool('izqDer', 700)) {
+          _gestoDisparado('izqDer', '255,210,120', h);
+          dispararGesto('izqDer');
+        } else if (h.vx < 0 && !enCool('izqIzq', 700)) {
+          _gestoDisparado('izqIzq', '255,180,120', h);
+          dispararGesto('izqIzq');
+        }
         break;
       }
     }
@@ -1593,7 +1604,8 @@ async function init() {
   });
 
   // ── Modo baile ────────────────────────────────────────────────────────────────
-  btnBaile.addEventListener('click', () => {
+  btnBaile.addEventListener('click', async () => {
+    resumeContextSync(); // iOS: reanudar el contexto en el gesto del usuario (sin await antes)
     if (modoBaile) {
       apagarBaile();
       ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
@@ -1609,6 +1621,20 @@ async function init() {
     btnBaile.classList.add('activo');
     paletaBaile.classList.add('visible');
     pintarLoop(getLooperEstado()); // si un loop quedó sonando, el botón verde lo refleja
+    // Arrancar el audio solo, para que el baile suene aunque no hayas tocado "Arrancar"
+    if (!state.audioIniciado) {
+      status.textContent = 'Iniciando audio…';
+      try {
+        await startAudio();
+        status.textContent = '';
+        btnStart.textContent = 'Sonando';
+        btnStart.classList.add('activo');
+        btnStop.disabled = false;
+      } catch (err) {
+        status.textContent = err.message || 'Error de audio';
+        console.error('[Repique Code] Audio (baile):', err);
+      }
+    }
   });
 
   const efectoBtns = document.querySelectorAll('.efecto-btn');

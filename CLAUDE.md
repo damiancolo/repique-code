@@ -2,9 +2,9 @@
 
 ## Qué es
 
-Instrumento musical controlado por gestos de manos. Usa MediaPipe para detectar manos por cámara y Tone.js para síntesis de audio. Publicado en `estudioprompt.com/lab/repique-code` como iframe embebido. Versión actual: **1.5**.
+Instrumento musical controlado por gestos de manos. Usa MediaPipe para detectar manos por cámara y Tone.js para síntesis de audio. Publicado en `estudioprompt.com/lab/repique-code` como iframe embebido.
 
-Arranca siempre en el ritmo **Libre ✎** (índice 6) para que el usuario pueda editar directamente.
+Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado). Tiene tres modos: **normal** (drone + secuenciador por gestos de forma), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos).
 
 ## Arquitectura
 
@@ -47,7 +47,7 @@ Cuando `locked = true`:
 
 ## Banco de patrones (audio.js — BANCO_PATRONES)
 
-Array de 6 patrones exportado como `BANCO_PATRONES`. Cada patrón tiene 5 tracks × 16 pasos:
+Array de 8 patrones exportado como `BANCO_PATRONES`. Cada patrón tiene 5 tracks × 16 pasos:
 - `piano` — kick principal
 - `repique` — snare/repique
 - `chico` — hihat/chico
@@ -56,15 +56,18 @@ Array de 6 patrones exportado como `BANCO_PATRONES`. Cada patrón tiene 5 tracks
 
 | Índice | Nombre | Descripción |
 |--------|--------|-------------|
-| 0 | House | Kick 4/4, snare 2+4, hihat corcheas |
-| 1 | Dos pulsos | Kick en 1+3, snare en 2+4, hihat constante |
-| 2 | Escalera | Piano:1, repique:2, chico:3, madera:4 por tiempo |
-| 3 | Tresillo | División 3-3-2, groove afrolatino sincopado |
-| 4 | Medianoche | Medio tiempo muy abierto, golpes mínimos (lento) |
-| 5 | Llamada | Chico constante, repique sincopado, bombo en tiempos |
-| 6 | **Libre ✎** | Patrón editable en tiempo real por el usuario — **default al cargar** |
+| 0 | El cualca | Kick 4/4, snare 2+4, hihat corcheas, perc offbeat |
+| 1 | House | Four-on-the-floor, hihat con bombeo, clap 2+4 |
+| 2 | Dos pulsos | Kick 1+3, snare 2+4, hihat constante |
+| 3 | Escalera | Piano:1, repique:2, chico:3, madera:4 por tiempo |
+| 4 | Libre ✎ | Patrón editable, arranca casi vacío |
+| 5 | **CANDOMByte** | Candombe sintetizado, clave 3+3+4+2+4 — **default al cargar** |
+| 6 | Candombe 🎧 | Loop grabado real (no editable; suena un Tone.Player) |
+| 7 | Techno | Kick+bombo pesados, hihat contratiempo, clap escaso |
 
-Para agregar un ritmo nuevo: agregar objeto al array `BANCO_PATRONES` en `audio.js`, y el botón correspondiente en `#menu-ritmo` de `index.html` con `data-ritmo="N"`.
+`CANDOMBE_IDX = 5`, `CANDOMBE_REAL_IDX = 6` (exportado). Todos editables en tiempo real desde el viz salvo el 6. Botones en `#menu-ritmo` de `index.html` con `data-ritmo="N"`; el activo y `#ritmo-nombre` deben coincidir con `ritmoActual` (audio.js) y `ritmoActivoIdx` (main.js).
+
+Para agregar un ritmo nuevo: objeto al array `BANCO_PATRONES` en `audio.js` + botón en `#menu-ritmo`.
 
 ## Visualizador de ritmo (tooltip hover)
 
@@ -88,37 +91,58 @@ En el modo Libre ✎ el footer del viz tiene dos botones: **↺ limpiar** (borra
 `actualizarFiltro(ancho)` — lowpass 3500-12000 Hz según apertura de manos
 `actualizarArea(area)` — volumen del drone según bounding box de dedos
 
+## Modo baile: gestos → sonidos, biblioteca y familias (audio.js + main.js)
+
+En modo baile los gestos de movimiento disparan efectos de audio (además de los visuales). El flujo: `main.js:detectarGestosMusica(dt)` detecta el gesto → llama `dispararGesto(slot)` (audio.js) → resuelve el sonido asignado vía `FX_FUNCS[id]`.
+
+**Ranuras de gesto** (`GESTOS_BAILE`, 11 slots): `izqCae`, `derSube`, `izqSube`, `derCae`, `separar`, `juntar`, `cielo`, `swipeDer`, `swipeIzq`, `ambasSuben`, `ambasBajan`.
+
+**Anti-solapamiento** (clave — gestos de dos manos tienen prioridad y suprimen los de una):
+- `dobleVert`: si ambas manos van juntas en vertical → suena sólo la escalera (suprime drop/riser/arp/láser), aunque la escalera esté en cooldown.
+- `dobleHoriz`: si ambas manos van en horizontal en sentidos opuestos (separar/juntar) → suprime los swipes de una mano (sólo stab/impacto).
+
+**Familias** (`FAMILIAS`, `BIBLIOTECAS`): tres sets de timbres, cada uno con su paleta y su mapeo por gesto propio:
+- `crazy` → "Crazy": efectos electrónicos originales (drop, riser, stab, láser, shimmer, pluck, sweep, escalera, + percusión kick/clap/hat/snare/etc.).
+- `grave` → "Mate": timbres oscuros/sub (gKick, gSub, gReese, gTom, gThud, gGrowl, gDrone). **Familia por defecto** (`let _familia = 'grave'`).
+- `aguda` → "Butiá": timbres brillantes (aBell, aGlass, aChime, aSpark, aBlip, aCrystal, aZapHi).
+
+API audio.js: `getFamilia()`/`setFamilia(id)`, `getBiblioteca()` (paleta de la familia activa), `getAsignaciones()`/`setAsignacion(slot,id)` (mapa de la familia activa), `dispararGesto`, `previewSonido(id)`, `exportarConfig()`/`importarConfig(cfg)` (persistencia). Todos los sonidos son funciones `(time)` que se auto-registran en el looper si `time===undefined`, y están en `FX_FUNCS`.
+
+**Sonidos tonales**: usan `_acordeRoot()`/`_acordeNotas()` (acorde actual de la progresión `STAB_CHORDS`) para afinar al groove. `_fam()` es un transpose global (hoy identidad, `_familiaSemis=0`).
+
+**UI** (`index.html` `#config-sonidos` + main.js): botón `🎚 sonidos` en la paleta de baile abre el panel; botones de familia `.fam-btn` (Crazy/Mate/Butiá, `data-fam`); un `<select>` por gesto con la paleta de la familia activa + ▶ preview. Config guardada en localStorage (`repique_baile_config`).
+
+**Robustez**: el loop principal (`main.js:loop`) está envuelto en `try/catch` → una excepción de Tone.js (colisión de timing) ya no congela la app; sólo se pierde ese frame.
+
+**Looper** (`audio.js`): graba CUÁNDO se dispara cada sonido (por id) durante 2 compases y lo replaya en un `Tone.Part` cuantizado a 16n. Botón `🔁 loop`. El loop sigue sonando al salir del baile; sólo lo corta el botón verde o Stop.
+
 ## Cómo hacer deploy
 
-⚠️ El webhook automático GitHub → Vercel **no es confiable**. Usar siempre deploy manual:
+Hay DOS repos: el del instrumento (este) y el Astro del sitio. El webhook GitHub→Vercel del Astro **funciona** (push a `principal` deploya producción; push a `prueba` deploya preview). Flujo:
 
 ```bash
 # 1. Build del instrumento
-cd /Users/damianlafferranderie/Desktop/programeitor/repique-code
+cd /Users/damianlafferranderie/Desktop/programeitor/recursos/repique-code
 npm run build --cache /tmp/npm-cache
 
-# 2. Copiar al Astro (SOLO el JS actual — borrar los viejos del assets/)
-ASTRO=/Users/damianlafferranderie/.gemini/antigravity/scratch/estudioprompt
+# 2. Copiar al Astro (borrar el JS viejo con hash antes de copiar el nuevo)
+ASTRO=/Users/damianlafferranderie/Desktop/programeitor/estudioprompt.com/estudioprompt
 cp dist/index.html $ASTRO/public/repique-code/
-cp dist/logo-ep.png $ASTRO/public/repique-code/
-# Limpiar assets viejos y copiar el nuevo
 rm -f $ASTRO/public/repique-code/assets/index-*.js
-cp -r dist/assets $ASTRO/public/repique-code/
+cp -r dist/assets/. $ASTRO/public/repique-code/assets/
 
-# 3. Build del Astro
-cd $ASTRO
-npm run build
-
-# 4. Commit y push a GitHub
+# 3. Build + commit + push del Astro
+cd $ASTRO && npm run build
 git add public/repique-code/
-git commit -m "Repique Code X.X — descripción"
-git push origin main
-
-# 5. Deploy a Vercel (SIEMPRE con npx, no confiar en el webhook)
-npx --cache /tmp/npm-cache --yes vercel@latest --prod
+git commit -m "Repique Code — descripción"
+git push origin principal     # producción · (push a 'prueba' = preview)
 ```
 
-El deploy confirma con: `▲ Aliased https://estudioprompt.com`
+⚠️ La rama `prueba` del Astro tiene 8 commits propios (ilustración Repositorio) — NO mergear prueba→principal. Para sincronizar el preview con prod, copiar el `dist` en ambas ramas por separado.
+
+El alias estable del preview `estudioprompt-prueba.vercel.app` es manual: repuntar tras cada deploy de `prueba` (`POST /v2/deployments/<DPL>/aliases`). Token Vercel en `~/Library/Application Support/com.vercel.cli/auth.json`. Project `prj_JgzHVi1v7h2eTU9yfWt9RjxGXp7T`, team `team_ABSUeFTZC1zeHHswIAVbNDJ0`.
+
+El repo del instrumento NO tiene remote; las ramas (baile-fx, beta-rara, candombe-1-6, looper-fx, pintura-viva) se mantienen sincronizadas a `main`.
 
 ## npm
 

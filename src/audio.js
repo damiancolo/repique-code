@@ -234,10 +234,8 @@ let _stabIdx = 0;
 // Familia de registro: transpone TODAS las notas de los gestos a otra octava.
 // 0 = normal · -12 = grave (una octava abajo) · +12 = aguda (una octava arriba).
 // Son las MISMAS notas en otro registro, conmutables con un botón del panel.
-let _familiaSemis = 0;
-export function setFamilia(semis) { _familiaSemis = semis; }
-export function getFamilia() { return _familiaSemis; }
-function _fam(nota) { return Tone.Frequency(nota).transpose(_familiaSemis).toNote(); }
+const _familiaSemis = 0; // las familias ya no transponen: cada una trae sus timbres
+function _fam(nota) { return _familiaSemis ? Tone.Frequency(nota).transpose(_familiaSemis).toNote() : nota; }
 // Acorde actual de la progresión, ya con la familia aplicada
 function _acordeNotas() { return STAB_CHORDS[_stabIdx].map(_fam); }
 // Raíz del acorde actual (con familia) — afina los efectos tonales al groove
@@ -572,6 +570,186 @@ export function sfxChord(time) {
   sfxChordSynth.triggerAttackRelease(_acordeNotas(), '4n', time);
 }
 
+// ═══ Familia GRAVE — timbres oscuros, sub-graves, dub ════════════════════════
+const gKickSynth = new Tone.MembraneSynth({
+  pitchDecay: 0.08, octaves: 8,
+  envelope: { attack: 0.001, decay: 0.6, sustain: 0, release: 0.3 }, volume: 6,
+});
+gKickSynth.connect(sfxDry);
+export function gKick(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gKick');
+  gKickSynth.triggerAttackRelease('C1', '4n', time);
+}
+
+const gSubSynth = new Tone.MonoSynth({
+  oscillator: { type: 'sine' },
+  filter: { type: 'lowpass', Q: 1 },
+  envelope: { attack: 0.02, decay: 0.4, sustain: 0.5, release: 0.6 },
+  filterEnvelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 0.5, baseFrequency: 60, octaves: 2 },
+  volume: -2,
+});
+gSubSynth.connect(sfxDry);
+export function gSub(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gSub');
+  gSubSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '2n', time);
+}
+
+const gReeseSynth = new Tone.MonoSynth({
+  oscillator: { type: 'fatsawtooth', count: 3, spread: 40 },
+  filter: { type: 'lowpass', rolloff: -24, Q: 3 },
+  envelope: { attack: 0.02, decay: 0.6, sustain: 0.4, release: 0.7 },
+  filterEnvelope: { attack: 0.05, decay: 0.6, sustain: 0.3, release: 0.6, baseFrequency: 70, octaves: 2.5 },
+  volume: -9,
+});
+gReeseSynth.connect(fxDelay);
+export function gReese(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gReese');
+  gReeseSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
+}
+
+const gTomSynth = new Tone.MembraneSynth({
+  pitchDecay: 0.1, octaves: 5,
+  envelope: { attack: 0.001, decay: 0.5, sustain: 0, release: 0.25 }, volume: 3,
+});
+gTomSynth.connect(sfxDry);
+export function gTom(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gTom');
+  gTomSynth.triggerAttackRelease('F1', '8n', time);
+}
+
+const gThudNoise = new Tone.NoiseSynth({
+  noise: { type: 'brown' },
+  envelope: { attack: 0.001, decay: 0.28, sustain: 0, release: 0.1 }, volume: -4,
+});
+const gThudFilter = new Tone.Filter({ type: 'lowpass', frequency: 280 });
+gThudNoise.connect(gThudFilter);
+gThudFilter.connect(sfxDry);
+export function gThud(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gThud');
+  gThudNoise.triggerAttackRelease(0.28, time);
+}
+
+const gGrowlSynth = new Tone.FMSynth({
+  harmonicity: 0.5, modulationIndex: 9,
+  oscillator: { type: 'sawtooth' }, modulation: { type: 'square' },
+  envelope: { attack: 0.03, decay: 0.5, sustain: 0.3, release: 0.5 }, volume: -10,
+});
+gGrowlSynth.connect(fxDelay);
+export function gGrowl(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gGrowl');
+  gGrowlSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
+}
+
+const gDroneSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsine', count: 2, spread: 20 },
+  envelope: { attack: 0.4, decay: 1, sustain: 0.3, release: 2 }, volume: -14,
+});
+gDroneSynth.connect(fxDelay);
+export function gDrone(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gDrone');
+  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(-12).toNote());
+  gDroneSynth.triggerAttackRelease(notas, '2n', time);
+}
+
+// ═══ Familia AGUDA — timbres brillantes, cristalinos, altos ══════════════════
+const aBellSynth = new Tone.FMSynth({
+  harmonicity: 3.5, modulationIndex: 12,
+  oscillator: { type: 'sine' }, modulation: { type: 'sine' },
+  envelope: { attack: 0.001, decay: 1, sustain: 0, release: 1.2 },
+  modulationEnvelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.3 }, volume: -9,
+});
+aBellSynth.connect(fxDelay);
+export function aBell(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('aBell');
+  aBellSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(24).toNote(), '4n', time);
+}
+
+const aGlassSynth = new Tone.Synth({
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.3 }, volume: -7,
+});
+const aGlassHP = new Tone.Filter({ type: 'highpass', frequency: 600 });
+aGlassSynth.connect(aGlassHP);
+aGlassHP.connect(fxDelay);
+export function aGlass(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('aGlass');
+  aGlassSynth.triggerAttackRelease(Tone.Frequency(_acordeNotas()[1]).transpose(24).toNote(), '16n', time);
+}
+
+const aChimeSynth = new Tone.Synth({
+  oscillator: { type: 'sine' },
+  envelope: { attack: 0.001, decay: 0.22, sustain: 0, release: 0.2 }, volume: -9,
+});
+aChimeSynth.connect(fxDelay);
+export function aChime(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('aChime');
+  const now = time ?? Tone.now();
+  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(24).toNote());
+  notas.forEach((n, i) => aChimeSynth.triggerAttackRelease(n, '32n', now + i * 0.05));
+}
+
+const aSparkSynth = new Tone.MetalSynth({
+  frequency: 800,
+  envelope: { attack: 0.001, decay: 0.3, release: 0.1 },
+  harmonicity: 8, modulationIndex: 40, resonance: 9000, octaves: 1.5, volume: -16,
+});
+aSparkSynth.connect(fxDelay);
+export function aSpark(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('aSpark');
+  aSparkSynth.triggerAttackRelease('16n', time);
+}
+
+const aBlipSynth = new Tone.MonoSynth({
+  oscillator: { type: 'square' },
+  filter: { type: 'lowpass', Q: 6 },
+  envelope: { attack: 0.002, decay: 0.12, sustain: 0, release: 0.08 },
+  filterEnvelope: { attack: 0.002, decay: 0.1, sustain: 0, release: 0.08, baseFrequency: 800, octaves: 3 },
+  volume: -10,
+});
+aBlipSynth.connect(fxDelay);
+export function aBlip(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('aBlip');
+  aBlipSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(24).toNote(), '16n', time);
+}
+
+const aCrystalSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsine', count: 2, spread: 12 },
+  envelope: { attack: 0.005, decay: 0.6, sustain: 0.1, release: 0.8 }, volume: -14,
+});
+aCrystalSynth.connect(fxDelay);
+export function aCrystal(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('aCrystal');
+  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(24).toNote());
+  aCrystalSynth.triggerAttackRelease(notas, '2n', time);
+}
+
+const aZapHiSynth = new Tone.Synth({
+  oscillator: { type: 'sawtooth' },
+  envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.05 }, volume: -12,
+});
+aZapHiSynth.connect(fxDelay);
+export function aZapHi(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('aZapHi');
+  const now = time ?? Tone.now();
+  const root = Tone.Frequency(_acordeRoot()).transpose(24).toFrequency();
+  aZapHiSynth.triggerAttackRelease(root, 0.12, now);
+  aZapHiSynth.frequency.exponentialRampToValueAtTime(root * 3, now + 0.1);
+}
+
 // ─── Looper de efectos de baile ──────────────────────────────────────────────
 // Graba CUÁNDO se disparó cada efecto durante un compás (no el audio) y lo
 // reprograma en un Tone.Part que loopea cada compás, cuantizado a la grilla de
@@ -598,6 +776,10 @@ const FX_FUNCS = {
   kick: sfxKick, clap: sfxClap, hat: sfxHat, snare: sfxSnare,
   cowbell: sfxCowbell, tom: sfxTom, rim: sfxRim, sub: sfxSub,
   bell: sfxBell, zap: sfxZap, chord: sfxChord,
+  gKick: gKick, gSub: gSub, gReese: gReese, gTom: gTom,
+  gThud: gThud, gGrowl: gGrowl, gDrone: gDrone,
+  aBell: aBell, aGlass: aGlass, aChime: aChime, aSpark: aSpark,
+  aBlip: aBlip, aCrystal: aCrystal, aZapHi: aZapHi,
 };
 
 const COMPASES_LOOP = 2;        // graba 2 compases enteros
@@ -671,66 +853,138 @@ export function pararLooper() {
 export function onLooperEstado(cb) { _onLooperEstado = cb; }
 export function getLooperEstado()  { return _looperEstado; }
 
-// ─── Biblioteca de sonidos asignables + mapeo de gestos del baile ────────────
-// El usuario elige, antes de bailar, qué sonido dispara cada gesto. Los gestos
-// llaman dispararGesto(slot) y este resuelve el sonido elegido vía FX_FUNCS, así
+// ─── Familias de sonidos + mapeo de gestos del baile ─────────────────────────
+// Tres familias, cada una con su PROPIA paleta de timbres y su mapeo por gesto:
+//   · crazy  → los efectos electrónicos originales
+//   · grave  → timbres oscuros, sub-graves
+//   · aguda  → timbres brillantes, cristalinos
+// El usuario elige familia con un botón y, dentro de cada una, qué sonido dispara
+// cada gesto. Los gestos llaman dispararGesto(slot) → resuelve vía FX_FUNCS, así
 // el looper sigue grabando/replayando por id de sonido sin cambios.
-export const BIBLIOTECA = [
-  { id: 'drop',         nombre: 'Drop',        emoji: '🌊' },
-  { id: 'riser',        nombre: 'Riser',       emoji: '🚀' },
-  { id: 'arp',          nombre: 'Arpegio',     emoji: '🎶' },
-  { id: 'laser',        nombre: 'Láser acid',  emoji: '⚡' },
-  { id: 'stab',         nombre: 'Stab acorde', emoji: '🎹' },
-  { id: 'impacto',      nombre: 'Reese sub',   emoji: '💥' },
-  { id: 'shimmer',      nombre: 'Shimmer',     emoji: '✨' },
-  { id: 'pluck',        nombre: 'Pluck',       emoji: '🪕' },
-  { id: 'sweep',        nombre: 'Sweep',       emoji: '🌬' },
-  { id: 'escaleraSube', nombre: 'Escalera ↑',  emoji: '🪜' },
-  { id: 'escaleraBaja', nombre: 'Escalera ↓',  emoji: '🪜' },
-  { id: 'kick',         nombre: 'Kick 808',    emoji: '🥁' },
-  { id: 'clap',         nombre: 'Clap',        emoji: '👏' },
-  { id: 'hat',          nombre: 'Hi-hat',      emoji: '🎩' },
-  { id: 'snare',        nombre: 'Snare',       emoji: '🪘' },
-  { id: 'cowbell',      nombre: 'Cowbell',     emoji: '🔔' },
-  { id: 'tom',          nombre: 'Tom',         emoji: '🛢' },
-  { id: 'rim',          nombre: 'Rimshot',     emoji: '🥢' },
-  { id: 'sub',          nombre: 'Sub bass',    emoji: '🔉' },
-  { id: 'bell',         nombre: 'Campana',     emoji: '🛎' },
-  { id: 'zap',          nombre: 'Zap',         emoji: '🔫' },
-  { id: 'chord',        nombre: 'Pad acorde',  emoji: '🌈' },
+export const FAMILIAS = [
+  { id: 'crazy', nombre: 'Crazy' },
+  { id: 'grave', nombre: 'Grave' },
+  { id: 'aguda', nombre: 'Aguda' },
 ];
 
-// Cada "ranura" es un gesto del baile, con el sonido por defecto que tenía
+export const BIBLIOTECAS = {
+  crazy: [
+    { id: 'drop',         nombre: 'Drop',        emoji: '🌊' },
+    { id: 'riser',        nombre: 'Riser',       emoji: '🚀' },
+    { id: 'arp',          nombre: 'Arpegio',     emoji: '🎶' },
+    { id: 'laser',        nombre: 'Láser acid',  emoji: '⚡' },
+    { id: 'stab',         nombre: 'Stab acorde', emoji: '🎹' },
+    { id: 'impacto',      nombre: 'Reese sub',   emoji: '💥' },
+    { id: 'shimmer',      nombre: 'Shimmer',     emoji: '✨' },
+    { id: 'pluck',        nombre: 'Pluck',       emoji: '🪕' },
+    { id: 'sweep',        nombre: 'Sweep',       emoji: '🌬' },
+    { id: 'escaleraSube', nombre: 'Escalera ↑',  emoji: '🪜' },
+    { id: 'escaleraBaja', nombre: 'Escalera ↓',  emoji: '🪜' },
+    { id: 'kick',         nombre: 'Kick 808',    emoji: '🥁' },
+    { id: 'clap',         nombre: 'Clap',        emoji: '👏' },
+    { id: 'hat',          nombre: 'Hi-hat',      emoji: '🎩' },
+    { id: 'snare',        nombre: 'Snare',       emoji: '🪘' },
+    { id: 'cowbell',      nombre: 'Cowbell',     emoji: '🔔' },
+    { id: 'tom',          nombre: 'Tom',         emoji: '🛢' },
+    { id: 'rim',          nombre: 'Rimshot',     emoji: '🥢' },
+    { id: 'sub',          nombre: 'Sub bass',    emoji: '🔉' },
+    { id: 'bell',         nombre: 'Campana',     emoji: '🛎' },
+    { id: 'zap',          nombre: 'Zap',         emoji: '🔫' },
+    { id: 'chord',        nombre: 'Pad acorde',  emoji: '🌈' },
+  ],
+  grave: [
+    { id: 'gKick',  nombre: 'Kick profundo', emoji: '🥁' },
+    { id: 'gSub',   nombre: 'Sub bass',      emoji: '🔉' },
+    { id: 'gReese', nombre: 'Reese oscuro',  emoji: '🐻' },
+    { id: 'gTom',   nombre: 'Tom grave',     emoji: '🛢' },
+    { id: 'gThud',  nombre: 'Thud',          emoji: '🥊' },
+    { id: 'gGrowl', nombre: 'Growl',         emoji: '🦏' },
+    { id: 'gDrone', nombre: 'Drone oscuro',  emoji: '🌑' },
+  ],
+  aguda: [
+    { id: 'aBell',    nombre: 'Campana',    emoji: '🛎' },
+    { id: 'aGlass',   nombre: 'Vidrio',     emoji: '🔷' },
+    { id: 'aChime',   nombre: 'Carillón',   emoji: '🎐' },
+    { id: 'aSpark',   nombre: 'Chispa',     emoji: '✨' },
+    { id: 'aBlip',    nombre: 'Blip',       emoji: '💠' },
+    { id: 'aCrystal', nombre: 'Cristal',    emoji: '❄️' },
+    { id: 'aZapHi',   nombre: 'Zap agudo',  emoji: '⚡' },
+  ],
+};
+
+// Las "ranuras": cada gesto del baile
 export const GESTOS_BAILE = [
-  { slot: 'izqCae',     nombre: 'Izq. cae ↓',     def: 'drop' },
-  { slot: 'derSube',    nombre: 'Der. sube ↑',    def: 'riser' },
-  { slot: 'izqSube',    nombre: 'Izq. sube ↑',    def: 'arp' },
-  { slot: 'derCae',     nombre: 'Der. cae ↓',     def: 'laser' },
-  { slot: 'separar',    nombre: 'Separar ↔',      def: 'stab' },
-  { slot: 'juntar',     nombre: 'Juntar ><',      def: 'impacto' },
-  { slot: 'cielo',      nombre: 'Al cielo ☁',     def: 'shimmer' },
-  { slot: 'swipeDer',   nombre: 'Swipe der. →',   def: 'pluck' },
-  { slot: 'swipeIzq',   nombre: 'Swipe izq. ←',   def: 'sweep' },
-  { slot: 'ambasSuben', nombre: 'Ambas suben ↑↑', def: 'escaleraSube' },
-  { slot: 'ambasBajan', nombre: 'Ambas bajan ↓↓', def: 'escaleraBaja' },
+  { slot: 'izqCae',     nombre: 'Izq. cae ↓' },
+  { slot: 'derSube',    nombre: 'Der. sube ↑' },
+  { slot: 'izqSube',    nombre: 'Izq. sube ↑' },
+  { slot: 'derCae',     nombre: 'Der. cae ↓' },
+  { slot: 'separar',    nombre: 'Separar ↔' },
+  { slot: 'juntar',     nombre: 'Juntar ><' },
+  { slot: 'cielo',      nombre: 'Al cielo ☁' },
+  { slot: 'swipeDer',   nombre: 'Swipe der. →' },
+  { slot: 'swipeIzq',   nombre: 'Swipe izq. ←' },
+  { slot: 'ambasSuben', nombre: 'Ambas suben ↑↑' },
+  { slot: 'ambasBajan', nombre: 'Ambas bajan ↓↓' },
 ];
 
-const _asignaciones = {};
-GESTOS_BAILE.forEach(g => { _asignaciones[g.slot] = g.def; });
+// Mapeo por defecto de cada familia: gesto → sonido (de esa familia)
+const _defaults = {
+  crazy: {
+    izqCae: 'drop', derSube: 'riser', izqSube: 'arp', derCae: 'laser',
+    separar: 'stab', juntar: 'impacto', cielo: 'shimmer',
+    swipeDer: 'pluck', swipeIzq: 'sweep',
+    ambasSuben: 'escaleraSube', ambasBajan: 'escaleraBaja',
+  },
+  grave: {
+    izqCae: 'gKick', derSube: 'gReese', izqSube: 'gSub', derCae: 'gThud',
+    separar: 'gGrowl', juntar: 'gKick', cielo: 'gDrone',
+    swipeDer: 'gTom', swipeIzq: 'gReese',
+    ambasSuben: 'gSub', ambasBajan: 'gDrone',
+  },
+  aguda: {
+    izqCae: 'aBlip', derSube: 'aSpark', izqSube: 'aChime', derCae: 'aZapHi',
+    separar: 'aCrystal', juntar: 'aGlass', cielo: 'aBell',
+    swipeDer: 'aGlass', swipeIzq: 'aSpark',
+    ambasSuben: 'aChime', ambasBajan: 'aBell',
+  },
+};
 
-export function getAsignaciones() { return { ..._asignaciones }; }
+// Mapa activo por familia (copia de los defaults; el usuario lo edita)
+const _asign = { crazy: {}, grave: {}, aguda: {} };
+FAMILIAS.forEach(f => Object.assign(_asign[f.id], _defaults[f.id]));
+
+let _familia = 'crazy';
+export function setFamilia(fam) { if (_asign[fam]) _familia = fam; }
+export function getFamilia()    { return _familia; }
+export function getBiblioteca() { return BIBLIOTECAS[_familia]; }
+export function getAsignaciones() { return { ..._asign[_familia] }; }
 export function setAsignacion(slot, id) {
-  if (_asignaciones[slot] !== undefined && FX_FUNCS[id]) _asignaciones[slot] = id;
+  if (_asign[_familia][slot] !== undefined && FX_FUNCS[id]) _asign[_familia][slot] = id;
 }
-// Disparo de gesto: resuelve el sonido elegido. time agendado = replay del looper.
+// Disparo de gesto: resuelve el sonido de la familia activa. time = replay del looper.
 export function dispararGesto(slot, time) {
-  const fn = FX_FUNCS[_asignaciones[slot]];
+  const fn = FX_FUNCS[_asign[_familia][slot]];
   if (fn) fn(time);
 }
 // Escuchar un sonido suelto desde el configurador (en vivo, sin agendar)
 export function previewSonido(id) {
   const fn = FX_FUNCS[id];
   if (fn) fn();
+}
+// Persistencia: exporta/importa toda la config (familia + los 3 mapeos)
+export function exportarConfig() { return { familia: _familia, asign: _asign }; }
+export function importarConfig(cfg) {
+  if (!cfg) return;
+  if (cfg.asign) {
+    for (const f in _asign) {
+      const m = cfg.asign[f];
+      if (!m) continue;
+      for (const slot in _asign[f]) {
+        if (m[slot] && FX_FUNCS[m[slot]]) _asign[f][slot] = m[slot];
+      }
+    }
+  }
+  if (cfg.familia && _asign[cfg.familia]) _familia = cfg.familia;
 }
 
 // ─── Bombo sub-grave (bypasea filtro, siempre profundo) ────────────────────

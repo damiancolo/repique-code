@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, BIBLIOTECA, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -1630,47 +1630,28 @@ async function init() {
     onLooperEstado(pintarLoop);
   }
 
-  // ── Configurador: elegí qué sonido dispara cada gesto del baile ───────────────
-  const LS_SONIDOS = 'repique_baile_sonidos';
-  (function cargarAsignacionesGuardadas() {
+  // ── Configurador: familia + qué sonido dispara cada gesto del baile ───────────
+  const LS_SONIDOS = 'repique_baile_config';
+  (function cargarConfigGuardada() {
     try {
       const raw = localStorage.getItem(LS_SONIDOS);
-      if (!raw) return;
-      const obj = JSON.parse(raw);
-      Object.entries(obj).forEach(([slot, id]) => setAsignacion(slot, id));
+      if (raw) importarConfig(JSON.parse(raw));
     } catch (_) { /* sin persistencia, se usan los defaults */ }
   })();
-  function guardarAsignaciones() {
-    try { localStorage.setItem(LS_SONIDOS, JSON.stringify(getAsignaciones())); } catch (_) {}
+  function guardarConfig() {
+    try { localStorage.setItem(LS_SONIDOS, JSON.stringify(exportarConfig())); } catch (_) {}
   }
-  // Familia de registro (normal / grave / aguda) — transpone todas las notas
-  const LS_FAMILIA = 'repique_baile_familia';
-  (function cargarFamilia() {
-    try {
-      const v = parseInt(localStorage.getItem(LS_FAMILIA) ?? '0', 10);
-      if (!Number.isNaN(v)) setFamilia(v);
-    } catch (_) {}
-  })();
   function pintarFamilia() {
     const actual = getFamilia();
     document.querySelectorAll('.fam-btn').forEach(b => {
-      b.classList.toggle('activo', parseInt(b.dataset.fam, 10) === actual);
+      b.classList.toggle('activo', b.dataset.fam === actual);
     });
   }
-  document.querySelectorAll('.fam-btn').forEach(b => {
-    b.addEventListener('click', () => {
-      const semis = parseInt(b.dataset.fam, 10) || 0;
-      setFamilia(semis);
-      try { localStorage.setItem(LS_FAMILIA, String(semis)); } catch (_) {}
-      pintarFamilia();
-      previewSonido('chord'); // escuchá el acorde en la familia elegida
-    });
-  });
-  pintarFamilia();
   function construirConfigSonidos() {
     const cont = document.getElementById('config-sonidos-rows');
     if (!cont) return;
     const asig = getAsignaciones();
+    const lib  = getBiblioteca();
     cont.innerHTML = '';
     GESTOS_BAILE.forEach(g => {
       const row = document.createElement('div');
@@ -1680,7 +1661,7 @@ async function init() {
       label.textContent = g.nombre;
       const sel = document.createElement('select');
       sel.className = 'cfg-select';
-      BIBLIOTECA.forEach(s => {
+      lib.forEach(s => {
         const o = document.createElement('option');
         o.value = s.id;
         o.textContent = `${s.emoji} ${s.nombre}`;
@@ -1689,7 +1670,7 @@ async function init() {
       });
       sel.addEventListener('change', () => {
         setAsignacion(g.slot, sel.value);
-        guardarAsignaciones();
+        guardarConfig();
         previewSonido(sel.value); // escuchá lo que acabás de elegir
       });
       const prev = document.createElement('button');
@@ -1701,13 +1682,22 @@ async function init() {
       cont.appendChild(row);
     });
   }
+  document.querySelectorAll('.fam-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      setFamilia(b.dataset.fam);
+      guardarConfig();
+      pintarFamilia();
+      construirConfigSonidos(); // repuebla los desplegables con la paleta de la familia
+    });
+  });
+  pintarFamilia();
   const btnSonidos   = document.getElementById('btn-sonidos');
   const panelSonidos = document.getElementById('config-sonidos');
   if (btnSonidos && panelSonidos) {
     btnSonidos.addEventListener('click', () => {
       const vis = panelSonidos.classList.toggle('visible');
       btnSonidos.classList.toggle('activo', vis);
-      if (vis) construirConfigSonidos();
+      if (vis) { pintarFamilia(); construirConfigSonidos(); }
     });
     document.getElementById('config-sonidos-cerrar')?.addEventListener('click', () => {
       panelSonidos.classList.remove('visible');

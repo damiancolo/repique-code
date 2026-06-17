@@ -405,6 +405,164 @@ export function efectoEscaleraBaja(time) {
   _runEscalera(false, time);
 }
 
+// ─── Biblioteca extra de one-shots (sintetizados, para asignar a gestos) ─────
+// Bus "seco" para la percusión: va al master sin la reverb grande del bus de gestos
+const sfxDry = new Tone.Gain(0.9);
+
+const sfxKickSynth = new Tone.MembraneSynth({
+  pitchDecay: 0.05, octaves: 6,
+  envelope: { attack: 0.001, decay: 0.42, sustain: 0, release: 0.2 },
+  volume: 4,
+});
+sfxKickSynth.connect(sfxDry);
+export function sfxKick(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('kick');
+  sfxKickSynth.triggerAttackRelease('C1', '8n', time);
+}
+
+const sfxClapNoise = new Tone.NoiseSynth({
+  noise: { type: 'white' },
+  envelope: { attack: 0.001, decay: 0.16, sustain: 0, release: 0.04 },
+  volume: -6,
+});
+const sfxClapFilter = new Tone.Filter({ type: 'bandpass', frequency: 1400, Q: 1.2 });
+sfxClapNoise.connect(sfxClapFilter);
+sfxClapFilter.connect(sfxDry);
+export function sfxClap(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('clap');
+  sfxClapNoise.triggerAttackRelease(0.16, time);
+}
+
+const sfxHatSynth = new Tone.MetalSynth({
+  frequency: 320,
+  envelope: { attack: 0.001, decay: 0.06, release: 0.01 },
+  harmonicity: 5.1, modulationIndex: 32, resonance: 7000, octaves: 1.2,
+  volume: -14,
+});
+const sfxHatFilter = new Tone.Filter({ type: 'highpass', frequency: 7000 });
+sfxHatSynth.connect(sfxHatFilter);
+sfxHatFilter.connect(sfxDry);
+export function sfxHat(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('hat');
+  sfxHatSynth.triggerAttackRelease('16n', time);
+}
+
+const sfxSnareNoise = new Tone.NoiseSynth({
+  noise: { type: 'white' },
+  envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.05 },
+  volume: -8,
+});
+const sfxSnareFilter = new Tone.Filter({ type: 'highpass', frequency: 1200 });
+sfxSnareNoise.connect(sfxSnareFilter);
+sfxSnareFilter.connect(sfxDry);
+const sfxSnareBody = new Tone.MembraneSynth({
+  pitchDecay: 0.03, octaves: 3,
+  envelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.05 },
+  volume: -4,
+});
+sfxSnareBody.connect(sfxDry);
+export function sfxSnare(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('snare');
+  sfxSnareBody.triggerAttackRelease('G2', '16n', time);
+  sfxSnareNoise.triggerAttackRelease(0.2, time);
+}
+
+const sfxCowbellSynth = new Tone.MetalSynth({
+  frequency: 560,
+  envelope: { attack: 0.001, decay: 0.18, release: 0.05 },
+  harmonicity: 3.4, modulationIndex: 20, resonance: 3500, octaves: 0.8,
+  volume: -12,
+});
+sfxCowbellSynth.connect(sfxDry);
+export function sfxCowbell(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('cowbell');
+  sfxCowbellSynth.triggerAttackRelease('8n', time);
+}
+
+const sfxTomSynth = new Tone.MembraneSynth({
+  pitchDecay: 0.06, octaves: 4,
+  envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.2 },
+  volume: 2,
+});
+sfxTomSynth.connect(sfxDry);
+export function sfxTom(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('tom');
+  sfxTomSynth.triggerAttackRelease('A2', '8n', time);
+}
+
+const sfxRimSynth = new Tone.MembraneSynth({
+  pitchDecay: 0.008, octaves: 1,
+  envelope: { attack: 0.0005, decay: 0.04, sustain: 0, release: 0.02 },
+  volume: 0,
+});
+sfxRimSynth.connect(sfxDry);
+export function sfxRim(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('rim');
+  sfxRimSynth.triggerAttackRelease('E4', '32n', time);
+}
+
+const sfxSubSynth = new Tone.Synth({
+  oscillator: { type: 'sine' },
+  envelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.4 },
+  volume: 0,
+});
+sfxSubSynth.connect(sfxDry);
+export function sfxSub(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('sub');
+  const nota = Tone.Frequency(_acordeRoot()).transpose(-12).toNote();
+  sfxSubSynth.triggerAttackRelease(nota, '8n', time);
+}
+
+const sfxBellSynth = new Tone.FMSynth({
+  harmonicity: 3.01, modulationIndex: 14,
+  oscillator: { type: 'sine' }, modulation: { type: 'sine' },
+  envelope: { attack: 0.001, decay: 1.2, sustain: 0, release: 1.4 },
+  modulationEnvelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.4 },
+  volume: -10,
+});
+sfxBellSynth.connect(fxDelay);
+export function sfxBell(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('bell');
+  const nota = Tone.Frequency(_acordeRoot()).transpose(12).toNote();
+  sfxBellSynth.triggerAttackRelease(nota, '4n', time);
+}
+
+const sfxZapSynth = new Tone.Synth({
+  oscillator: { type: 'sawtooth' },
+  envelope: { attack: 0.002, decay: 0.18, sustain: 0, release: 0.06 },
+  volume: -10,
+});
+sfxZapSynth.connect(fxDelay);
+export function sfxZap(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('zap');
+  const now = time ?? Tone.now();
+  const root = Tone.Frequency(_acordeRoot()).toFrequency();
+  sfxZapSynth.triggerAttackRelease(root * 4, 0.18, now);
+  sfxZapSynth.frequency.exponentialRampToValueAtTime(root, now + 0.16);
+}
+
+const sfxChordSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.02, decay: 0.4, sustain: 0.25, release: 0.8 },
+  volume: -14,
+});
+sfxChordSynth.connect(fxDelay);
+export function sfxChord(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('chord');
+  sfxChordSynth.triggerAttackRelease(STAB_CHORDS[_stabIdx], '4n', time);
+}
+
 // ─── Looper de efectos de baile ──────────────────────────────────────────────
 // Graba CUÁNDO se disparó cada efecto durante un compás (no el audio) y lo
 // reprograma en un Tone.Part que loopea cada compás, cuantizado a la grilla de
@@ -428,6 +586,9 @@ const FX_FUNCS = {
   sweep:   efectoSweep,
   escaleraSube: efectoEscaleraSube,
   escaleraBaja: efectoEscaleraBaja,
+  kick: sfxKick, clap: sfxClap, hat: sfxHat, snare: sfxSnare,
+  cowbell: sfxCowbell, tom: sfxTom, rim: sfxRim, sub: sfxSub,
+  bell: sfxBell, zap: sfxZap, chord: sfxChord,
 };
 
 const COMPASES_LOOP = 2;        // graba 2 compases enteros
@@ -500,6 +661,68 @@ export function pararLooper() {
 
 export function onLooperEstado(cb) { _onLooperEstado = cb; }
 export function getLooperEstado()  { return _looperEstado; }
+
+// ─── Biblioteca de sonidos asignables + mapeo de gestos del baile ────────────
+// El usuario elige, antes de bailar, qué sonido dispara cada gesto. Los gestos
+// llaman dispararGesto(slot) y este resuelve el sonido elegido vía FX_FUNCS, así
+// el looper sigue grabando/replayando por id de sonido sin cambios.
+export const BIBLIOTECA = [
+  { id: 'drop',         nombre: 'Drop',        emoji: '🌊' },
+  { id: 'riser',        nombre: 'Riser',       emoji: '🚀' },
+  { id: 'arp',          nombre: 'Arpegio',     emoji: '🎶' },
+  { id: 'laser',        nombre: 'Láser acid',  emoji: '⚡' },
+  { id: 'stab',         nombre: 'Stab acorde', emoji: '🎹' },
+  { id: 'impacto',      nombre: 'Reese sub',   emoji: '💥' },
+  { id: 'shimmer',      nombre: 'Shimmer',     emoji: '✨' },
+  { id: 'pluck',        nombre: 'Pluck',       emoji: '🪕' },
+  { id: 'sweep',        nombre: 'Sweep',       emoji: '🌬' },
+  { id: 'escaleraSube', nombre: 'Escalera ↑',  emoji: '🪜' },
+  { id: 'escaleraBaja', nombre: 'Escalera ↓',  emoji: '🪜' },
+  { id: 'kick',         nombre: 'Kick 808',    emoji: '🥁' },
+  { id: 'clap',         nombre: 'Clap',        emoji: '👏' },
+  { id: 'hat',          nombre: 'Hi-hat',      emoji: '🎩' },
+  { id: 'snare',        nombre: 'Snare',       emoji: '🪘' },
+  { id: 'cowbell',      nombre: 'Cowbell',     emoji: '🔔' },
+  { id: 'tom',          nombre: 'Tom',         emoji: '🛢' },
+  { id: 'rim',          nombre: 'Rimshot',     emoji: '🥢' },
+  { id: 'sub',          nombre: 'Sub bass',    emoji: '🔉' },
+  { id: 'bell',         nombre: 'Campana',     emoji: '🛎' },
+  { id: 'zap',          nombre: 'Zap',         emoji: '🔫' },
+  { id: 'chord',        nombre: 'Pad acorde',  emoji: '🌈' },
+];
+
+// Cada "ranura" es un gesto del baile, con el sonido por defecto que tenía
+export const GESTOS_BAILE = [
+  { slot: 'izqCae',     nombre: 'Izq. cae ↓',     def: 'drop' },
+  { slot: 'derSube',    nombre: 'Der. sube ↑',    def: 'riser' },
+  { slot: 'izqSube',    nombre: 'Izq. sube ↑',    def: 'arp' },
+  { slot: 'derCae',     nombre: 'Der. cae ↓',     def: 'laser' },
+  { slot: 'separar',    nombre: 'Separar ↔',      def: 'stab' },
+  { slot: 'juntar',     nombre: 'Juntar ><',      def: 'impacto' },
+  { slot: 'cielo',      nombre: 'Al cielo ☁',     def: 'shimmer' },
+  { slot: 'swipeDer',   nombre: 'Swipe der. →',   def: 'pluck' },
+  { slot: 'swipeIzq',   nombre: 'Swipe izq. ←',   def: 'sweep' },
+  { slot: 'ambasSuben', nombre: 'Ambas suben ↑↑', def: 'escaleraSube' },
+  { slot: 'ambasBajan', nombre: 'Ambas bajan ↓↓', def: 'escaleraBaja' },
+];
+
+const _asignaciones = {};
+GESTOS_BAILE.forEach(g => { _asignaciones[g.slot] = g.def; });
+
+export function getAsignaciones() { return { ..._asignaciones }; }
+export function setAsignacion(slot, id) {
+  if (_asignaciones[slot] !== undefined && FX_FUNCS[id]) _asignaciones[slot] = id;
+}
+// Disparo de gesto: resuelve el sonido elegido. time agendado = replay del looper.
+export function dispararGesto(slot, time) {
+  const fn = FX_FUNCS[_asignaciones[slot]];
+  if (fn) fn(time);
+}
+// Escuchar un sonido suelto desde el configurador (en vivo, sin agendar)
+export function previewSonido(id) {
+  const fn = FX_FUNCS[id];
+  if (fn) fn();
+}
 
 // ─── Bombo sub-grave (bypasea filtro, siempre profundo) ────────────────────
 const synthBombo = new Tone.MembraneSynth({
@@ -751,6 +974,7 @@ export async function startAudio() {
     synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
     fxVerb.connect(masterGain);     // bus de efectos de gestos (delay → reverb)
     impactSub.connect(masterGain);  // el sub del impacto va limpio, sin reverb
+    sfxDry.connect(masterGain);     // bus seco de la biblioteca (percusión, sub)
     // Drone → droneGain → salida (bypasea el filtro de percusión)
     drone.connect(droneGain);
     droneGain.toDestination();

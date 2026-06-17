@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado } from './audio.js';
+import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, BIBLIOTECA, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -1010,11 +1010,11 @@ async function init() {
           if (subenTodas && _baileHands.every(h => _estuvoEn(h, p => p.y > H * 0.5))) {
             _coolGesto.escalera = ahora;
             for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '180,140,255', alpha: 1 });
-            efectoEscaleraSube();
+            dispararGesto('ambasSuben');
           } else if (bajanTodas && _baileHands.every(h => _estuvoEn(h, p => p.y < H * 0.5))) {
             _coolGesto.escalera = ahora;
             for (const h of _baileHands) _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '140,180,255', alpha: 1 });
-            efectoEscaleraBaja();
+            dispararGesto('ambasBajan');
           }
         }
       }
@@ -1026,7 +1026,7 @@ async function init() {
         if (h.x > W / 2 || h.y < H * 0.6 || h.vy < 900) continue;
         if (!_estuvoEn(h, p => p.y < H * 0.36)) continue;
         _gestoDisparado('drop', '255,255,255', h);
-        efectoTechnoDrop();
+        dispararGesto('izqCae');
         break;
       }
     }
@@ -1037,7 +1037,7 @@ async function init() {
         if (h.x < W / 2 || h.y > H * 0.4 || h.vy > -900) continue;
         if (!_estuvoEn(h, p => p.y > H * 0.64)) continue;
         _gestoDisparado('riser', '120,210,255', h);
-        efectoRiser();
+        dispararGesto('derSube');
         break;
       }
     }
@@ -1048,7 +1048,7 @@ async function init() {
         if (h.x > W / 2 || h.y > H * 0.4 || h.vy > -900) continue;
         if (!_estuvoEn(h, p => p.y > H * 0.64)) continue;
         _gestoDisparado('arp', '170,255,120', h);
-        efectoArpegio();
+        dispararGesto('izqSube');
         break;
       }
     }
@@ -1059,7 +1059,7 @@ async function init() {
         if (h.x < W / 2 || h.y < H * 0.6 || h.vy < 900) continue;
         if (!_estuvoEn(h, p => p.y < H * 0.36)) continue;
         _gestoDisparado('laser', '255,80,80', h);
-        efectoLaser();
+        dispararGesto('derCae');
         break;
       }
     }
@@ -1070,7 +1070,7 @@ async function init() {
         if (h.x < W / 2) continue;
         if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;
         _gestoDisparado('pluck', '120,255,200', h);
-        efectoPluck();
+        dispararGesto('swipeDer');
         break;
       }
     }
@@ -1081,7 +1081,7 @@ async function init() {
         if (h.x > W / 2) continue;
         if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;
         _gestoDisparado('sweep', '255,200,120', h);
-        efectoSweep();
+        dispararGesto('swipeIzq');
         break;
       }
     }
@@ -1094,7 +1094,7 @@ async function init() {
         for (const h of _baileHands) {
           _halos.push({ x: h.x, y: h.y, r: 16, rMax: 110, color: '255,215,120', alpha: 1 });
         }
-        efectoShimmer();
+        dispararGesto('cielo');
       }
     } else {
       _cieloFrames = 0;
@@ -1110,10 +1110,10 @@ async function init() {
         if (!enCool('stab') && vel > 1400 && dist > W * 0.4) {
           _gestoDisparado('stab', '190,130,255', a);
           _halos.push({ x: b.x, y: b.y, r: 16, rMax: 110, color: '190,130,255', alpha: 1 });
-          efectoStab();
+          dispararGesto('separar');
         } else if (!enCool('impact') && vel < -1400 && dist < W * 0.22) {
           _gestoDisparado('impact', '255,130,60', { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-          efectoImpacto();
+          dispararGesto('juntar');
         }
       }
       _distManosPrev = dist;
@@ -1618,6 +1618,67 @@ async function init() {
       else pararLooper();
     });
     onLooperEstado(pintarLoop);
+  }
+
+  // ── Configurador: elegí qué sonido dispara cada gesto del baile ───────────────
+  const LS_SONIDOS = 'repique_baile_sonidos';
+  (function cargarAsignacionesGuardadas() {
+    try {
+      const raw = localStorage.getItem(LS_SONIDOS);
+      if (!raw) return;
+      const obj = JSON.parse(raw);
+      Object.entries(obj).forEach(([slot, id]) => setAsignacion(slot, id));
+    } catch (_) { /* sin persistencia, se usan los defaults */ }
+  })();
+  function guardarAsignaciones() {
+    try { localStorage.setItem(LS_SONIDOS, JSON.stringify(getAsignaciones())); } catch (_) {}
+  }
+  function construirConfigSonidos() {
+    const cont = document.getElementById('config-sonidos-rows');
+    if (!cont) return;
+    const asig = getAsignaciones();
+    cont.innerHTML = '';
+    GESTOS_BAILE.forEach(g => {
+      const row = document.createElement('div');
+      row.className = 'cfg-row';
+      const label = document.createElement('span');
+      label.className = 'cfg-gesto';
+      label.textContent = g.nombre;
+      const sel = document.createElement('select');
+      sel.className = 'cfg-select';
+      BIBLIOTECA.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = `${s.emoji} ${s.nombre}`;
+        if (s.id === asig[g.slot]) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change', () => {
+        setAsignacion(g.slot, sel.value);
+        guardarAsignaciones();
+        previewSonido(sel.value); // escuchá lo que acabás de elegir
+      });
+      const prev = document.createElement('button');
+      prev.className = 'cfg-prev tool-btn';
+      prev.textContent = '▶';
+      prev.title = 'Escuchar';
+      prev.addEventListener('click', () => previewSonido(sel.value));
+      row.append(label, sel, prev);
+      cont.appendChild(row);
+    });
+  }
+  const btnSonidos   = document.getElementById('btn-sonidos');
+  const panelSonidos = document.getElementById('config-sonidos');
+  if (btnSonidos && panelSonidos) {
+    btnSonidos.addEventListener('click', () => {
+      const vis = panelSonidos.classList.toggle('visible');
+      btnSonidos.classList.toggle('activo', vis);
+      if (vis) construirConfigSonidos();
+    });
+    document.getElementById('config-sonidos-cerrar')?.addEventListener('click', () => {
+      panelSonidos.classList.remove('visible');
+      btnSonidos.classList.remove('activo');
+    });
   }
 
   colorBtns.forEach((btn, i) => {

@@ -239,6 +239,49 @@
     #btn-loop.loop   { border-color: #4ade80; color: #4ade80; }
     @keyframes loopBlink { 50% { opacity: 0.2; } }
 
+    #btn-sonidos.activo { border-color: #a855f7; color: #c084fc; }
+    #config-sonidos {
+      display: none;
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      width: 272px;
+      max-height: 72vh;
+      overflow-y: auto;
+      background: rgba(10,10,14,0.92);
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 10px;
+      padding: 0.7rem 0.8rem;
+      z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+    #config-sonidos.visible { display: block; }
+    #config-sonidos-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: rgba(255,255,255,0.82);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.55rem;
+    }
+    .cfg-row { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.4rem; }
+    .cfg-gesto { flex: 0 0 92px; color: rgba(255,255,255,0.6); font-size: 0.56rem; }
+    .cfg-select {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 5px;
+      font-size: 0.6rem;
+      font-family: inherit;
+      padding: 0.15rem 0.2rem;
+    }
+    .cfg-select option { background: #14141c; color: #fff; }
+    .cfg-prev { padding: 0.12rem 0.4rem; }
+
     #volume-wrap {
       display: flex;
       align-items: center;
@@ -785,7 +828,15 @@
       </div>
       <div id="fila-loop">
         <button id="btn-loop" class="tool-btn" title="Tocá y hacé tu primer efecto: graba 2 compases y los deja en loop. Sigue sonando aunque vayas a dibujar; se corta tocando el botón verde">🔁 loop</button>
+        <button id="btn-sonidos" class="tool-btn" title="Elegí qué sonido dispara cada gesto antes de bailar">🎚 sonidos</button>
       </div>
+    </div>
+    <div id="config-sonidos">
+      <div id="config-sonidos-head">
+        <span>🎚 sonido por gesto</span>
+        <button id="config-sonidos-cerrar" class="tool-btn">✕</button>
+      </div>
+      <div id="config-sonidos-rows"></div>
     </div>
     <div id="volume-wrap">
       <span>Vol</span>

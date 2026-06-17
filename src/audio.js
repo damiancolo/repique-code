@@ -658,6 +658,36 @@ export function gDrone(time) {
   gDroneSynth.triggerAttackRelease(notas, '2n', time);
 }
 
+// gDark — nota profunda y oscura (raíz −2 octavas, filtro cerrado): reemplaza al
+// kick en Mate. El owner quiere notas profundas, no percusión.
+const gDarkSynth = new Tone.Synth({
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.04, decay: 0.6, sustain: 0.4, release: 1.2 }, volume: -3,
+});
+const gDarkFilter = new Tone.Filter({ type: 'lowpass', frequency: 400, Q: 1 });
+gDarkSynth.connect(gDarkFilter);
+gDarkFilter.connect(sfxDry);
+export function gDark(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gDark');
+  gDarkSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '2n', time);
+}
+
+// gLow — nota grave detunada y cálida (raíz −1 octava), otra textura oscura
+const gLowSynth = new Tone.MonoSynth({
+  oscillator: { type: 'fatsawtooth', count: 2, spread: 18 },
+  filter: { type: 'lowpass', rolloff: -24, Q: 1 },
+  envelope: { attack: 0.03, decay: 0.8, sustain: 0.5, release: 0.9 },
+  filterEnvelope: { attack: 0.04, decay: 0.6, sustain: 0.3, release: 0.7, baseFrequency: 90, octaves: 2 },
+  volume: -7,
+});
+gLowSynth.connect(sfxDry);
+export function gLow(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('gLow');
+  gLowSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '2n', time);
+}
+
 // ═══ Familia AGUDA — timbres brillantes, cristalinos, altos ══════════════════
 const aBellSynth = new Tone.FMSynth({
   harmonicity: 3.5, modulationIndex: 12,
@@ -777,7 +807,7 @@ const FX_FUNCS = {
   cowbell: sfxCowbell, tom: sfxTom, rim: sfxRim, sub: sfxSub,
   bell: sfxBell, zap: sfxZap, chord: sfxChord,
   gKick: gKick, gSub: gSub, gReese: gReese, gTom: gTom,
-  gThud: gThud, gGrowl: gGrowl, gDrone: gDrone,
+  gThud: gThud, gGrowl: gGrowl, gDrone: gDrone, gDark: gDark, gLow: gLow,
   aBell: aBell, aGlass: aGlass, aChime: aChime, aSpark: aSpark,
   aBlip: aBlip, aCrystal: aCrystal, aZapHi: aZapHi,
 };
@@ -893,13 +923,14 @@ export const BIBLIOTECAS = {
     { id: 'chord',        nombre: 'Pad acorde',  emoji: '🌈' },
   ],
   grave: [
-    { id: 'gKick',  nombre: 'Kick profundo', emoji: '🥁' },
+    { id: 'gDark',  nombre: 'Nota profunda', emoji: '🌑' },
+    { id: 'gLow',   nombre: 'Nota grave',    emoji: '🫐' },
     { id: 'gSub',   nombre: 'Sub bass',      emoji: '🔉' },
     { id: 'gReese', nombre: 'Reese oscuro',  emoji: '🐻' },
     { id: 'gTom',   nombre: 'Tom grave',     emoji: '🛢' },
     { id: 'gThud',  nombre: 'Thud',          emoji: '🥊' },
     { id: 'gGrowl', nombre: 'Growl',         emoji: '🦏' },
-    { id: 'gDrone', nombre: 'Drone oscuro',  emoji: '🌑' },
+    { id: 'gDrone', nombre: 'Drone oscuro',  emoji: '🌫' },
   ],
   aguda: [
     { id: 'aBell',    nombre: 'Campana',    emoji: '🛎' },
@@ -936,10 +967,10 @@ const _defaults = {
     ambasSuben: 'escaleraSube', ambasBajan: 'escaleraBaja',
   },
   grave: {
-    izqCae: 'gKick', derSube: 'gReese', izqSube: 'gSub', derCae: 'gThud',
-    separar: 'gGrowl', juntar: 'gKick', cielo: 'gDrone',
+    izqCae: 'gDark', derSube: 'gReese', izqSube: 'gSub', derCae: 'gLow',
+    separar: 'gGrowl', juntar: 'gLow', cielo: 'gDrone',
     swipeDer: 'gTom', swipeIzq: 'gReese',
-    ambasSuben: 'gSub', ambasBajan: 'gDrone',
+    ambasSuben: 'gSub', ambasBajan: 'gDark',
   },
   aguda: {
     izqCae: 'aBlip', derSube: 'aSpark', izqSube: 'aChime', derCae: 'aZapHi',

@@ -1064,8 +1064,18 @@ async function init() {
       }
     }
 
+    // Si las DOS manos van en horizontal en sentidos opuestos están separándose
+    // o juntándose (gesto de dos manos) → SUPRIME los swipes de una sola mano,
+    // así separar/juntar suena sólo como stab/impacto, sin sonidos solapados.
+    // (Un swipe de una mano, con la otra quieta, NO lo activa: sigue andando.)
+    let dobleHoriz = false;
+    if (_baileHands.length >= 2) {
+      const [a, b] = _baileHands;
+      if (Math.abs(a.vx) > 900 && Math.abs(b.vx) > 900 && a.vx * b.vx < 0) dobleHoriz = true;
+    }
+
     // Swipe horizontal de la mano DERECHA → pluck melódico con delay
-    if (!enCool('pluck', 700)) {
+    if (!dobleHoriz && !enCool('pluck', 700)) {
       for (const h of _baileHands) {
         if (h.x < W / 2) continue;
         if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;
@@ -1076,7 +1086,7 @@ async function init() {
     }
 
     // Swipe horizontal de la mano IZQUIERDA → uplifter / sweep (whoosh EDM)
-    if (!enCool('sweep', 700)) {
+    if (!dobleHoriz && !enCool('sweep', 700)) {
       for (const h of _baileHands) {
         if (h.x > W / 2) continue;
         if (Math.abs(h.vx) < 1500 || Math.abs(h.vx) < Math.abs(h.vy) * 1.4) continue;

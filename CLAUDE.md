@@ -103,7 +103,7 @@ En modo baile los gestos de movimiento disparan efectos de audio (además de los
 
 **Familias** (`FAMILIAS`, `BIBLIOTECAS`): tres sets de timbres, cada uno con su paleta y su mapeo por gesto propio:
 - `crazy` → "Crazy": efectos electrónicos originales (drop, riser, stab, láser, shimmer, pluck, sweep, escalera, + percusión kick/clap/hat/snare/etc.).
-- `grave` → "Mate": notas profundas y oscuras (gDark, gLow, gSub, gReese, gGrowl, gDrone + gTom/gThud) — **sin kick** (el owner prefiere notas, no percusión). **Familia por defecto** (`let _familia = 'grave'`).
+- `grave` → "Mate": graves con onda **techno**, cortos/articulados y distintos entre sí para que se sienta el disparo (gDark=pluck cuadrado, gLow=acid 303, gSub=sub con pegada, gReese=reese stab, gTom=tom afinado, gThud=stab oscuro de acorde, gGrowl=hoover, gDrone=pad sostenido para "al cielo") — **sin kick**. **Familia por defecto** (`let _familia = 'grave'`). Iteración jun 2026: antes eran notas largas sostenidas y se embarraban/costaba percibir el disparo.
 - `aguda` → "Butiá": timbres brillantes (aBell, aGlass, aChime, aSpark, aBlip, aCrystal, aZapHi).
 
 API audio.js: `getFamilia()`/`setFamilia(id)`, `getBiblioteca()` (paleta de la familia activa), `getAsignaciones()`/`setAsignacion(slot,id)` (mapa de la familia activa), `dispararGesto`, `previewSonido(id)`, `exportarConfig()`/`importarConfig(cfg)` (persistencia). Todos los sonidos son funciones `(time)` que se auto-registran en el looper si `time===undefined`, y están en `FX_FUNCS`.

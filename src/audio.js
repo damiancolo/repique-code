@@ -582,73 +582,79 @@ export function gKick(time) {
   gKickSynth.triggerAttackRelease('C1', '4n', time);
 }
 
-// gSub — sub con pegada: triangle grave + filtro, ataque rápido y CORTO (no se
-// sostiene) → se percibe el golpe sin embarrar
+// Familia Mate = ÓRGANO: notas musicales graves, armónicas, sin golpe. Ataque
+// suave, sostenido con cola corta y limpia (no se embarran porque los gestos
+// tienen cooldown y las voces mono se reemplazan). Distintas por registro/voz.
+
+// gSub — Pedal: sub puro de órgano (sine), la nota más grave/fundamental
 const gSubSynth = new Tone.Synth({
-  oscillator: { type: 'triangle' },
-  envelope: { attack: 0.004, decay: 0.3, sustain: 0, release: 0.12 },
-  volume: -1,
+  oscillator: { type: 'sine' },
+  envelope: { attack: 0.03, decay: 0.1, sustain: 0.85, release: 0.5 },
+  volume: -3,
 });
-const gSubFilter = new Tone.Filter({ type: 'lowpass', frequency: 520 });
-gSubSynth.connect(gSubFilter);
-gSubFilter.connect(sfxDry);
+gSubSynth.connect(sfxDry);
 export function gSub(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('gSub');
-  gSubSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '8n', time);
+  gSubSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '2n', time);
 }
 
-// gReese — reese STAB techno: fatsaw detunado pero CORTO y seco (antes era largo
-// y sostenido → se embarraba). Filtro con envolvente para que muerda
-const gReeseSynth = new Tone.MonoSynth({
-  oscillator: { type: 'fatsawtooth', count: 3, spread: 40 },
-  filter: { type: 'lowpass', rolloff: -24, Q: 3 },
-  envelope: { attack: 0.006, decay: 0.28, sustain: 0, release: 0.12 },
-  filterEnvelope: { attack: 0.01, decay: 0.26, sustain: 0, release: 0.12, baseFrequency: 130, octaves: 2.4 },
-  volume: -8,
+// gReese → ACORDE de órgano: el acorde actual completo (armónico), cálido
+const gReeseSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsine', count: 2, spread: 8 },
+  envelope: { attack: 0.04, decay: 0.15, sustain: 0.6, release: 0.6 },
+  volume: -13,
 });
-gReeseSynth.connect(sfxDry);
+const gReeseFilter = new Tone.Filter({ type: 'lowpass', frequency: 1800 });
+gReeseSynth.connect(gReeseFilter);
+gReeseFilter.connect(sfxDry);
 export function gReese(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('gReese');
-  gReeseSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '8n', time);
+  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(-12).toNote());
+  gReeseSynth.triggerAttackRelease(notas, '2n', time);
 }
 
-// gTom — tom techno afinado, percusivo y seco (muy perceptible)
-const gTomSynth = new Tone.MembraneSynth({
-  pitchDecay: 0.08, octaves: 5,
-  envelope: { attack: 0.001, decay: 0.32, sustain: 0, release: 0.14 }, volume: 4,
+// gTom → Órgano medio: misma voz un registro más arriba (raíz sin transponer),
+// para distinguirlo por altura de las graves
+const gTomSynth = new Tone.Synth({
+  oscillator: { type: 'fatsine', count: 2, spread: 8 },
+  envelope: { attack: 0.02, decay: 0.1, sustain: 0.6, release: 0.35 },
+  volume: -9,
 });
-gTomSynth.connect(sfxDry);
+const gTomFilter = new Tone.Filter({ type: 'lowpass', frequency: 2600 });
+gTomSynth.connect(gTomFilter);
+gTomFilter.connect(sfxDry);
 export function gTom(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('gTom');
-  gTomSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '8n', time);
+  gTomSynth.triggerAttackRelease(_acordeRoot(), '4n', time);
 }
 
-// gThud → ahora STAB OSCURO: acorde de sierra filtrado, corto y mordiente (era
-// ruido marrón poco perceptible). Tonal, así afina con el groove
-const gStabSynth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: { type: 'sawtooth' },
-  envelope: { attack: 0.004, decay: 0.24, sustain: 0, release: 0.14 }, volume: -12,
+// gThud → Octava de órgano: raíz + su octava (sonido abierto, armónico)
+const gOctSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.03, decay: 0.12, sustain: 0.6, release: 0.4 },
+  volume: -11,
 });
-const gStabFilter = new Tone.Filter({ type: 'lowpass', frequency: 900, Q: 2 });
-gStabSynth.connect(gStabFilter);
-gStabFilter.connect(sfxDry);
+const gOctFilter = new Tone.Filter({ type: 'lowpass', frequency: 2000 });
+gOctSynth.connect(gOctFilter);
+gOctFilter.connect(sfxDry);
 export function gThud(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('gThud');
-  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(-12).toNote());
-  gStabSynth.triggerAttackRelease(notas, '8n', time);
+  const r = Tone.Frequency(_acordeRoot());
+  gOctSynth.triggerAttackRelease([r.transpose(-12).toNote(), r.toNote()], '4n', time);
 }
 
-// gGrowl → HOOVER rave: sierra muy detunada con filtro mordiente, medio-corto
+// gGrowl → Órgano "reed": registro de lengüeta, más armónicos pero suave (sierra
+// suave filtrada, sin envolvente de filtro mordiente)
 const gGrowlSynth = new Tone.MonoSynth({
-  oscillator: { type: 'fatsawtooth', count: 3, spread: 60 },
-  filter: { type: 'lowpass', rolloff: -24, Q: 2 },
-  envelope: { attack: 0.008, decay: 0.4, sustain: 0.15, release: 0.2 },
-  filterEnvelope: { attack: 0.02, decay: 0.4, sustain: 0.2, release: 0.2, baseFrequency: 160, octaves: 2.5 },
-  volume: -11,
+  oscillator: { type: 'fatsawtooth', count: 3, spread: 20 },
+  filter: { type: 'lowpass', rolloff: -12, Q: 1 },
+  envelope: { attack: 0.03, decay: 0.1, sustain: 0.6, release: 0.4 },
+  filterEnvelope: { attack: 0.05, decay: 0.2, sustain: 0.6, release: 0.4, baseFrequency: 450, octaves: 1.4 },
+  volume: -13,
 });
 gGrowlSynth.connect(fxDelay);
 export function gGrowl(time) {
@@ -657,13 +663,12 @@ export function gGrowl(time) {
   gGrowlSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
 }
 
-// gDrone — PAD oscuro sostenido: el único largo, pensado para el gesto sostenido
-// "manos al cielo". Sierra suave filtrada.
+// gDrone — Pad de órgano sostenido: acorde cálido, el más largo (para "al cielo")
 const gDroneSynth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: { type: 'fatsawtooth', count: 2, spread: 30 },
-  envelope: { attack: 0.15, decay: 0.8, sustain: 0.3, release: 1.4 }, volume: -15,
+  oscillator: { type: 'fatsine', count: 3, spread: 14 },
+  envelope: { attack: 0.2, decay: 0.4, sustain: 0.6, release: 1.6 }, volume: -15,
 });
-const gDroneFilter = new Tone.Filter({ type: 'lowpass', frequency: 700 });
+const gDroneFilter = new Tone.Filter({ type: 'lowpass', frequency: 1400 });
 gDroneSynth.connect(gDroneFilter);
 gDroneFilter.connect(fxDelay);
 export function gDrone(time) {
@@ -673,36 +678,35 @@ export function gDrone(time) {
   gDroneSynth.triggerAttackRelease(notas, '2n', time);
 }
 
-// gDark — PLUCK grave: bajo de onda cuadrada con envolvente de filtro, ataque
-// rápido y muy corto → el más articulado/perceptible de Mate (reemplaza al kick)
-const gDarkSynth = new Tone.MonoSynth({
-  oscillator: { type: 'square' },
-  filter: { type: 'lowpass', rolloff: -24, Q: 2 },
-  envelope: { attack: 0.002, decay: 0.18, sustain: 0, release: 0.08 },
-  filterEnvelope: { attack: 0.002, decay: 0.16, sustain: 0, release: 0.08, baseFrequency: 170, octaves: 3 },
-  volume: -6,
+// gDark — Órgano grave: voz cálida fatsine en registro bajo (la nota base de Mate)
+const gDarkSynth = new Tone.Synth({
+  oscillator: { type: 'fatsine', count: 3, spread: 10 },
+  envelope: { attack: 0.03, decay: 0.12, sustain: 0.7, release: 0.45 },
+  volume: -7,
 });
-gDarkSynth.connect(sfxDry);
+const gDarkFilter = new Tone.Filter({ type: 'lowpass', frequency: 1500 });
+gDarkSynth.connect(gDarkFilter);
+gDarkFilter.connect(sfxDry);
 export function gDark(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('gDark');
-  gDarkSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '8n', time);
+  gDarkSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
 }
 
-// gLow — ACID 303 grave: sierra resonante con squelch de filtro rápido (techno),
-// corto y mordiente. Distinto en timbre del pluck/sub/reese.
-const gLowSynth = new Tone.MonoSynth({
-  oscillator: { type: 'sawtooth' },
-  filter: { type: 'lowpass', rolloff: -24, Q: 7 },
-  envelope: { attack: 0.004, decay: 0.22, sustain: 0, release: 0.1 },
-  filterEnvelope: { attack: 0.004, decay: 0.2, sustain: 0.05, release: 0.1, baseFrequency: 130, octaves: 3.5, exponent: 2 },
+// gLow — Órgano cálido: voz triangle un poco más brillante que gDark (otro color
+// en el mismo registro grave)
+const gLowSynth = new Tone.Synth({
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.025, decay: 0.1, sustain: 0.65, release: 0.4 },
   volume: -8,
 });
-gLowSynth.connect(sfxDry);
+const gLowFilter = new Tone.Filter({ type: 'lowpass', frequency: 2200 });
+gLowSynth.connect(gLowFilter);
+gLowFilter.connect(sfxDry);
 export function gLow(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('gLow');
-  gLowSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '8n', time);
+  gLowSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
 }
 
 // ═══ Familia AGUDA — timbres brillantes, cristalinos, altos ══════════════════
@@ -940,14 +944,14 @@ export const BIBLIOTECAS = {
     { id: 'chord',        nombre: 'Pad acorde',  emoji: '🌈' },
   ],
   grave: [
-    { id: 'gDark',  nombre: 'Pluck grave', emoji: '🫨' },
-    { id: 'gLow',   nombre: 'Acid 303',    emoji: '🧪' },
-    { id: 'gSub',   nombre: 'Sub',         emoji: '🔉' },
-    { id: 'gReese', nombre: 'Reese stab',  emoji: '🐻' },
-    { id: 'gTom',   nombre: 'Tom',         emoji: '🛢' },
-    { id: 'gThud',  nombre: 'Stab oscuro', emoji: '🎹' },
-    { id: 'gGrowl', nombre: 'Hoover',      emoji: '🦏' },
-    { id: 'gDrone', nombre: 'Pad oscuro',  emoji: '🌫' },
+    { id: 'gDark',  nombre: 'Órgano grave',  emoji: '🎹' },
+    { id: 'gLow',   nombre: 'Órgano cálido', emoji: '🟠' },
+    { id: 'gSub',   nombre: 'Pedal',         emoji: '🦶' },
+    { id: 'gReese', nombre: 'Acorde órgano', emoji: '🎶' },
+    { id: 'gTom',   nombre: 'Órgano medio',  emoji: '🎵' },
+    { id: 'gThud',  nombre: 'Octava',        emoji: '🎼' },
+    { id: 'gGrowl', nombre: 'Órgano reed',   emoji: '🪈' },
+    { id: 'gDrone', nombre: 'Pad órgano',    emoji: '🌫' },
   ],
   aguda: [
     { id: 'aBell',    nombre: 'Campana',    emoji: '🛎' },

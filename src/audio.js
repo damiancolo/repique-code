@@ -863,8 +863,8 @@ export function getLooperEstado()  { return _looperEstado; }
 // el looper sigue grabando/replayando por id de sonido sin cambios.
 export const FAMILIAS = [
   { id: 'crazy', nombre: 'Crazy' },
-  { id: 'grave', nombre: 'Grave' },
-  { id: 'aguda', nombre: 'Aguda' },
+  { id: 'grave', nombre: 'Mate' },
+  { id: 'aguda', nombre: 'Butiá' },
 ];
 
 export const BIBLIOTECAS = {
@@ -953,7 +953,7 @@ const _defaults = {
 const _asign = { crazy: {}, grave: {}, aguda: {} };
 FAMILIAS.forEach(f => Object.assign(_asign[f.id], _defaults[f.id]));
 
-let _familia = 'crazy';
+let _familia = 'grave'; // arranca en "Mate" (familia grave) por pedido del owner
 export function setFamilia(fam) { if (_asign[fam]) _familia = fam; }
 export function getFamilia()    { return _familia; }
 export function getBiblioteca() { return BIBLIOTECAS[_familia]; }

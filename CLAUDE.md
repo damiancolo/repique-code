@@ -138,7 +138,7 @@ git commit -m "Repique Code — descripción"
 git push origin principal     # producción · (push a 'prueba' = preview)
 ```
 
-⚠️ La rama `prueba` del Astro tiene 8 commits propios (ilustración Repositorio) — NO mergear prueba→principal. Para sincronizar el preview con prod, copiar el `dist` en ambas ramas por separado.
+La rama `prueba` del Astro es el **preview de Repique Code** (no es trabajo ajeno). Sus commits históricos (desarrollo del looper/baile) ya llegaron a producción por la vía looper-fx→main, así que hoy `prueba` y `principal` sólo difieren en un archivo generado (`.astro/content.d.ts`). Flujo: copiar el `dist` en ambas ramas por separado (no hace falta merge).
 
 El alias estable del preview `estudioprompt-prueba.vercel.app` es manual: repuntar tras cada deploy de `prueba` (`POST /v2/deployments/<DPL>/aliases`). Token Vercel en `~/Library/Application Support/com.vercel.cli/auth.json`. Project `prj_JgzHVi1v7h2eTU9yfWt9RjxGXp7T`, team `team_ABSUeFTZC1zeHHswIAVbNDJ0`.
 

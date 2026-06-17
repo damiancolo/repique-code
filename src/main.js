@@ -1893,8 +1893,8 @@ async function init() {
 
   const VIZ_TRACKS = [
     { key: 'chico',   label: '🪘 chico',   color: 'rgba(255,255,255,0.82)' },
-    { key: 'repique', label: '🥁 repique', color: '#e63946' },
-    { key: 'piano',   label: '🛢 piano',   color: '#e67e22' },
+    { key: 'repique', label: '🥁 piano',   color: '#e63946' },
+    { key: 'piano',   label: '🛢 repique', color: '#e67e22' },
     { key: 'madera',  label: '🥢 madera',  color: '#1abc9c' },
     { key: 'bombo',   label: '💥 bombo',   color: '#4a90e2' },
   ];

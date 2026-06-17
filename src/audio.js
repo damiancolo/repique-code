@@ -231,13 +231,22 @@ const STAB_CHORDS = [
   ['G3', 'Bb3', 'D4', 'A4'],  // Gm add9
 ];
 let _stabIdx = 0;
-// Raíz del acorde actual de la progresión — afina los efectos tonales al groove
-function _acordeRoot() { return STAB_CHORDS[_stabIdx][0]; }
+// Familia de registro: transpone TODAS las notas de los gestos a otra octava.
+// 0 = normal · -12 = grave (una octava abajo) · +12 = aguda (una octava arriba).
+// Son las MISMAS notas en otro registro, conmutables con un botón del panel.
+let _familiaSemis = 0;
+export function setFamilia(semis) { _familiaSemis = semis; }
+export function getFamilia() { return _familiaSemis; }
+function _fam(nota) { return Tone.Frequency(nota).transpose(_familiaSemis).toNote(); }
+// Acorde actual de la progresión, ya con la familia aplicada
+function _acordeNotas() { return STAB_CHORDS[_stabIdx].map(_fam); }
+// Raíz del acorde actual (con familia) — afina los efectos tonales al groove
+function _acordeRoot() { return _fam(STAB_CHORDS[_stabIdx][0]); }
 
 export function efectoStab(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('stab');
-  stabSynth.triggerAttackRelease(STAB_CHORDS[_stabIdx], '8n', time);
+  stabSynth.triggerAttackRelease(_acordeNotas(), '8n', time);
   _stabIdx = (_stabIdx + 1) % STAB_CHORDS.length;
 }
 
@@ -254,7 +263,7 @@ export function efectoArpegio(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('arp');
   const now = time ?? Tone.now();
-  const notas = STAB_CHORDS[_stabIdx].map(n => Tone.Frequency(n).transpose(12).toNote());
+  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(12).toNote());
   notas.forEach((nota, i) => arpSynth.triggerAttackRelease(nota, '16n', now + i * 0.07));
 }
 
@@ -291,7 +300,7 @@ shimmer.connect(fxDelay);
 export function efectoShimmer(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('shimmer');
-  const notas = STAB_CHORDS[_stabIdx].map(n => Tone.Frequency(n).transpose(24).toNote());
+  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(24).toNote());
   shimmer.triggerAttackRelease(notas, '2n', time);
 }
 
@@ -346,7 +355,7 @@ pluckShaper.connect(fxDelay);
 export function efectoPluck(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('pluck');
-  const nota = Tone.Frequency(STAB_CHORDS[_stabIdx][1]).transpose(12).toNote();
+  const nota = Tone.Frequency(_acordeNotas()[1]).transpose(12).toNote();
   pluckSynth.triggerAttackRelease(nota, '16n', time);
 }
 
@@ -389,7 +398,7 @@ function _runEscalera(sube, time) {
   const N = 8;
   for (let i = 0; i < N; i++) {
     const idx = sube ? i : (N - 1 - i);
-    escaleraSynth.triggerAttackRelease(ESCALERA_NOTAS[idx], '16n', now + i * 0.055);
+    escaleraSynth.triggerAttackRelease(_fam(ESCALERA_NOTAS[idx]), '16n', now + i * 0.055);
   }
 }
 
@@ -418,7 +427,7 @@ sfxKickSynth.connect(sfxDry);
 export function sfxKick(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('kick');
-  sfxKickSynth.triggerAttackRelease('C1', '8n', time);
+  sfxKickSynth.triggerAttackRelease(_fam('C1'), '8n', time);
 }
 
 const sfxClapNoise = new Tone.NoiseSynth({
@@ -467,7 +476,7 @@ sfxSnareBody.connect(sfxDry);
 export function sfxSnare(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('snare');
-  sfxSnareBody.triggerAttackRelease('G2', '16n', time);
+  sfxSnareBody.triggerAttackRelease(_fam('G2'), '16n', time);
   sfxSnareNoise.triggerAttackRelease(0.2, time);
 }
 
@@ -493,7 +502,7 @@ sfxTomSynth.connect(sfxDry);
 export function sfxTom(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('tom');
-  sfxTomSynth.triggerAttackRelease('A2', '8n', time);
+  sfxTomSynth.triggerAttackRelease(_fam('A2'), '8n', time);
 }
 
 const sfxRimSynth = new Tone.MembraneSynth({
@@ -505,7 +514,7 @@ sfxRimSynth.connect(sfxDry);
 export function sfxRim(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('rim');
-  sfxRimSynth.triggerAttackRelease('E4', '32n', time);
+  sfxRimSynth.triggerAttackRelease(_fam('E4'), '32n', time);
 }
 
 const sfxSubSynth = new Tone.Synth({
@@ -560,7 +569,7 @@ sfxChordSynth.connect(fxDelay);
 export function sfxChord(time) {
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('chord');
-  sfxChordSynth.triggerAttackRelease(STAB_CHORDS[_stabIdx], '4n', time);
+  sfxChordSynth.triggerAttackRelease(_acordeNotas(), '4n', time);
 }
 
 // ─── Looper de efectos de baile ──────────────────────────────────────────────

@@ -266,6 +266,36 @@
       text-transform: uppercase;
       margin-bottom: 0.55rem;
     }
+    #config-familia {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-bottom: 0.6rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .cfg-fam-label {
+      flex: 0 0 auto;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.56rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-right: 0.2rem;
+    }
+    .fam-btn {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.5);
+      font-family: inherit;
+      font-size: 0.56rem;
+      letter-spacing: 0.04em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .fam-btn:hover  { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.8); }
+    .fam-btn.activo { border-color: #a855f7; color: #c084fc; }
     .cfg-row { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.4rem; }
     .cfg-gesto { flex: 0 0 92px; color: rgba(255,255,255,0.6); font-size: 0.56rem; }
     .cfg-select {
@@ -835,6 +865,12 @@
       <div id="config-sonidos-head">
         <span>🎚 sonido por gesto</span>
         <button id="config-sonidos-cerrar" class="tool-btn">✕</button>
+      </div>
+      <div id="config-familia">
+        <span class="cfg-fam-label">Familia</span>
+        <button class="fam-btn activo" data-fam="0">Normal</button>
+        <button class="fam-btn" data-fam="-12">Grave</button>
+        <button class="fam-btn" data-fam="12">Aguda</button>
       </div>
       <div id="config-sonidos-rows"></div>
     </div>

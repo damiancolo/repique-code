@@ -570,144 +570,41 @@ export function sfxChord(time) {
   sfxChordSynth.triggerAttackRelease(_acordeNotas(), '4n', time);
 }
 
-// ═══ Familia GRAVE — timbres oscuros, sub-graves, dub ════════════════════════
-const gKickSynth = new Tone.MembraneSynth({
-  pitchDecay: 0.08, octaves: 8,
-  envelope: { attack: 0.001, decay: 0.6, sustain: 0, release: 0.3 }, volume: 6,
-});
-gKickSynth.connect(sfxDry);
-export function gKick(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gKick');
-  gKickSynth.triggerAttackRelease('C1', '4n', time);
-}
-
-// Familia Mate = ÓRGANO: notas musicales graves, armónicas, sin golpe. Ataque
-// suave, sostenido con cola corta y limpia (no se embarran porque los gestos
-// tienen cooldown y las voces mono se reemplazan). Distintas por registro/voz.
-
-// gSub — Pedal: sub puro de órgano (sine), la nota más grave/fundamental
-const gSubSynth = new Tone.Synth({
-  oscillator: { type: 'sine' },
-  envelope: { attack: 0.03, decay: 0.1, sustain: 0.85, release: 0.5 },
-  volume: -3,
-});
-gSubSynth.connect(sfxDry);
-export function gSub(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gSub');
-  gSubSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-24).toNote(), '2n', time);
-}
-
-// gReese → ACORDE de órgano: el acorde actual completo (armónico), cálido
-const gReeseSynth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: { type: 'fatsine', count: 2, spread: 8 },
-  envelope: { attack: 0.04, decay: 0.15, sustain: 0.6, release: 0.6 },
-  volume: -13,
-});
-const gReeseFilter = new Tone.Filter({ type: 'lowpass', frequency: 1800 });
-gReeseSynth.connect(gReeseFilter);
-gReeseFilter.connect(sfxDry);
-export function gReese(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gReese');
-  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(-12).toNote());
-  gReeseSynth.triggerAttackRelease(notas, '2n', time);
-}
-
-// gTom → Órgano medio: misma voz un registro más arriba (raíz sin transponer),
-// para distinguirlo por altura de las graves
-const gTomSynth = new Tone.Synth({
-  oscillator: { type: 'fatsine', count: 2, spread: 8 },
-  envelope: { attack: 0.02, decay: 0.1, sustain: 0.6, release: 0.35 },
-  volume: -9,
-});
-const gTomFilter = new Tone.Filter({ type: 'lowpass', frequency: 2600 });
-gTomSynth.connect(gTomFilter);
-gTomFilter.connect(sfxDry);
-export function gTom(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gTom');
-  gTomSynth.triggerAttackRelease(_acordeRoot(), '4n', time);
-}
-
-// gThud → Octava de órgano: raíz + su octava (sonido abierto, armónico)
-const gOctSynth = new Tone.PolySynth(Tone.Synth, {
-  oscillator: { type: 'triangle' },
-  envelope: { attack: 0.03, decay: 0.12, sustain: 0.6, release: 0.4 },
-  volume: -11,
-});
-const gOctFilter = new Tone.Filter({ type: 'lowpass', frequency: 2000 });
-gOctSynth.connect(gOctFilter);
-gOctFilter.connect(sfxDry);
-export function gThud(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gThud');
-  const r = Tone.Frequency(_acordeRoot());
-  gOctSynth.triggerAttackRelease([r.transpose(-12).toNote(), r.toNote()], '4n', time);
-}
-
-// gGrowl → Órgano "reed": registro de lengüeta, más armónicos pero suave (sierra
-// suave filtrada, sin envolvente de filtro mordiente)
-const gGrowlSynth = new Tone.MonoSynth({
-  oscillator: { type: 'fatsawtooth', count: 3, spread: 20 },
-  filter: { type: 'lowpass', rolloff: -12, Q: 1 },
-  envelope: { attack: 0.03, decay: 0.1, sustain: 0.6, release: 0.4 },
-  filterEnvelope: { attack: 0.05, decay: 0.2, sustain: 0.6, release: 0.4, baseFrequency: 450, octaves: 1.4 },
-  volume: -13,
-});
-gGrowlSynth.connect(fxDelay);
-export function gGrowl(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gGrowl');
-  gGrowlSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
-}
-
-// gDrone — Pad de órgano sostenido: acorde cálido, el más largo (para "al cielo")
-const gDroneSynth = new Tone.PolySynth(Tone.Synth, {
+// ═══ Familia GRAVE = "Mate" — ÓRGANO DE IGLESIA ELECTRÓNICO / ESPACIAL ═══════
+// Cada gesto dispara una NOTA FIJA de la escala (Do Re Mi Fa Sol La Si Do), para
+// que sea identificable y se pueda "tocar" una melodía. Timbre: fatsine cálido
+// (órgano) + una capa de octava suave (brillo electrónico), con la reverb/delay
+// grande del bus = sensación espacial.
+const organSynth = new Tone.PolySynth(Tone.Synth, {
   oscillator: { type: 'fatsine', count: 3, spread: 14 },
-  envelope: { attack: 0.2, decay: 0.4, sustain: 0.6, release: 1.6 }, volume: -15,
+  envelope: { attack: 0.04, decay: 0.2, sustain: 0.7, release: 0.9 },
+  volume: -10,
 });
-const gDroneFilter = new Tone.Filter({ type: 'lowpass', frequency: 1400 });
-gDroneSynth.connect(gDroneFilter);
-gDroneFilter.connect(fxDelay);
-export function gDrone(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gDrone');
-  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(-12).toNote());
-  gDroneSynth.triggerAttackRelease(notas, '2n', time);
+const organHi = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsine', count: 2, spread: 10 },
+  envelope: { attack: 0.07, decay: 0.3, sustain: 0.5, release: 1.0 },
+  volume: -22,
+});
+const organFilter = new Tone.Filter({ type: 'lowpass', frequency: 2800 });
+organSynth.connect(organFilter);
+organHi.connect(organFilter);
+organFilter.connect(fxDelay); // delay + reverb grande del bus = "del espacio"
+
+// Toca la nota en el órgano + su octava suave (brillo). nota = ej. 'C3'
+function _organNota(nota, time) {
+  const now = time ?? Tone.now();
+  organSynth.triggerAttackRelease(nota, '4n', now);
+  organHi.triggerAttackRelease(Tone.Frequency(nota).transpose(12).toNote(), '4n', now);
 }
 
-// gDark — Órgano grave: voz cálida fatsine en registro bajo (la nota base de Mate)
-const gDarkSynth = new Tone.Synth({
-  oscillator: { type: 'fatsine', count: 3, spread: 10 },
-  envelope: { attack: 0.03, decay: 0.12, sustain: 0.7, release: 0.45 },
-  volume: -7,
-});
-const gDarkFilter = new Tone.Filter({ type: 'lowpass', frequency: 1500 });
-gDarkSynth.connect(gDarkFilter);
-gDarkFilter.connect(sfxDry);
-export function gDark(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gDark');
-  gDarkSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
-}
-
-// gLow — Órgano cálido: voz triangle un poco más brillante que gDark (otro color
-// en el mismo registro grave)
-const gLowSynth = new Tone.Synth({
-  oscillator: { type: 'triangle' },
-  envelope: { attack: 0.025, decay: 0.1, sustain: 0.65, release: 0.4 },
-  volume: -8,
-});
-const gLowFilter = new Tone.Filter({ type: 'lowpass', frequency: 2200 });
-gLowSynth.connect(gLowFilter);
-gLowFilter.connect(sfxDry);
-export function gLow(time) {
-  if (!state.audioIniciado) return;
-  if (time === undefined) _registrarFx('gLow');
-  gLowSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(-12).toNote(), '4n', time);
-}
+export function gDo(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gDo');  _organNota('C3', time); }
+export function gRe(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gRe');  _organNota('D3', time); }
+export function gMi(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gMi');  _organNota('E3', time); }
+export function gFa(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gFa');  _organNota('F3', time); }
+export function gSol(time) { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gSol'); _organNota('G3', time); }
+export function gLa(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gLa');  _organNota('A3', time); }
+export function gSi(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gSi');  _organNota('B3', time); }
+export function gDo2(time) { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gDo2'); _organNota('C4', time); }
 
 // ═══ Familia AGUDA — timbres brillantes, cristalinos, altos ══════════════════
 const aBellSynth = new Tone.FMSynth({
@@ -827,8 +724,7 @@ const FX_FUNCS = {
   kick: sfxKick, clap: sfxClap, hat: sfxHat, snare: sfxSnare,
   cowbell: sfxCowbell, tom: sfxTom, rim: sfxRim, sub: sfxSub,
   bell: sfxBell, zap: sfxZap, chord: sfxChord,
-  gKick: gKick, gSub: gSub, gReese: gReese, gTom: gTom,
-  gThud: gThud, gGrowl: gGrowl, gDrone: gDrone, gDark: gDark, gLow: gLow,
+  gDo: gDo, gRe: gRe, gMi: gMi, gFa: gFa, gSol: gSol, gLa: gLa, gSi: gSi, gDo2: gDo2,
   aBell: aBell, aGlass: aGlass, aChime: aChime, aSpark: aSpark,
   aBlip: aBlip, aCrystal: aCrystal, aZapHi: aZapHi,
 };
@@ -944,14 +840,14 @@ export const BIBLIOTECAS = {
     { id: 'chord',        nombre: 'Pad acorde',  emoji: '🌈' },
   ],
   grave: [
-    { id: 'gDark',  nombre: 'Órgano grave',  emoji: '🎹' },
-    { id: 'gLow',   nombre: 'Órgano cálido', emoji: '🟠' },
-    { id: 'gSub',   nombre: 'Pedal',         emoji: '🦶' },
-    { id: 'gReese', nombre: 'Acorde órgano', emoji: '🎶' },
-    { id: 'gTom',   nombre: 'Órgano medio',  emoji: '🎵' },
-    { id: 'gThud',  nombre: 'Octava',        emoji: '🎼' },
-    { id: 'gGrowl', nombre: 'Órgano reed',   emoji: '🪈' },
-    { id: 'gDrone', nombre: 'Pad órgano',    emoji: '🌫' },
+    { id: 'gDo',  nombre: 'Do',  emoji: '🎹' },
+    { id: 'gRe',  nombre: 'Re',  emoji: '🎹' },
+    { id: 'gMi',  nombre: 'Mi',  emoji: '🎹' },
+    { id: 'gFa',  nombre: 'Fa',  emoji: '🎹' },
+    { id: 'gSol', nombre: 'Sol', emoji: '🎹' },
+    { id: 'gLa',  nombre: 'La',  emoji: '🎹' },
+    { id: 'gSi',  nombre: 'Si',  emoji: '🎹' },
+    { id: 'gDo2', nombre: 'Do↑', emoji: '🎹' },
   ],
   aguda: [
     { id: 'aBell',    nombre: 'Campana',    emoji: '🛎' },
@@ -988,10 +884,10 @@ const _defaults = {
     ambasSuben: 'escaleraSube', ambasBajan: 'escaleraBaja',
   },
   grave: {
-    izqCae: 'gDark', derSube: 'gReese', izqSube: 'gSub', derCae: 'gLow',
-    separar: 'gThud', juntar: 'gGrowl', cielo: 'gDrone',
-    swipeDer: 'gTom', swipeIzq: 'gLow',
-    ambasSuben: 'gSub', ambasBajan: 'gDark',
+    izqCae: 'gDo', derSube: 'gLa', izqSube: 'gSol', derCae: 'gMi',
+    separar: 'gFa', juntar: 'gRe', cielo: 'gDo2',
+    swipeDer: 'gSi', swipeIzq: 'gMi',
+    ambasSuben: 'gSol', ambasBajan: 'gDo',
   },
   aguda: {
     izqCae: 'aBlip', derSube: 'aSpark', izqSube: 'aChime', derCae: 'aZapHi',

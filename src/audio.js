@@ -577,18 +577,20 @@ export function sfxChord(time) {
 // grande del bus = sensación espacial.
 const organSynth = new Tone.PolySynth(Tone.Synth, {
   oscillator: { type: 'fatsine', count: 3, spread: 14 },
-  envelope: { attack: 0.04, decay: 0.2, sustain: 0.7, release: 0.9 },
-  volume: -10,
+  envelope: { attack: 0.03, decay: 0.2, sustain: 0.78, release: 0.9 },
+  volume: 2,
 });
 const organHi = new Tone.PolySynth(Tone.Synth, {
   oscillator: { type: 'fatsine', count: 2, spread: 10 },
-  envelope: { attack: 0.07, decay: 0.3, sustain: 0.5, release: 1.0 },
-  volume: -22,
+  envelope: { attack: 0.05, decay: 0.3, sustain: 0.55, release: 1.0 },
+  volume: -10,
 });
-const organFilter = new Tone.Filter({ type: 'lowpass', frequency: 2800 });
+const organFilter = new Tone.Filter({ type: 'lowpass', frequency: 3600 });
 organSynth.connect(organFilter);
 organHi.connect(organFilter);
-organFilter.connect(fxDelay); // delay + reverb grande del bus = "del espacio"
+// Va por DOS vías: seca (presencia, suena fuerte y claro) + reverb (cola espacial)
+organFilter.connect(sfxDry);
+organFilter.connect(fxDelay);
 
 // Toca la nota en el órgano + su octava suave (brillo). nota = ej. 'C3'
 function _organNota(nota, time) {
@@ -640,10 +642,10 @@ export function gOrganoBaja(time) { // corrida descendente
   if (time === undefined) _registrarFx('gOrganoBaja');
   _organRun(false, time);
 }
-export function gOrganoHit(time) { // acento brillante (aplauso de órgano)
+export function gOrganoHit(time) { // ARMONÍA: acorde de Do mayor amplio y sostenido
   if (!state.audioIniciado) return;
   if (time === undefined) _registrarFx('gOrganoHit');
-  _organAcorde(['C4', 'E4', 'G4'], '8n', time);
+  _organAcorde(['C3', 'E3', 'G3', 'C4', 'E4'], '2n', time);
 }
 
 // ═══ Familia AGUDA — timbres brillantes, cristalinos, altos ══════════════════
@@ -893,7 +895,7 @@ export const BIBLIOTECAS = {
     { id: 'gAcordeDo',  nombre: 'Do mayor',  emoji: '🎶' },
     { id: 'gOrganoSube', nombre: 'Órgano ↑', emoji: '⬆️' },
     { id: 'gOrganoBaja', nombre: 'Órgano ↓', emoji: '⬇️' },
-    { id: 'gOrganoHit',  nombre: 'Acento',   emoji: '👏' },
+    { id: 'gOrganoHit',  nombre: 'Armonía',  emoji: '👏' },
     { id: 'gPadOrgano',  nombre: 'Pad',      emoji: '🌫' },
   ],
   aguda: [

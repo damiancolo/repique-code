@@ -1068,7 +1068,7 @@ const _defaults = {
 const _asign = { crazy: {}, grave: {}, aguda: {}, vinculos: {} };
 FAMILIAS.forEach(f => Object.assign(_asign[f.id], _defaults[f.id]));
 
-let _familia = 'grave'; // arranca en "Mate" (familia grave) por pedido del owner
+let _familia = 'vinculos'; // arranca en "Vínculos" (las voces de sinte de la obra) por pedido del owner
 export function setFamilia(fam) { if (_asign[fam]) _familia = fam; }
 export function getFamilia()    { return _familia; }
 export function getBiblioteca() { return BIBLIOTECAS[_familia]; }

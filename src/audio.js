@@ -577,20 +577,23 @@ export function sfxChord(time) {
 // grande del bus = sensación espacial.
 const organSynth = new Tone.PolySynth(Tone.Synth, {
   oscillator: { type: 'fatsine', count: 2, spread: 9 }, // menos batido = timbre más limpio
-  envelope: { attack: 0.03, decay: 0.2, sustain: 0.78, release: 0.9 },
-  volume: -3, // sin boost: el limiter del master mantiene la presencia sin clippear
+  envelope: { attack: 0.03, decay: 0.22, sustain: 0.55, release: 0.7 }, // menos sustain = los acordes no se apilan
+  volume: -7, // nivel sano: la dinámica del master da presencia sin saturar
 });
 const organHi = new Tone.PolySynth(Tone.Synth, {
   oscillator: { type: 'fatsine', count: 1, spread: 0 }, // octava de brillo, sine puro y limpio
-  envelope: { attack: 0.05, decay: 0.3, sustain: 0.55, release: 1.0 },
-  volume: -13,
+  envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.8 },
+  volume: -16,
 });
-const organFilter = new Tone.Filter({ type: 'lowpass', frequency: 3200 });
+const organFilter = new Tone.Filter({ type: 'lowpass', frequency: 3000 });
 organSynth.connect(organFilter);
 organHi.connect(organFilter);
-// Va por DOS vías: seca (presencia, suena fuerte y claro) + reverb (cola espacial)
-organFilter.connect(sfxDry);
-organFilter.connect(fxDelay);
+// Va por DOS vías con niveles controlados: seca (presencia) + un send BAJO de reverb
+// para el aire espacial sin que la cola se acumule en un "wash" saturado.
+const organDry  = new Tone.Gain(0.7);
+const organVerb = new Tone.Gain(0.22);
+organFilter.connect(organDry);  organDry.connect(sfxDry);
+organFilter.connect(organVerb); organVerb.connect(fxDelay);
 
 // Toca la nota en el órgano + su octava suave (brillo). nota = ej. 'C3'
 function _organNota(nota, time) {
@@ -1099,7 +1102,8 @@ export function importarConfig(cfg) {
       }
     }
   }
-  if (cfg.familia && _asign[cfg.familia]) _familia = cfg.familia;
+  // NO restauramos cfg.familia a propósito: el baile SIEMPRE arranca en la familia
+  // por defecto (Vínculos), no en la última usada. Los mapeos por gesto sí se recuerdan.
 }
 
 // ─── Bombo sub-grave (bypasea filtro, siempre profundo) ────────────────────
@@ -1136,10 +1140,12 @@ const distorsion = new Tone.Distortion({ distortion: 0.5, wet: 0 });
 // Chebyshev: distorsión armónica cálida — modo split (pedalera)
 const chebyshev  = new Tone.Chebyshev({ order: 50, wet: 0 });
 
-// Limiter de salida: techo de seguridad antes del DAC. Las sumas (acordes de
-// varias notas, capas de osciladores, dry+reverb a la vez) ya no clippean con
-// distorsión digital fea → se puede tener volumen alto MANTENIENDO la calidad.
-const masterLimiter = new Tone.Limiter(-1);
+// Dinámica de salida en DOS etapas para sonar fuerte SIN saturar ni distorsionar:
+//  1) Compresor de bus suave (release lento) = "pega" las sumas sin distorsionar
+//     los graves (un limiter rápido solo sí distorsiona notas bajas como el órgano).
+//  2) Limiter como techo final de seguridad, casi no actúa gracias al headroom.
+const masterComp = new Tone.Compressor({ threshold: -16, ratio: 3, attack: 0.012, release: 0.22, knee: 8 });
+const masterLimiter = new Tone.Limiter(-1.5);
 
 // ─── Estado interno ───────────────────────────────────────────────────────────
 let masterGain       = null;
@@ -1352,16 +1358,17 @@ export async function startAudio() {
     filtro.connect(distorsion);
     distorsion.connect(chebyshev);
     chebyshev.connect(masterGain);
-    masterGain.connect(masterLimiter);
+    masterGain.connect(masterComp);
+    masterComp.connect(masterLimiter);
     masterLimiter.toDestination();
     synthBombo.connect(masterGain); // bypass filtro — siempre profundo
     synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
     fxVerb.connect(masterGain);     // bus de efectos de gestos (delay → reverb)
     impactSub.connect(masterGain);  // el sub del impacto va limpio, sin reverb
     sfxDry.connect(masterGain);     // bus seco de la biblioteca (percusión, sub)
-    // Drone → droneGain → salida (bypasea el filtro de percusión, pero pasa por el limiter)
+    // Drone → droneGain → salida (bypasea el filtro de percusión, pero pasa por la dinámica)
     drone.connect(droneGain);
-    droneGain.connect(masterLimiter);
+    droneGain.connect(masterComp);
   }
 
   // En móvil se saltea la carga de samples — síntesis directa, sin riesgo de cuelgue

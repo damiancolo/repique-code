@@ -740,6 +740,102 @@ export function aZapHi(time) {
   aZapHiSynth.frequency.exponentialRampToValueAtTime(root * 3, now + 0.1);
 }
 
+// ═══ Familia VÍNCULOS — las voces de sinte de la obra Vínculos ═══════════════
+// Seis timbres etéreos/espaciales (igual idea que estudioprompt.com/vinculos):
+// cristal, gota, hálito, pulso, sónar, vidrio. Tonales al acorde del groove y con
+// mucha reverb (fxDelay → fxVerb) para el aire cósmico.
+
+// Cristal — campana FM cristalina, larga y luminosa
+const vCristalSynth = new Tone.FMSynth({
+  harmonicity: 2, modulationIndex: 14,
+  oscillator: { type: 'sine' }, modulation: { type: 'sine' },
+  envelope: { attack: 0.002, decay: 1.4, sustain: 0, release: 1.4 },
+  modulationEnvelope: { attack: 0.002, decay: 0.6, sustain: 0, release: 0.4 }, volume: -8,
+});
+vCristalSynth.connect(fxDelay);
+export function vCristal(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('vCristal');
+  vCristalSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(24).toNote(), '2n', time);
+}
+
+// Gota — pulsación de triángulo que cae de tono, tipo kalimba
+const vGotaSynth = new Tone.Synth({
+  oscillator: { type: 'triangle' },
+  envelope: { attack: 0.002, decay: 0.5, sustain: 0, release: 0.3 }, volume: -7,
+});
+vGotaSynth.connect(fxDelay);
+export function vGota(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('vGota');
+  const now = time ?? Tone.now();
+  const f = Tone.Frequency(_acordeNotas()[1]).transpose(12).toFrequency();
+  vGotaSynth.triggerAttackRelease(f * 1.5, '8n', now);
+  vGotaSynth.frequency.exponentialRampToValueAtTime(f, now + 0.08);
+}
+
+// Hálito — pad aireado de sierras filtradas que crece y se disuelve
+const vHalitoSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsawtooth', count: 2, spread: 14 },
+  envelope: { attack: 0.6, decay: 0.3, sustain: 0.5, release: 1.8 }, volume: -18,
+});
+const vHalitoLP = new Tone.Filter({ type: 'lowpass', frequency: 1400, Q: 2 });
+vHalitoSynth.connect(vHalitoLP);
+vHalitoLP.connect(fxDelay);
+export function vHalito(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('vHalito');
+  const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(12).toNote());
+  vHalitoSynth.triggerAttackRelease(notas, '1n', time);
+}
+
+// Pulso — blip cuadrado retro con eco de octava
+const vPulsoSynth = new Tone.Synth({
+  oscillator: { type: 'square' },
+  envelope: { attack: 0.002, decay: 0.18, sustain: 0, release: 0.1 }, volume: -14,
+});
+const vPulsoLP = new Tone.Filter({ type: 'lowpass', frequency: 2400 });
+vPulsoSynth.connect(vPulsoLP);
+vPulsoLP.connect(fxDelay);
+export function vPulso(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('vPulso');
+  const now = time ?? Tone.now();
+  const f = Tone.Frequency(_acordeRoot()).transpose(24).toFrequency();
+  vPulsoSynth.triggerAttackRelease(f, '16n', now);
+  vPulsoSynth.triggerAttackRelease(f * 2, '32n', now + 0.11);
+}
+
+// Sónar — sine que cae de tono con cola larga, profundidad de sonda
+const vSonarSynth = new Tone.Synth({
+  oscillator: { type: 'sine' },
+  envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 2.4 }, volume: -7,
+});
+vSonarSynth.connect(fxDelay);
+export function vSonar(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('vSonar');
+  const now = time ?? Tone.now();
+  const f = Tone.Frequency(_acordeRoot()).transpose(12).toFrequency();
+  vSonarSynth.triggerAttackRelease(f, '2n', now);
+  vSonarSynth.frequency.exponentialRampToValueAtTime(f * 0.5, now + 1.6);
+}
+
+// Vidrio — dos sines con leve vibrato, sostenido y vítreo
+const vVidrioSynth = new Tone.PolySynth(Tone.Synth, {
+  oscillator: { type: 'fatsine', count: 2, spread: 8 },
+  envelope: { attack: 0.04, decay: 0.4, sustain: 0.3, release: 1.6 }, volume: -12,
+});
+const vVidrioVib = new Tone.Vibrato({ frequency: 5.5, depth: 0.12 });
+vVidrioSynth.connect(vVidrioVib);
+vVidrioVib.connect(fxDelay);
+export function vVidrio(time) {
+  if (!state.audioIniciado) return;
+  if (time === undefined) _registrarFx('vVidrio');
+  const notas = [_acordeNotas()[0], _acordeNotas()[2]].map(n => Tone.Frequency(n).transpose(24).toNote());
+  vVidrioSynth.triggerAttackRelease(notas, '2n', time);
+}
+
 // ─── Looper de efectos de baile ──────────────────────────────────────────────
 // Graba CUÁNDO se disparó cada efecto durante un compás (no el audio) y lo
 // reprograma en un Tone.Part que loopea cada compás, cuantizado a la grilla de
@@ -771,6 +867,8 @@ const FX_FUNCS = {
   gOrganoBaja: gOrganoBaja, gOrganoHit: gOrganoHit,
   aBell: aBell, aGlass: aGlass, aChime: aChime, aSpark: aSpark,
   aBlip: aBlip, aCrystal: aCrystal, aZapHi: aZapHi,
+  vCristal: vCristal, vGota: vGota, vHalito: vHalito,
+  vPulso: vPulso, vSonar: vSonar, vVidrio: vVidrio,
 };
 
 const COMPASES_LOOP = 2;        // graba 2 compases enteros
@@ -856,6 +954,7 @@ export const FAMILIAS = [
   { id: 'crazy', nombre: 'Crazy' },
   { id: 'grave', nombre: 'Mate' },
   { id: 'aguda', nombre: 'Butiá' },
+  { id: 'vinculos', nombre: 'Vínculos' },
 ];
 
 export const BIBLIOTECAS = {
@@ -907,6 +1006,14 @@ export const BIBLIOTECAS = {
     { id: 'aCrystal', nombre: 'Cristal',    emoji: '❄️' },
     { id: 'aZapHi',   nombre: 'Zap agudo',  emoji: '⚡' },
   ],
+  vinculos: [
+    { id: 'vCristal', nombre: 'Cristal', emoji: '🔆' },
+    { id: 'vGota',    nombre: 'Gota',    emoji: '💧' },
+    { id: 'vHalito',  nombre: 'Hálito',  emoji: '🌌' },
+    { id: 'vPulso',   nombre: 'Pulso',   emoji: '🛰' },
+    { id: 'vSonar',   nombre: 'Sónar',   emoji: '🔊' },
+    { id: 'vVidrio',  nombre: 'Vidrio',  emoji: '🪟' },
+  ],
 };
 
 // Las "ranuras": cada gesto del baile
@@ -948,10 +1055,17 @@ const _defaults = {
     separar: 'aCrystal', juntar: 'aGlass', cielo: 'aBell',
     ambasSuben: 'aChime', ambasBajan: 'aBell',
   },
+  // Vínculos: las 6 voces de sinte de la obra repartidas en los gestos
+  vinculos: {
+    derSube: 'vCristal', derCae: 'vGota', derDer: 'vVidrio', derIzq: 'vVidrio',
+    izqSube: 'vHalito', izqCae: 'vSonar', izqDer: 'vPulso', izqIzq: 'vPulso',
+    separar: 'vHalito', juntar: 'vCristal', cielo: 'vHalito',
+    ambasSuben: 'vCristal', ambasBajan: 'vSonar',
+  },
 };
 
 // Mapa activo por familia (copia de los defaults; el usuario lo edita)
-const _asign = { crazy: {}, grave: {}, aguda: {} };
+const _asign = { crazy: {}, grave: {}, aguda: {}, vinculos: {} };
 FAMILIAS.forEach(f => Object.assign(_asign[f.id], _defaults[f.id]));
 
 let _familia = 'grave'; // arranca en "Mate" (familia grave) por pedido del owner

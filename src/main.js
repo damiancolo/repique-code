@@ -99,45 +99,8 @@ async function init() {
   let shakaCount      = 0;
   let shakaActivo     = false;
   let vinculosVisible = false;
-  let _satellites     = [];
   let _prevPointers   = []; // [{ x, y, speeds:[] }] — una entrada por mano señalando
   let _lastSatTime    = 0;
-
-  // Posiciones de las estrellas de Vínculos (normalizadas 0-1, mismas que Vinculos.jsx)
-  const VINCULOS_STARS = [
-    { x:0.18,  y:0.58,  mag:-1.46, color:[202,215,255] },
-    { x:0.1,   y:0.85,  mag:-0.74, color:[255,244,232] },
-    { x:0.74,  y:0.28,  mag:-0.05, color:[255,210,161] },
-    { x:0.6,   y:0.1,   mag: 0.03, color:[202,215,255] },
-    { x:0.33,  y:0.15,  mag: 0.08, color:[255,244,232] },
-    { x:0.24,  y:0.44,  mag: 0.13, color:[181,199,255] },
-    { x:0.3,   y:0.5,   mag: 0.34, color:[255,248,240] },
-    { x:0.22,  y:0.37,  mag: 0.42, color:[255,181,107] },
-    { x:0.29,  y:0.32,  mag: 0.86, color:[255,181,107] },
-    { x:0.83,  y:0.6,   mag: 0.96, color:[255,136,102] },
-    { x:0.67,  y:0.47,  mag: 0.97, color:[181,199,255] },
-    { x:0.9,   y:0.74,  mag: 1.16, color:[202,215,255] },
-    { x:0.54,  y:0.06,  mag: 1.25, color:[232,240,255] },
-    { x:0.5,   y:0.37,  mag: 1.4,  color:[181,199,255] },
-    { x:0.5,   y:0.03,  mag: 1.98, color:[255,248,232] },
-    { x:0.36,  y:0.2,   mag: 1.58, color:[232,240,255] },
-    { x:0.38,  y:0.24,  mag: 1.14, color:[255,210,161] },
-    { x:0.2,   y:0.4,   mag: 1.64, color:[181,199,255] },
-    { x:0.215, y:0.42,  mag: 1.69, color:[181,199,255] },
-    { x:0.21,  y:0.435, mag: 1.77, color:[202,215,255] },
-    { x:0.225, y:0.41,  mag: 2.23, color:[202,215,255] },
-    { x:0.05,  y:0.92,  mag: 0.46, color:[181,199,255] },
-    { x:0.78,  y:0.78,  mag: 0.61, color:[181,199,255] },
-    { x:0.62,  y:0.22,  mag: 0.77, color:[255,248,240] },
-    { x:0.55,  y:0.52,  mag: 1.04, color:[181,199,255] },
-    { x:0.42,  y:0.12,  mag: 1.8,  color:[255,244,232] },
-    { x:0.45,  y:0.08,  mag: 1.79, color:[255,210,161] },
-    { x:0.14,  y:0.65,  mag: 1.84, color:[255,244,232] },
-    { x:0.88,  y:0.65,  mag: 1.87, color:[255,248,240] },
-    { x:0.12,  y:0.78,  mag: 1.86, color:[255,210,161] },
-  ];
-  const CONN_RADIUS     = 0.18; // sat → estrella (igual que en Vínculos)
-  const SAT_CONN_RADIUS = 0.22; // sat → sat
 
   function setLocked(val) {
     locked = val;
@@ -306,114 +269,6 @@ async function init() {
     vinculosCtx.beginPath();
     vinculosCtx.arc(px, py, sz, 0, Math.PI * 2);
     vinculosCtx.fill();
-  }
-
-  /** Línea de conexión satélite → estrella nombrada (igual que drawConnection en Vínculos) */
-  function drawVConn(sat, star, alpha) {
-    const W  = vinculosCanvas.width;
-    const H  = vinculosCanvas.height;
-    const x1 = sat.x * W;
-    const y1 = sat.y * H;
-    const x2 = star.x * W;
-    const y2 = star.y * H;
-    const c  = star.color;
-    const a  = alpha.toFixed(3);
-    const grad = vinculosCtx.createLinearGradient(x1, y1, x2, y2);
-    grad.addColorStop(0,   `rgba(150,210,255,${(alpha * 0.85).toFixed(3)})`);
-    grad.addColorStop(0.6, `rgba(120,185,235,${(alpha * 0.45).toFixed(3)})`);
-    grad.addColorStop(1,   `rgba(${c[0]},${c[1]},${c[2]},${(alpha * 0.25).toFixed(3)})`);
-    vinculosCtx.strokeStyle = grad;
-    vinculosCtx.lineWidth   = 1.2;
-    vinculosCtx.beginPath();
-    vinculosCtx.moveTo(x1, y1);
-    vinculosCtx.lineTo(x2, y2);
-    vinculosCtx.stroke();
-    // Halo en el extremo de la estrella
-    const pg = vinculosCtx.createRadialGradient(x2, y2, 0, x2, y2, 7);
-    pg.addColorStop(0, `rgba(150,210,255,${(alpha * 0.3).toFixed(3)})`);
-    pg.addColorStop(1, 'rgba(0,0,0,0)');
-    vinculosCtx.fillStyle = pg;
-    vinculosCtx.beginPath();
-    vinculosCtx.arc(x2, y2, 7, 0, Math.PI * 2);
-    vinculosCtx.fill();
-  }
-
-  /** Línea de conexión satélite → satélite */
-  function drawSatConn(s1, s2, alpha) {
-    const W  = vinculosCanvas.width;
-    const H  = vinculosCanvas.height;
-    const x1 = s1.x * W;
-    const y1 = s1.y * H;
-    const x2 = s2.x * W;
-    const y2 = s2.y * H;
-    const grad = vinculosCtx.createLinearGradient(x1, y1, x2, y2);
-    const a = (alpha * 0.65).toFixed(3);
-    grad.addColorStop(0, `rgba(150,210,255,${a})`);
-    grad.addColorStop(1, `rgba(150,210,255,${a})`);
-    vinculosCtx.strokeStyle = grad;
-    vinculosCtx.lineWidth   = 0.9;
-    vinculosCtx.beginPath();
-    vinculosCtx.moveTo(x1, y1);
-    vinculosCtx.lineTo(x2, y2);
-    vinculosCtx.stroke();
-  }
-
-  /** Lanza un satélite. nx, ny normalizados (0-1); vxPx, vyPx en px/s */
-  function launchSatellite(nx, ny, vxPx, vyPx) {
-    const W   = vinculosCanvas.width  || window.innerWidth;
-    const H   = vinculosCanvas.height || window.innerHeight;
-    // Velocidad normalizada: escalar para que cruce la pantalla en ~18-35 s
-    const vxN = (vxPx / W) * 0.14;
-    const vyN = (vyPx / H) * 0.14;
-    _satellites.push({ x: nx, y: ny, vx: vxN, vy: vyN, age: 0, maxLife: 14 });
-  }
-
-  /** Actualiza física y dibuja todos los satélites + conexiones estilo Vínculos */
-  function updateSatellites(dt) {
-    vinculosCtx.clearRect(0, 0, vinculosCanvas.width, vinculosCanvas.height);
-    _satellites = _satellites.filter(s => s.age < s.maxLife);
-    const now = performance.now() / 1000;
-
-    // ─ 1. Conexiones sat→sat (debajo de todo) ────────────────────────────────
-    for (let i = 0; i < _satellites.length; i++) {
-      for (let j = i + 1; j < _satellites.length; j++) {
-        const s1   = _satellites[i];
-        const s2   = _satellites[j];
-        const dist = Math.hypot(s1.x - s2.x, s1.y - s2.y);
-        if (dist < SAT_CONN_RADIUS) {
-          const lifeFade = Math.min((s1.maxLife - s1.age) / 3, (s2.maxLife - s2.age) / 3, 1);
-          const alpha    = (1 - dist / SAT_CONN_RADIUS) * lifeFade;
-          drawSatConn(s1, s2, alpha);
-        }
-      }
-    }
-
-    // ─ 2. Conexiones sat→estrella + cuerpo del satélite ─────────────────────
-    for (const s of _satellites) {
-      s.x  += s.vx * dt;
-      s.y  += s.vy * dt;
-      s.age += dt;
-
-      const fadeIn   = Math.min(s.age / 0.8, 1);
-      const lifeFade = Math.min((s.maxLife - s.age) / 3, 1);
-      const presence = fadeIn * lifeFade;
-
-      // Conexiones a las estrellas cercanas (máx 6, igual que Vínculos)
-      const nearby = VINCULOS_STARS
-        .map(star => ({ star, dist: Math.hypot(s.x - star.x, s.y - star.y) }))
-        .filter(d => d.dist < CONN_RADIUS)
-        .sort((a, b) => a.dist - b.dist)
-        .slice(0, 6);
-
-      for (const { star, dist } of nearby) {
-        const alpha = (1 - dist / CONN_RADIUS) * presence * 0.9;
-        drawVConn(s, star, alpha);
-      }
-
-      // Dibujar el satélite como estrella brillante (mag=-1 → máximo brillo)
-      const tw = 0.78 + 0.22 * Math.sin(now * 0.5 + s.x * 11 + s.y * 7);
-      drawVStar(s.x, s.y, -1, [195, 220, 255], tw * presence);
-    }
   }
 
   /**
@@ -1471,8 +1326,22 @@ async function init() {
           if (prevSpeeds.length >= 3) {
             const avg = prevSpeeds.reduce((a, b) => a + b) / prevSpeeds.length;
             if (speed > avg * SAT_JERK_RATIO && speed > SAT_MIN_SPEED && nowMs - _lastSatTime > SAT_COOLDOWN) {
-              // Lanzar en la dirección exacta del movimiento del dedo en este frame
-              launchSatellite(p.nx, p.ny, vxPx, vyPx);
+              // Lanzar en la dirección exacta del movimiento del dedo en este frame.
+              // El satélite lo crea la página /vinculos/ (iframe): misma obra real,
+              // con su voz de sinte, nombre efímero, estela y órbita.
+              // Dirección y velocidad en unidades normalizadas (fracción de pantalla/s).
+              const vnx = vxPx / W;
+              const vny = vyPx / H;
+              if (vinculosIframe.contentWindow) {
+                vinculosIframe.contentWindow.postMessage({
+                  type: 'vinculos-launch',
+                  x: p.nx,
+                  y: p.ny,
+                  dirX: vnx,
+                  dirY: vny,
+                  rawSpeed: Math.hypot(vnx, vny),
+                }, location.origin);
+              }
               _lastSatTime = nowMs;
               speeds = []; // reset — requiere acumular estado de nuevo antes del próximo tiro
             }
@@ -1482,8 +1351,9 @@ async function init() {
       }
       _prevPointers = newPointers;
 
-      // updateSatellites limpia el canvas primero → las estrellas del dedo van DESPUÉS
-      updateSatellites(dt);
+      // Los satélites viven adentro del iframe (/vinculos/) — acá solo se dibujan
+      // las estrellas que siguen a los índices, sobre un canvas transparente.
+      vinculosCtx.clearRect(0, 0, vinculosCanvas.width, vinculosCanvas.height);
 
       // Dibujar estrellas siguiendo cada índice (encima de todo lo demás)
       const tw = 0.80 + 0.20 * Math.sin(nowMs / 180);
@@ -2099,7 +1969,6 @@ async function init() {
     vinculosOverlay.classList.remove('visible');
     vinculosVisible    = false;
     vinculosIframe.src = '';
-    _satellites   = [];
     _prevPointers = [];
     vinculosCtx.clearRect(0, 0, vinculosCanvas.width, vinculosCanvas.height);
   });

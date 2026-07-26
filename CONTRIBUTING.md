@@ -120,6 +120,41 @@ vez. Y usá un cooldown (`_coolGesto`), o el gesto se dispara 60 veces por segun
 significa movimiento **hacia la derecha en pantalla**, que es la izquierda real de
 quien se está filmando. Cuesta acostumbrarse.
 
+### Agregar un pincel a la pintura
+
+El modo pintura ✏️ vive entero en `src/main.js`. Un estilo de pincel es una rama
+de `_segmentoBase(a, b, gesture)`: recibe dos puntos y dibuja el tramo entre
+ellos sobre `bufCtx`.
+
+**1. Agregá la rama** en `_segmentoBase`:
+
+```js
+} else if (estiloActual === 'miPincel') {
+  bufCtx.strokeStyle = COLORES_PINCEL[colorIdx];   // color elegido en la paleta
+  bufCtx.lineWidth   = TAM_LINEA[tamIdx];          // tamaño s/m/l
+  _linea(a, b);   // o dibujá lo que quieras entre a y b
+}
+```
+
+Mirá los cuatro estilos existentes como referencia: `linea` (sólido), `neon`
+(glow + núcleo blanco), `spray` (puntos aleatorios en disco) y `arcoiris`
+(el hue rota con la distancia).
+
+**2. Agregá el botón** en `index.html`, junto a los otros:
+
+```html
+<button class="tool-btn estilo-btn" data-estilo="miPincel" title="Qué hace">mi pincel</button>
+```
+
+Nada más: el handler de `.estilo-btn` es genérico (lee `data-estilo`), y tu
+pincel hereda **gratis** el espejo ×2, el mandala ×6 (`trazarSegmento` replica
+cualquier estilo) y el latido con el beat (el pulso opera sobre el canvas
+completo, no sobre el trazo).
+
+**Colores**: la paleta son 12 swatches en `#fila-colores` (index.html) + el
+array `COLORES_PINCEL` — **el orden HTML tiene que coincidir con el array**.
+`DEDO_A_COLOR` mapea el gesto de puño + un dedo a índices de esa paleta.
+
 ### Cambiar los samples
 
 Los samples viven en `public/samples/`, organizados por categoría

@@ -194,8 +194,9 @@ archivo va con vos. El detalle formal está en [NOTICE](NOTICE).
 **Repique Code** is a gesture-controlled Uruguayan candombe percussion instrument
 that runs entirely in the browser. A webcam tracks your hands with MediaPipe;
 Tone.js turns your movements into rhythm, drone, synth voices and reactive
-visuals. No backend, no framework, two dependencies — your camera feed never
-leaves your device.
+visuals — plus an air-painting mode where your index finger draws strokes that
+pulse with the beat. No backend, no framework, two dependencies — your camera
+feed never leaves your device.
 
 It is an **open, unfinished work**: it has grown in layers over months in
 collaboration with AI models, and it is meant to keep growing. Fork it, break it,

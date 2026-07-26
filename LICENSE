@@ -1,0 +1,36 @@
+MIT License
+
+Copyright (c) 2026 Damián Lafferranderie — Estudioprompt
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+NOTA SOBRE LOS SAMPLES DE AUDIO
+
+La licencia MIT de arriba cubre el CÓDIGO de Repique Code.
+
+Los archivos de audio en `public/samples/` NO son obra de este proyecto: son
+samples de terceros bajo licencias Creative Commons (CC0 y CC-BY). Se
+redistribuyen aquí legalmente, pero conservan su licencia original y varios
+EXIGEN atribución.
+
+Si redistribuís este proyecto o los samples, mantené el archivo CREDITS.md.
+El detalle completo (autor, licencia y enlace de cada sample) está en
+CREDITS.md y en public/samples/credits.json.

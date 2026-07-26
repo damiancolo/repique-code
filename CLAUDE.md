@@ -1,5 +1,17 @@
 # Repique Code — Guía para Claude
 
+> **Qué es este archivo.** El contexto que se le pasa a un asistente de IA para que
+> entienda el proyecto antes de tocarlo: arquitectura, convenciones y dónde vive
+> cada cosa. Buena parte de Repique Code se escribió en conversación con modelos de
+> lenguaje, y este archivo es lo que hace que cada sesión no arranque de cero.
+>
+> Está publicado a propósito. Si vas a seguir haciendo crecer esto con ayuda de IA,
+> empezá por acá. Si lo modificás a mano, actualizalo cuando cambies algo
+> estructural.
+>
+> Para humanos: [ARQUITECTURA.md](ARQUITECTURA.md) explica lo mismo pero en prosa,
+> y [CONTRIBUTING.md](CONTRIBUTING.md) tiene recetas concretas.
+
 ## Qué es
 
 Instrumento musical controlado por gestos de manos. Usa MediaPipe para detectar manos por cámara y Tone.js para síntesis de audio. Publicado en `estudioprompt.com/lab/repique-code` como iframe embebido.
@@ -120,38 +132,31 @@ API audio.js: `getFamilia()`/`setFamilia(id)`, `getBiblioteca()` (paleta de la f
 
 ## Cómo hacer deploy
 
-Hay DOS repos: el del instrumento (este) y el Astro del sitio. El webhook GitHub→Vercel del Astro **funciona** (push a `principal` deploya producción; push a `prueba` deploya preview). Flujo:
+El build es estático y no depende de ningún hosting en particular:
 
 ```bash
-# 1. Build del instrumento
-cd /Users/damianlafferranderie/Desktop/programeitor/recursos/repique-code
-npm run build --cache /tmp/npm-cache
-
-# 2. Copiar al Astro (borrar el JS viejo con hash antes de copiar el nuevo)
-ASTRO=/Users/damianlafferranderie/Desktop/programeitor/estudioprompt.com/estudioprompt
-cp dist/index.html $ASTRO/public/repique-code/
-rm -f $ASTRO/public/repique-code/assets/index-*.js
-cp -r dist/assets/. $ASTRO/public/repique-code/assets/
-
-# 3. Build + commit + push del Astro
-cd $ASTRO && npm run build
-git add public/repique-code/
-git commit -m "Repique Code — descripción"
-git push origin principal     # producción · (push a 'prueba' = preview)
+npm run build     # queda todo en dist/
 ```
 
-La rama `prueba` del Astro es el **preview de Repique Code** (no es trabajo ajeno). Sus commits históricos (desarrollo del looper/baile) ya llegaron a producción por la vía looper-fx→main, así que hoy `prueba` y `principal` sólo difieren en un archivo generado (`.astro/content.d.ts`). Flujo: copiar el `dist` en ambas ramas por separado (no hace falta merge).
+`dist/` se puede servir desde cualquier hosting de archivos. `vite.config.js` usa
+`base: './'` (rutas relativas), así que funciona también desde un subdirectorio o
+embebido en un iframe.
 
-El alias estable del preview `estudioprompt-prueba.vercel.app` es manual: repuntar tras cada deploy de `prueba` (`POST /v2/deployments/<DPL>/aliases`). Token Vercel en `~/Library/Application Support/com.vercel.cli/auth.json`. Project `prj_JgzHVi1v7h2eTU9yfWt9RjxGXp7T`, team `team_ABSUeFTZC1zeHHswIAVbNDJ0`.
+Los forks tienen un workflow de GitHub Pages listo en `.github/workflows/pages.yml`
+(activarlo en Settings → Pages → Source: GitHub Actions).
 
-El repo del instrumento NO tiene remote; las ramas (baile-fx, beta-rara, candombe-1-6, looper-fx, pintura-viva) se mantienen sincronizadas a `main`.
+⚠️ Los assets del build llevan hash en el nombre (ej. `index-C6z8meJ1.js`). Si
+copiás `dist/` sobre un deploy anterior, borrá el JS viejo primero o vas a servir
+dos bundles.
+
+> El despliegue de la instancia oficial en `estudioprompt.com/lab/repique-code`
+> usa un sitio Astro aparte, fuera de este repositorio.
 
 ## npm
 
 ```bash
-npm install --cache /tmp/npm-cache
+npm install
 ```
-(el cache de npm tiene archivos de root, usar siempre ese flag)
 
 ## Notas técnicas
 

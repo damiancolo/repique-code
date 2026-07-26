@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Repique Code 1.8 — Estudioprompt</title>
+  <title>Repique Code 1.9 — Estudioprompt</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -466,6 +466,16 @@
     }
     #guia-detalle-panel p { margin: 0.15rem 0; }
     #guia-detalle-panel strong { color: rgba(255,255,255,0.65); font-weight: 400; }
+    #guia-detalle-panel a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.22);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #guia-detalle-panel a:hover {
+      color: #fff;
+      border-bottom-color: rgba(255,255,255,0.6);
+    }
     #guia-detalle-panel .gd-sep {
       border-top: 1px solid rgba(255,255,255,0.05);
       margin: 0.7rem 0;
@@ -782,7 +792,7 @@
     <img id="logo-ep" src="logo-ep.png" alt="Estudioprompt">
     <div id="header-text">
       <div id="header-brand">Estudioprompt</div>
-      <div id="header-nombre">Repique Code 1.8</div>
+      <div id="header-nombre">Repique Code 1.9</div>
     </div>
   </div>
 
@@ -1020,6 +1030,14 @@
       <div class="gd-sep"></div>
       <h3>Vínculos — 🤙🤙</h3>
       <p>Shaka con las dos manos (sostener) → aparece el botón <strong>Vínculos</strong>: una obra de estrellas donde tu índice lanza satélites.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Código abierto y créditos</h3>
+      <p>Repique Code es <strong>software libre</strong> bajo licencia MIT: podés descargarlo, modificarlo y publicar tu propia versión. No es una obra terminada — la idea es que siga creciendo.</p>
+      <p>→ <a href="https://github.com/damiancolo/repique-code" target="_blank" rel="noopener">github.com/damiancolo/repique-code</a></p>
+      <p><strong>Candombe 🎧</strong> es una grabación del dataset <em>Uruguayan candombe drumming</em> de <strong>L. Jure &amp; M. Rocamora</strong> (<a href="https://zenodo.org/records/6533068" target="_blank" rel="noopener">Zenodo</a>), bajo <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</p>
+      <p>Los samples de percusión son de <strong>Freesound</strong> (CC0 y CC-BY): MrRentAPercussionist, BoilingSand, soundbytez, Uberproduktion, oceansonmars y Sajmund. El detalle completo está en <a href="https://github.com/damiancolo/repique-code/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a>.</p>
+      <p>Hecho con <a href="https://ai.google.dev/edge/mediapipe" target="_blank" rel="noopener">MediaPipe</a> y <a href="https://tonejs.github.io/" target="_blank" rel="noopener">Tone.js</a> por <a href="https://estudioprompt.com" target="_blank" rel="noopener">Estudioprompt</a>.</p>
     </div>
   </div>
 

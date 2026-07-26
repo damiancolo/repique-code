@@ -185,7 +185,7 @@ mantené el aviso de copyright.
 
 **Samples de audio: CC0 y CC-BY**, de terceros. No son obra de este proyecto y
 varios exigen atribución → **[CREDITS.md](CREDITS.md)**. Si redistribuís, ese
-archivo va con vos.
+archivo va con vos. El detalle formal está en [NOTICE](NOTICE).
 
 ---
 

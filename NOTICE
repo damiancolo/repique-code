@@ -1,0 +1,26 @@
+Repique Code
+Copyright (c) 2026 Damián Lafferranderie — Estudioprompt
+
+La licencia MIT del archivo LICENSE cubre el CÓDIGO de este proyecto.
+
+Los archivos de audio en `public/samples/` NO son obra de este proyecto: son
+samples de terceros bajo licencias Creative Commons (CC0 y CC-BY). Se
+redistribuyen aquí legalmente, pero conservan su licencia original y varios
+EXIGEN atribución.
+
+Si redistribuís este proyecto o sus samples, mantené el archivo CREDITS.md.
+El detalle completo (autor, licencia y enlace de cada sample) está en
+CREDITS.md y en public/samples/credits.json.
+
+En particular, el ritmo "Candombe" usa una grabación del dataset
+"Uruguayan candombe drumming" de L. Jure & M. Rocamora
+(https://zenodo.org/records/6533068), bajo CC BY 4.0.
+
+---
+
+The MIT license in the LICENSE file covers the CODE of this project.
+
+Audio files in `public/samples/` are third-party Creative Commons samples
+(CC0 and CC-BY), not original work of this project. They are redistributed
+legally but keep their original licenses, and several REQUIRE attribution.
+Keep CREDITS.md when redistributing.

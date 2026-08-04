@@ -13,6 +13,31 @@ El código se abre bajo licencia MIT. Se agregan `LICENSE`, `CREDITS.md`,
 `CONTRIBUTING.md`, este changelog y un workflow de GitHub Pages para que cualquier
 fork tenga su propia demo en vivo.
 
+**Los tres modos, y la pintura al frente** (4 ago)
+- La app **abre en modo pintura**. Antes había que ir a buscarlo.
+- Los tres modos quedan en una fila propia con el mismo peso: **🎵 música ·
+  ✏ pintura · 🕺 baile**. Música es el modo base — se está en él cuando no hay
+  ninguno de los otros dos encendido.
+- `Arrancar` pasa a ser interruptor: el mismo botón enciende y apaga el audio.
+  Desaparece el ■ suelto que ocupaba el lugar donde ahora está 🎵.
+- Fuera el borrador de dos puños ✊✊. Para borrar quedan *deshacer* y *limpiar*;
+  el puño sigue sirviendo para elegir color.
+- **Espejo ×2** y **mandala ×6** dejan de compartir un botón que ciclaba: son dos
+  botones independientes y excluyentes entre sí.
+- El modo baile arranca en el efecto **orbe**.
+
+**Pincel fractal** (4 ago) — reemplaza al spray. Del trazo brotan formas que se
+repiten a escalas menores, y el botón cicla entre seis geometrías: **círculos**
+(burbujas tangentes), **helecho**, **copo** (cristal de seis brazos), **rayo**,
+**coral** y **triángulo** (Sierpinski). El azar va por un LCG con semilla fija por
+estampa que cada réplica reinicia antes de dibujar: sin eso, con mandala ×6 cada
+brazo dibujaría un árbol distinto y se rompería la simetría.
+
+**Candados cerrados de entrada** (4 ago) — tempo y graves ya no se mueven con los
+gestos hasta que se abre su candado a mano, así se pueden hacer notas sin
+desafinar el fondo. El mouse los mueve siempre. El bloqueo total de gestos queda
+atado sólo al lock de dos pinzas 🤏🤏.
+
 **Vínculos como familia y como obra** (17 jul)
 - El modo baile arranca en la familia **Vínculos**: las 6 voces de sinte espaciales
   (`vCristal`, `vGota`, `vHalito`, `vPulso`, `vSonar`, `vVidrio`) de la obra

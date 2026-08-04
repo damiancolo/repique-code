@@ -127,30 +127,13 @@
     #btn-start:disabled              { opacity: 0.25; cursor: default; }
     #btn-start.activo                { border-color: #e63946; color: #e63946; }
 
-    #fila-stop {
+    #fila-modos {
       display: flex;
       gap: 0.5rem;
       align-items: center;
     }
 
-    #btn-stop {
-      background: none;
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      color: #fff;
-      padding: 0.35rem 1.1rem;
-      font-size: 0.65rem;
-      font-family: inherit;
-      font-weight: 300;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
-    }
-
-    #btn-stop:hover:not(:disabled) { border-color: rgba(255,255,255,0.7); }
-    #btn-stop:disabled              { opacity: 0.25; cursor: default; }
-
-    #btn-paint, #btn-baile {
+    #btn-musica, #btn-paint, #btn-baile {
       background: none;
       border: 1px solid rgba(255, 255, 255, 0.35);
       color: rgba(255,255,255,0.55);
@@ -165,8 +148,8 @@
       justify-content: center;
       padding: 0;
     }
-    #btn-paint:hover, #btn-baile:hover   { border-color: rgba(255,255,255,0.7); color: #fff; }
-    #btn-paint.activo, #btn-baile.activo { border-color: #fff; color: #fff; }
+    #btn-musica:hover, #btn-paint:hover, #btn-baile:hover   { border-color: rgba(255,255,255,0.7); color: #fff; }
+    #btn-musica.activo, #btn-paint.activo, #btn-baile.activo { border-color: #fff; color: #fff; }
 
     #paleta-baile {
       display: none;
@@ -202,6 +185,7 @@
       align-items: center;
       gap: 0.3rem;
       flex-wrap: wrap;
+      max-width: 240px; /* mismo ancho que la fila de colores: la paleta no se ensancha */
     }
 
     .color-btn {
@@ -232,6 +216,14 @@
     }
     #btn-limpiar:hover, #btn-guardar:hover, .tool-btn:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
     .tool-btn.activo { border-color: #e63946; color: #e63946; }
+
+    /* Marca de "este botón cicla" — a cuerpo del texto el glifo no se lee */
+    .ciclo {
+      font-size: 1.5em;
+      letter-spacing: 0;
+      vertical-align: -0.1em;
+      margin-right: 0.32em;
+    }
 
     #fila-loop { display: flex; align-items: center; gap: 0.3rem; }
     #btn-loop.armado { border-color: #f4a259; color: #f4a259; }
@@ -804,7 +796,7 @@
       <div id="tempo-slider-thumb"></div>
     </div>
     <span id="tempo-bpm-label">120</span>
-    <button class="slider-lock" id="tempo-lock" title="Bloquear el tempo a los gestos">🔓</button>
+    <button class="slider-lock locked" id="tempo-lock" title="El tempo está bloqueado a los gestos — abrí el candado para moverlo con las manos">🔒</button>
   </div>
   <div id="filtro-slider-wrap" title="Graves / agudos (arrastrar, gesto ☝🤞 o altura de las manos)">
     <div id="filtro-slider-track">
@@ -812,17 +804,17 @@
       <div id="filtro-slider-thumb"></div>
     </div>
     <span id="filtro-label">agudos</span>
-    <button class="slider-lock" id="filtro-lock" title="Bloquear graves/agudos a los gestos">🔓</button>
+    <button class="slider-lock locked" id="filtro-lock" title="Graves/agudos está bloqueado a los gestos — abrí el candado para moverlo con las manos">🔒</button>
   </div>
 
   <div id="panel">
     <button id="btn-start" disabled>Arrancar</button>
-    <div id="fila-stop">
-      <button id="btn-stop" disabled>&#9632;</button>
-      <button id="btn-paint" title="Modo pintura">✏</button>
-      <button id="btn-baile" title="Modo baile — efectos que siguen tu movimiento">🕺</button>
+    <div id="fila-modos">
+      <button id="btn-musica" title="Modo música — la forma de tus manos son las notas">🎵</button>
+      <button id="btn-paint" class="activo" title="Modo pintura — dibujás con los dedos">✏</button>
+      <button id="btn-baile" title="Modo baile — cada movimiento dispara un sonido">🕺</button>
     </div>
-    <div id="paleta">
+    <div id="paleta" class="visible">
       <!-- El orden DEBE coincidir con COLORES_PINCEL en main.js -->
       <div id="fila-colores">
         <button class="color-btn" style="background:#e63946" title="Rojo — ☝ índice"></button>
@@ -841,14 +833,17 @@
       <div id="fila-tools">
         <button class="tool-btn estilo-btn activo" data-estilo="linea" title="Trazo sólido">línea</button>
         <button class="tool-btn estilo-btn" data-estilo="neon" title="Trazo con resplandor">neón</button>
-        <button class="tool-btn estilo-btn" data-estilo="spray" title="Aerosol de puntos">spray</button>
         <button class="tool-btn estilo-btn" data-estilo="arcoiris" title="El color rota al trazar">arcoíris</button>
+        <!-- Último a propósito: su etiqueta cambia de largo al ciclar variantes, y
+             al final de la fila el reflujo no empuja a los otros estilos. -->
+        <button class="tool-btn estilo-btn" data-estilo="fractal" title="Pulsá otra vez para cambiar de fractal"><span class="ciclo">⟳</span>fractal círculos</button>
       </div>
       <div id="fila-tools-2">
         <button class="tool-btn tam-btn" data-tam="0" title="Trazo fino">s</button>
         <button class="tool-btn tam-btn activo" data-tam="1" title="Trazo medio">m</button>
         <button class="tool-btn tam-btn" data-tam="2" title="Trazo grueso">l</button>
-        <button class="tool-btn" id="btn-espejo" title="Replica el trazo en espejo o mandala">espejo: no</button>
+        <button class="tool-btn" id="btn-espejo" title="Replica el trazo reflejado en el eje vertical">espejo ×2</button>
+        <button class="tool-btn" id="btn-mandala" title="Replica el trazo rotado seis veces alrededor del centro">mandala ×6</button>
       </div>
       <div id="fila-tools-3">
         <button class="tool-btn" id="btn-deshacer" title="Deshacer el último trazo">↩ deshacer</button>
@@ -858,13 +853,13 @@
     </div>
     <div id="paleta-baile">
       <div id="fila-efectos">
-        <button class="tool-btn efecto-btn activo" data-efecto="estela" title="Cometa de colores que sigue tu mano">estela</button>
+        <button class="tool-btn efecto-btn" data-efecto="estela" title="Cometa de colores que sigue tu mano">estela</button>
         <button class="tool-btn efecto-btn" data-efecto="quetzal" title="Serpiente emplumada esmeralda y oro">quetzal</button>
         <button class="tool-btn efecto-btn" data-efecto="particulas" title="Chispas que vuelan con tu movimiento">partículas</button>
         <button class="tool-btn efecto-btn" data-efecto="fuego" title="Llamas que nacen de tus manos">fuego</button>
         <button class="tool-btn efecto-btn" data-efecto="rayo" title="Electricidad entre tus dos manos">rayo</button>
         <button class="tool-btn efecto-btn" data-efecto="ondas" title="Círculos que nacen con cada beat">ondas</button>
-        <button class="tool-btn efecto-btn" data-efecto="orbe" title="Bola de energía flotando sobre tu palma">orbe</button>
+        <button class="tool-btn efecto-btn activo" data-efecto="orbe" title="Bola de energía flotando sobre tu palma">orbe</button>
         <button class="tool-btn efecto-btn" data-efecto="galaxia" title="Estrellas en espiral desde tus manos">galaxia</button>
       </div>
       <div id="fila-loop">
@@ -923,7 +918,7 @@
       <tr><td>🤏🤏 Pinza ×2</td><td>Bloquear tempo y graves</td></tr>
       <tr><td>✌️ Victoria</td><td>Desbloquear</td></tr>
       <tr><td>☝🤞 Puntas juntas</td><td>Sliders tempo/graves — sobre la barra</td></tr>
-      <tr><td>🕺 Modo baile</td><td>Movimientos = efectos y sonidos</td></tr>
+      <tr><td>🎵 ✏ 🕺 Modos</td><td>Música / pintura / baile</td></tr>
     </table>
     <div class="sep"></div>
     <table>
@@ -940,8 +935,9 @@
 
       <h3>Inicio</h3>
       <p>Concedé acceso a la cámara cuando se solicite.</p>
-      <p>Pulsá <strong>Arrancar</strong> para iniciar el audio y el secuenciador.</p>
+      <p><strong>Arrancar</strong> enciende el audio y el secuenciador; el mismo botón pasa a <strong>Parar</strong> y los apaga.</p>
       <p>Posicioná las manos frente a la cámara para interactuar.</p>
+      <p>Debajo están los <strong>tres modos</strong>: <strong>🎵 música</strong> (las formas de tus manos son notas) · <strong>✏ pintura</strong> (dibujás con los dedos) · <strong>🕺 baile</strong> (cada movimiento dispara un sonido). La app abre en <strong>pintura</strong>.</p>
 
       <div class="gd-sep"></div>
       <h3>Ritmos — botón ♩</h3>
@@ -960,7 +956,7 @@
       <p>Dos barras a la derecha: <strong>tempo</strong> (80–180 BPM) y <strong>graves/agudos</strong>.</p>
       <p>Se mueven con el mouse o con el gesto <strong>☝🤞 puntas juntas</strong> sobre la barra (arriba = más).</p>
       <p>El filtro también responde a la <strong>altura de tus manos</strong> con el cuadrilátero.</p>
-      <p>Candados <strong>🔓/🔒</strong>: bloquean los gestos de ese slider (el mouse sigue andando).</p>
+      <p>Los dos arrancan con el <strong>candado cerrado 🔒</strong>: los gestos NO tocan el tempo ni los graves, así podés hacer notas tranquilo. Abrí el candado <strong>🔓</strong> del slider que quieras controlar con las manos. El mouse los mueve siempre, con candado o sin él.</p>
       <p><strong>🤏🤏 Dos pinzas</strong> → bloquea tempo + graves de una (las notas siguen libres). <strong>✌ Victoria</strong> → desbloquea.</p>
 
       <div class="gd-sep"></div>
@@ -989,9 +985,9 @@
       <p><strong>🖖 Índice + medio + anular</strong> → brocha gorda semitransparente.</p>
       <p><strong>✊ Puño + UN dedo</strong> (mantener 2 s) → seleccionar color por gesto:</p>
       <p style="padding-left:0.8rem">Índice = rojo · Medio = azul · Anular = verde · Meñique = amarillo · Pulgar = naranja</p>
-      <p><strong>✊✊ Dos puños</strong> → borrador circular (escala con el tamaño).</p>
-      <p>Paleta: <strong>12 colores</strong> · estilos <strong>línea / neón / spray / arcoíris</strong> · tamaños <strong>s / m / l</strong>.</p>
-      <p><strong>Espejo ×2 / mandala ×6</strong> → cada trazo se replica reflejado o rotado.</p>
+      <p>Paleta: <strong>12 colores</strong> · estilos <strong>línea / neón / fractal / arcoíris</strong> · tamaños <strong>s / m / l</strong>.</p>
+      <p><strong>⟳ Fractal</strong> → del trazo brotan formas que se repiten a escalas cada vez menores. El <strong>⟳</strong> quiere decir que el botón cicla: volvé a pulsarlo para pasar al siguiente. <strong>Círculos</strong> (burbujas tangentes) · <strong>helecho</strong> (fronda que se bifurca) · <strong>copo</strong> (cristal de seis brazos) · <strong>rayo</strong> (relámpago quebrado) · <strong>coral</strong> (mata tupida) · <strong>triángulo</strong> (Sierpinski, el geométrico).</p>
+      <p><strong>Espejo ×2</strong> y <strong>mandala ×6</strong> → dos botones: el trazo se replica reflejado o rotado seis veces.</p>
       <p><strong>↩ Deshacer</strong> (hasta 4 pasos) · <strong>limpiar</strong> · <strong>guardar</strong> → descarga tu dibujo en PNG.</p>
       <p>El dibujo <strong>late con el beat</strong> mientras suena la música.</p>
 

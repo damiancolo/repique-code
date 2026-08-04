@@ -13,7 +13,6 @@ const ctx           = canvas.getContext('2d');
 const canvasPaint   = document.getElementById('canvas-paint');
 const ctxPaint      = canvasPaint.getContext('2d');
 const btnStart      = document.getElementById('btn-start');
-const btnStop       = document.getElementById('btn-stop');
 const btnPaint      = document.getElementById('btn-paint');
 const volInput      = document.getElementById('volume');
 const status        = document.getElementById('status');
@@ -88,8 +87,10 @@ async function init() {
   let _bpmTarget   = 120;
   let _filtroT     = 0.73; // ≈ 4000 Hz, estado inicial del filtro
   let _gestureDrag = null; // { tipo: 'bpm'|'filtro', startY, startVal }
-  let tempoLocked  = false; // candado manual del slider de tempo
-  let filtroLocked = false; // candado manual del slider de graves/agudos
+  // Los candados arrancan CERRADOS: tempo y graves no se mueven con los gestos
+  // hasta que se abre el candado a mano (el mouse siempre los mueve igual).
+  let tempoLocked  = true;  // candado manual del slider de tempo
+  let filtroLocked = true;  // candado manual del slider de graves/agudos
 
   // ── Vínculos ─────────────────────────────────────────────────────────────────
   const FRAMES_SHAKA  = 15;
@@ -128,9 +129,24 @@ async function init() {
   // ── Estilos, tamaños y espejo ────────────────────────────────────────────────
   const TAM_LINEA    = [3, 6, 12];   // s / m / l
   const TAM_BROCHA   = [20, 32, 52];
-  const RADIO_SPRAY  = [12, 20, 32];
-  const RADIOS_BORRA = [16, 28, 48];
-  let estiloActual = 'linea';        // linea | neon | spray | arcoiris
+  // ── Fractales ────────────────────────────────────────────────────────────────
+  // El botón «fractal» cicla entre estas cuatro geometrías. `paso` es cada cuántos
+  // px recorridos se estampa un árbol y `largo` el de la primera rama: el paso es
+  // siempre ~2.5× el largo a propósito, porque si se estampa más seguido los
+  // árboles se solapan y el trazo se lee como una escalera en vez de como ramas.
+  // `tallo` es el grosor de la línea continua respecto al trazo normal: el rayo lo
+  // lleva muy fino porque si no el tallo pesa más que el relámpago y lo tapa.
+  const FRACTALES = [
+    { id: 'circulos',  label: 'fractal círculos',  paso: [34, 52, 80], largo: [ 9, 14, 22], tallo: 0.28 },
+    { id: 'helecho',   label: 'fractal helecho',   paso: [30, 48, 76], largo: [12, 20, 32], tallo: 0.35 },
+    { id: 'copo',      label: 'fractal copo',      paso: [34, 54, 84], largo: [10, 16, 26], tallo: 0.30 },
+    { id: 'rayo',      label: 'fractal rayo',      paso: [30, 46, 70], largo: [ 8, 13, 20], tallo: 0.14 },
+    { id: 'coral',     label: 'fractal coral',     paso: [24, 38, 58], largo: [11, 17, 27], tallo: 0.30 },
+    { id: 'triangulo', label: 'fractal triángulo', paso: [32, 50, 78], largo: [11, 18, 29], tallo: 0.25 },
+  ];
+  let fractalIdx = 0;
+  const BARRIDO_FRACTAL = 0.42;      // ~24° de inclinación hacia atrás, tipo helecho
+  let estiloActual = 'linea';        // linea | neon | fractal | arcoiris
   let tamIdx       = 1;
   let espejoModo   = 0;              // 0 = no · 1 = espejo ×2 · 2 = mandala ×6
   let _hue         = 0;              // estado del arcoíris
@@ -138,7 +154,6 @@ async function init() {
   // ── Deshacer (snapshots del buffer) ──────────────────────────────────────────
   const SNAPSHOTS_MAX = 4;
   let _snapshots = [];
-  let _borrando  = false;
   function guardarSnapshot() {
     const c = document.createElement('canvas');
     c.width  = bufCanvas.width;
@@ -150,7 +165,7 @@ async function init() {
   // Índices landmark de las puntas y articulaciones PIP de los 4 dedos
   const FINGER_TIPS = [8, 12, 16, 20]; // índice, medio, anular, meñique
   const FINGER_PIPS = [6, 10, 14, 18];
-  let modoPintar     = false;
+  let modoPintar     = true;   // la app abre directamente en modo pintura
   let colorIdx       = 0;
   // Pintura viva: el dibujo late con el beat del secuenciador
   let _pulse         = 0;  // envolvente 1→0 que dispara cada negra
@@ -158,7 +173,7 @@ async function init() {
 
   // ── Modo baile: efectos reactivos al movimiento y al beat ───────────────────
   let modoBaile    = false;
-  let efectoActual = 'estela'; // estela | quetzal | particulas | fuego | rayo | ondas
+  let efectoActual = 'orbe'; // estela | quetzal | particulas | fuego | rayo | ondas | orbe | galaxia
   let _beatBaile   = false;    // flanco de beat para los efectos (lo consume renderBaile)
   let _hueBaile    = 200;
   let _baileHands  = [];       // [{x, y, vx, vy, speed, trail:[{x,y}]}]
@@ -307,9 +322,182 @@ async function init() {
     return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
   }
 
+  // ── Fractal: azar reproducible ───────────────────────────────────────────────
+  // El árbol se estampa cada `paso` px recorridos, y todas las réplicas de
+  // espejo/mandala tienen que salir IDÉNTICAS — por eso el azar va por un LCG con
+  // semilla fija por estampa, que cada réplica reinicia antes de dibujar.
+  let _fracAcum  = 0;      // px acumulados desde la última estampa
+  let _fracEstampa = false;// ¿toca estampar en este segmento?
+  let _fracSemilla = 1;    // semilla de la estampa actual
+  let _rndEstado   = 1;
+  function _rnd() {
+    _rndEstado = (_rndEstado * 1664525 + 1013904223) >>> 0;
+    return _rndEstado / 4294967296;
+  }
+
+  function _tramo(x, y, x2, y2, ancho, alpha) {
+    bufCtx.globalAlpha = alpha;
+    bufCtx.lineWidth   = Math.max(0.5, ancho); // sin piso, las hojas se evaporan
+    _linea({ x, y }, { x: x2, y: y2 });
+  }
+
+  /**
+   * círculos — cada burbuja engendra burbujas tangentes más chicas.
+   * `salida` es la dirección "hacia afuera" (la opuesta a la madre): la raíz
+   * reparte cinco hijas en anillo completo y las demás abren un abanico hacia
+   * afuera, para no volver sobre la madre ni apelmazar el centro del racimo.
+   */
+  function _burbuja(x, y, r, prof, ancho, alpha, salida) {
+    bufCtx.globalAlpha = alpha;
+    bufCtx.lineWidth   = Math.max(0.5, ancho);
+    bufCtx.beginPath();
+    bufCtx.arc(x, y, r, 0, Math.PI * 2);
+    bufCtx.stroke();
+    if (prof === 0 || r < 2.5) return;
+
+    const raiz = salida === null;
+    const N    = raiz ? 5 : 3;
+    const rh   = r * 0.45;
+    const dist = r + rh;                  // tangentes exactas
+    for (let k = 0; k < N; k++) {
+      const a = raiz
+        ? (k * 2 * Math.PI) / N
+        : salida + (k / (N - 1) - 0.5) * Math.PI * 1.15;   // abanico de ~207°
+      _burbuja(x + Math.cos(a) * dist, y + Math.sin(a) * dist,
+               rh, prof - 1, ancho * 0.8, alpha * 0.85, a);
+    }
+  }
+
+  /** helecho — bifurcación binaria con apertura y decaimiento al azar */
+  function _ramaHelecho(x, y, ang, largo, prof, ancho, alpha) {
+    if (prof === 0 || largo < 1.5) return;
+    const x2 = x + Math.cos(ang) * largo;
+    const y2 = y + Math.sin(ang) * largo;
+    _tramo(x, y, x2, y2, ancho, alpha);
+    const abre = 0.34 + _rnd() * 0.38;           // apertura ~20°–41°
+    const dec  = 0.62 + _rnd() * 0.12;           // decaimiento del largo
+    _ramaHelecho(x2, y2, ang - abre, largo * dec, prof - 1, ancho * 0.66, alpha * 0.86);
+    _ramaHelecho(x2, y2, ang + abre, largo * dec, prof - 1, ancho * 0.66, alpha * 0.86);
+  }
+
+  /** copo — sin azar: los seis brazos salen calcados, como un cristal de nieve */
+  function _ramaCopo(x, y, ang, largo, prof, ancho, alpha) {
+    if (prof === 0 || largo < 1.5) return;
+    const x2 = x + Math.cos(ang) * largo;
+    const y2 = y + Math.sin(ang) * largo;
+    _tramo(x, y, x2, y2, ancho, alpha);
+    // Las hijas laterales nacen a media altura del tramo y el eje sigue derecho:
+    // eso da silueta de cristal en vez de la de arbolito.
+    const mx = x + (x2 - x) * 0.55, my = y + (y2 - y) * 0.55;
+    _ramaCopo(mx, my, ang - 0.62, largo * 0.5,  prof - 1, ancho * 0.62, alpha * 0.9);
+    _ramaCopo(mx, my, ang + 0.62, largo * 0.5,  prof - 1, ancho * 0.62, alpha * 0.9);
+    _ramaCopo(x2, y2, ang,        largo * 0.42, prof - 1, ancho * 0.62, alpha * 0.9);
+  }
+
+  /** rayo — canal quebrado que zigzaguea sobre un eje, con derivaciones tenues */
+  function _ramaRayo(x, y, eje, largo, prof, ancho, alpha) {
+    if (prof === 0 || largo < 2) return;
+    // El quiebre oscila alrededor del EJE, no del tramo anterior: si se acumulara
+    // sobre el ángulo previo el rayo se enrularía en vez de zigzaguear.
+    const a2 = eje + (_rnd() - 0.5) * 1.15;
+    const x2 = x + Math.cos(a2) * largo;
+    const y2 = y + Math.sin(a2) * largo;
+    _tramo(x, y, x2, y2, ancho, alpha);
+    _ramaRayo(x2, y2, eje, largo * 0.86, prof - 1, ancho * 0.86, alpha * 0.92);
+    // Derivación corta y tenue, con eje desviado — sólo a veces
+    if (_rnd() < 0.4) {
+      const lado = _rnd() < 0.5 ? -1 : 1;
+      _ramaRayo(x2, y2, eje + lado * (0.6 + _rnd() * 0.5),
+                largo * 0.42, prof - 2, ancho * 0.45, alpha * 0.5);
+    }
+  }
+
+  /** coral — tres hijas por nudo, muy abiertas y muy cortas: mata tupida, no árbol */
+  function _ramaCoral(x, y, ang, largo, prof, ancho, alpha) {
+    if (prof === 0 || largo < 1.5) return;
+    const x2 = x + Math.cos(ang) * largo;
+    const y2 = y + Math.sin(ang) * largo;
+    _tramo(x, y, x2, y2, ancho, alpha);
+    // Apertura ancha (~50°–80°) y decaimiento fuerte: en vez de estirarse como
+    // un árbol, se abre en abanico y se apelmaza como un coral o un liquen.
+    const abre = 0.9 + _rnd() * 0.5;
+    _ramaCoral(x2, y2, ang - abre, largo * 0.52, prof - 1, ancho * 0.58, alpha * 0.85);
+    _ramaCoral(x2, y2, ang + (_rnd() - 0.5) * 0.35, largo * 0.46, prof - 1, ancho * 0.55, alpha * 0.8);
+    _ramaCoral(x2, y2, ang + abre, largo * 0.52, prof - 1, ancho * 0.58, alpha * 0.85);
+  }
+
+  /** triángulo — Sierpinski: el único fractal geométrico del juego */
+  function _sierpinski(p1, p2, p3, prof, ancho, alpha) {
+    if (prof === 0) {
+      bufCtx.globalAlpha = alpha;
+      bufCtx.lineWidth   = ancho;
+      bufCtx.beginPath();
+      bufCtx.moveTo(p1.x, p1.y);
+      bufCtx.lineTo(p2.x, p2.y);
+      bufCtx.lineTo(p3.x, p3.y);
+      bufCtx.closePath();
+      bufCtx.stroke();
+      return;
+    }
+    const m = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    const m12 = m(p1, p2), m23 = m(p2, p3), m31 = m(p3, p1);
+    _sierpinski(p1, m12, m31, prof - 1, ancho * 0.8, alpha);
+    _sierpinski(m12, p2, m23, prof - 1, ancho * 0.8, alpha);
+    _sierpinski(m31, m23, p3, prof - 1, ancho * 0.8, alpha);
+  }
+
+  /** Estampa el árbol de la variante activa en el punto p, que avanza hacia `ang` */
+  function _estamparFractal(p, ang, largo, ancho) {
+    switch (FRACTALES[fractalIdx].id) {
+      case 'circulos':
+        // Racimo de burbujas centrado en el punto del trazo
+        _burbuja(p.x, p.y, largo, 3, ancho * 0.7, 0.9, null);
+        break;
+      case 'copo':
+        // Seis brazos radiales desde el punto — simetría hexagonal
+        for (let k = 0; k < 6; k++) {
+          _ramaCopo(p.x, p.y, ang + (k * Math.PI) / 3, largo, 4, ancho, 0.85);
+        }
+        break;
+      case 'rayo': {
+        // Un solo relámpago perpendicular al avance, de un lado o del otro.
+        // Tramos cortos y muchos niveles = zigzag nervioso en vez de curva suave.
+        const lado = _rnd() < 0.5 ? -1 : 1;
+        _ramaRayo(p.x, p.y, ang + lado * Math.PI / 2, largo, 8, ancho * 1.1, 1);
+        break;
+      }
+      case 'coral':
+        _ramaCoral(p.x, p.y, ang - Math.PI / 2, largo, 4, ancho, 0.85);
+        _ramaCoral(p.x, p.y, ang + Math.PI / 2, largo, 4, ancho, 0.85);
+        break;
+      case 'triangulo': {
+        // Triángulo equilátero centrado en el punto, girado según el avance
+        const v = k => ({
+          x: p.x + Math.cos(ang + Math.PI / 2 + (k * 2 * Math.PI) / 3) * largo,
+          y: p.y + Math.sin(ang + Math.PI / 2 + (k * 2 * Math.PI) / 3) * largo,
+        });
+        _sierpinski(v(0), v(1), v(2), 3, ancho, 0.9);
+        break;
+      }
+      default: // helecho
+        _ramaHelecho(p.x, p.y, ang - Math.PI / 2 - BARRIDO_FRACTAL, largo, 4, ancho, 0.85);
+        _ramaHelecho(p.x, p.y, ang + Math.PI / 2 + BARRIDO_FRACTAL, largo, 4, ancho, 0.85);
+    }
+  }
+
   /** Replica el segmento según el modo espejo y lo dibuja con el estilo activo */
   function trazarSegmento(p1, p2, gesture) {
     const W = bufCanvas.width, H = bufCanvas.height;
+    // La decisión de estampar se toma UNA vez por segmento, antes de replicar:
+    // así las 6 hojas del mandala estampan el mismo árbol en el mismo momento.
+    if (estiloActual === 'fractal' && gesture !== 'brocha') {
+      _fracAcum += Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      _fracEstampa = _fracAcum >= FRACTALES[fractalIdx].paso[tamIdx];
+      if (_fracEstampa) {
+        _fracAcum = 0;
+        _fracSemilla = (Math.random() * 4294967295) >>> 0;
+      }
+    }
     const variantes = [[p1, p2]];
     if (espejoModo === 1) {
       variantes.push([{ x: W - p1.x, y: p1.y }, { x: W - p2.x, y: p2.y }]);
@@ -354,19 +542,19 @@ async function init() {
       bufCtx.lineWidth   = Math.max(1, TAM_LINEA[tamIdx] * 0.4);
       _linea(a, b);
 
-    } else if (estiloActual === 'spray') {
-      const r = RADIO_SPRAY[tamIdx];
-      const n = Math.max(8, Math.round(dist * 1.6));
-      bufCtx.fillStyle = COLORES_PINCEL[colorIdx];
-      for (let i = 0; i < n; i++) {
-        const t  = i / n;
-        // Punto aleatorio en disco (sqrt para densidad uniforme)
-        const ang = Math.random() * Math.PI * 2;
-        const rad = Math.sqrt(Math.random()) * r;
-        const px = a.x + (b.x - a.x) * t + Math.cos(ang) * rad;
-        const py = a.y + (b.y - a.y) * t + Math.sin(ang) * rad;
-        bufCtx.globalAlpha = 0.2 + Math.random() * 0.3;
-        bufCtx.fillRect(px, py, 1.7, 1.7);
+    } else if (estiloActual === 'fractal') {
+      // Tallo continuo y fino: hilvana el recorrido de la mano
+      bufCtx.strokeStyle = COLORES_PINCEL[colorIdx];
+      bufCtx.globalAlpha = 0.45;
+      bufCtx.lineWidth   = Math.max(0.8, TAM_LINEA[tamIdx] * FRACTALES[fractalIdx].tallo);
+      _linea(a, b);
+      // Cada tanto brota un árbol a ambos lados, perpendicular al movimiento
+      if (_fracEstampa && dist > 0.001) {
+        _rndEstado = _fracSemilla;          // misma semilla → misma forma en cada réplica
+        const ang   = Math.atan2(b.y - a.y, b.x - a.x);
+        const largo = FRACTALES[fractalIdx].largo[tamIdx] * (0.75 + _rnd() * 0.5);
+        const ancho = Math.max(1, TAM_LINEA[tamIdx] * 0.55);
+        _estamparFractal(b, ang, largo, ancho);
       }
 
     } else if (estiloActual === 'arcoiris') {
@@ -381,22 +569,6 @@ async function init() {
       _linea(a, b);
     }
     bufCtx.restore();
-  }
-
-  function aplicarBorrador(puños) {
-    // Mano derecha = menor X en cámara (aparece a la derecha en pantalla espejada)
-    const manoDer = puños.reduce((acc, m) => (m[9].x < acc[9].x ? m : acc));
-    const mx = (1 - manoDer[9].x) * canvas.width;
-    const my = manoDer[9].y * canvas.height;
-    sincBuf();
-    if (!_borrando) { guardarSnapshot(); _borrando = true; } // deshacer recupera lo borrado
-    bufCtx.globalCompositeOperation = 'destination-out';
-    bufCtx.beginPath();
-    bufCtx.arc(mx, my, RADIOS_BORRA[tamIdx], 0, Math.PI * 2);
-    bufCtx.fillStyle = 'rgba(0,0,0,1)';
-    bufCtx.fill();
-    bufCtx.globalCompositeOperation = 'source-over';
-    return { mx, my };
   }
 
   // ── Pintura viva: el dibujo respira con el beat ─────────────────────────────
@@ -419,7 +591,7 @@ async function init() {
     }
   }
 
-  function renderPaintCanvas(manos, gestureMano, seleccionInfo, borrarInfo) {
+  function renderPaintCanvas(manos, gestureMano, seleccionInfo) {
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
     drawBufConPulso();
 
@@ -455,21 +627,6 @@ async function init() {
       return;
     }
 
-    // ── Cursor borrador (dos puños) ───────────────────────────────────────────
-    if (borrarInfo) {
-      const { mx, my } = borrarInfo;
-      ctxPaint.beginPath();
-      ctxPaint.arc(mx, my, RADIOS_BORRA[tamIdx], 0, Math.PI * 2);
-      ctxPaint.strokeStyle = 'rgba(255,255,255,0.6)';
-      ctxPaint.lineWidth = 2;
-      ctxPaint.stroke();
-      ctxPaint.beginPath();
-      ctxPaint.arc(mx, my, 2, 0, Math.PI * 2);
-      ctxPaint.fillStyle = 'rgba(255,255,255,0.5)';
-      ctxPaint.fill();
-      return;
-    }
-
     // ── Cursor según gesto activo ─────────────────────────────────────────────
     if (gestureMano) {
       const { mano, gesture } = gestureMano;
@@ -487,12 +644,6 @@ async function init() {
         ctxPaint.fill();
         ctxPaint.strokeStyle = COLORES_PINCEL[colorIdx];
         ctxPaint.lineWidth = 1.5;
-        ctxPaint.stroke();
-      } else if (gesture === 'borrar') {
-        ctxPaint.beginPath();
-        ctxPaint.arc(sx, sy, 24, 0, Math.PI * 2);
-        ctxPaint.strokeStyle = 'rgba(255,255,255,0.7)';
-        ctxPaint.lineWidth = 2;
         ctxPaint.stroke();
       }
     }
@@ -1096,61 +1247,51 @@ async function init() {
       const puños   = manos.filter(m => esPuno(m));
       const noPuños = manos.filter(m => !esPuno(m));
 
-      if (puños.length >= 2) {
-        // ── Dos puños → borrar ────────────────────────────────────────────
-        colorSeleccion = null; ultimoPtoBuf = null; ultimoGesture = null;
-        const borrarInfo = aplicarBorrador(puños);
+      // ── Comprobar selección de color SÓLO si hay dedo claro ─────────────
+      // (un puño + EXACTAMENTE un dedo reconocido en la otra mano)
+      let dedoIdxSel = null;
+      let selectorMano = null;
+      if (puños.length === 1 && noPuños.length >= 1) {
+        const d = detectarDedoColor(noPuños[0]);
+        if (d !== null) { dedoIdxSel = d; selectorMano = noPuños[0]; }
+      }
+
+      if (dedoIdxSel !== null) {
+        // ── Selección de color ─────────────────────────────────────────────
+        ultimoPtoBuf = null; ultimoGesture = null;
+        const tip = dedoIdxSel < 4 ? FINGER_TIPS[dedoIdxSel] : 4;
+        const sx = (1 - selectorMano[tip].x) * canvas.width;
+        const sy = selectorMano[tip].y * canvas.height;
+        if (colorSeleccion && colorSeleccion.idx === dedoIdxSel) {
+          const elapsed = Date.now() - colorSeleccion.inicio;
+          if (elapsed >= MS_SELECCION) {
+            colorIdx = colorSeleccion.pal;
+            colorBtns.forEach((b, j) => b.classList.toggle('activo', j === colorIdx));
+            colorSeleccion = null;
+          } else {
+            colorSeleccion.sx = sx; colorSeleccion.sy = sy;
+          }
+        } else {
+          colorSeleccion = { idx: dedoIdxSel, pal: DEDO_A_COLOR[dedoIdxSel], inicio: Date.now(), sx, sy };
+        }
         renderFrame(ctx, video, canvas, [], null, null);
-        renderPaintCanvas(manos, null, null, borrarInfo);
+        renderPaintCanvas(manos, null, colorSeleccion);
 
       } else {
-        _borrando = false; // fin de la sesión de borrado
-        // ── Comprobar selección de color SÓLO si hay dedo claro ───────────
-        // (un puño + EXACTAMENTE un dedo reconocido en la otra mano)
-        let dedoIdxSel = null;
-        let selectorMano = null;
-        if (puños.length === 1 && noPuños.length >= 1) {
-          const d = detectarDedoColor(noPuños[0]);
-          if (d !== null) { dedoIdxSel = d; selectorMano = noPuños[0]; }
+        // ── Dibujo normal (aunque haya un puño, no interfiere) ─────────────
+        colorSeleccion = null;
+        let gestureMano = null;
+        for (const m of manos) {
+          const g = detectarGesturePintura(m);
+          if (g) { gestureMano = { mano: m, gesture: g }; break; }
         }
-
-        if (dedoIdxSel !== null) {
-          // ── Selección de color ───────────────────────────────────────────
-          ultimoPtoBuf = null; ultimoGesture = null;
-          const tip = dedoIdxSel < 4 ? FINGER_TIPS[dedoIdxSel] : 4;
-          const sx = (1 - selectorMano[tip].x) * canvas.width;
-          const sy = selectorMano[tip].y * canvas.height;
-          if (colorSeleccion && colorSeleccion.idx === dedoIdxSel) {
-            const elapsed = Date.now() - colorSeleccion.inicio;
-            if (elapsed >= MS_SELECCION) {
-              colorIdx = colorSeleccion.pal;
-              colorBtns.forEach((b, j) => b.classList.toggle('activo', j === colorIdx));
-              colorSeleccion = null;
-            } else {
-              colorSeleccion.sx = sx; colorSeleccion.sy = sy;
-            }
-          } else {
-            colorSeleccion = { idx: dedoIdxSel, pal: DEDO_A_COLOR[dedoIdxSel], inicio: Date.now(), sx, sy };
-          }
-          renderFrame(ctx, video, canvas, [], null, null);
-          renderPaintCanvas(manos, null, colorSeleccion, null);
-
+        if (gestureMano) {
+          aplicarTrazo(gestureMano.mano, gestureMano.gesture);
         } else {
-          // ── Dibujo normal (aunque haya un puño, no interfiere) ───────────
-          colorSeleccion = null;
-          let gestureMano = null;
-          for (const m of manos) {
-            const g = detectarGesturePintura(m);
-            if (g) { gestureMano = { mano: m, gesture: g }; break; }
-          }
-          if (gestureMano) {
-            aplicarTrazo(gestureMano.mano, gestureMano.gesture);
-          } else {
-            ultimoPtoBuf = null; ultimoGesture = null;
-          }
-          renderFrame(ctx, video, canvas, [], null, null);
-          renderPaintCanvas(manos, gestureMano, null, null);
+          ultimoPtoBuf = null; ultimoGesture = null;
         }
+        renderFrame(ctx, video, canvas, [], null, null);
+        renderPaintCanvas(manos, gestureMano, null);
       }
     } else if (modoBaile) {
       // ── Modo baile: las manos generan efectos, no controlan la música ──────
@@ -1187,9 +1328,11 @@ async function init() {
         victoriaActivo = false;
       }
 
-      // Con lock global (dos pinzas) o ambos candados puestos, NADA de los
-      // gestos puede alterar cómo suena el ritmo de fondo (filtro, wow, tecno)
-      const bloqueoTotal = locked || (tempoLocked && filtroLocked);
+      // Lock global (dos pinzas): NADA de los gestos altera cómo suena el ritmo
+      // de fondo (filtro, wow, tecno). Antes esto también se disparaba con los
+      // dos candados puestos, pero desde que arrancan cerrados ese sería el
+      // estado normal y el modo tecno/acid nunca se podría activar.
+      const bloqueoTotal = locked;
 
       // Cuadrilátero → filtro (altura) / área / nota  [BPM solo por slider]
       if (ancho !== null) {
@@ -1387,57 +1530,62 @@ async function init() {
   requestAnimationFrame(loop);
 
   // ── Controles de audio ────────────────────────────────────────────────────────
+  // Un solo botón arranca y para: el ■ suelto desapareció de la fila de modos,
+  // que ahora es 🎵 / ✏ / 🕺.
+  function pintarStart() {
+    btnStart.textContent = state.audioIniciado ? 'Parar' : 'Arrancar';
+    btnStart.classList.toggle('activo', state.audioIniciado);
+  }
+
   btnStart.addEventListener('click', async () => {
     resumeContextSync();
+    if (state.audioIniciado) {
+      stopAudio();
+      resetTracks();
+      pintarStart();
+      return;
+    }
     btnStart.disabled = true;
     btnStart.textContent = 'Cargando…';
     status.textContent = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'Iniciando audio…' : 'Cargando samples…';
     try {
       await startAudio();
       status.textContent = '';
-      btnStart.textContent = 'Sonando';
-      btnStart.classList.add('activo');
-      btnStop.disabled = false;
     } catch (err) {
       status.textContent = err.message || 'Error de audio';
-      btnStart.textContent = 'Reintentar';
-      btnStart.disabled = false;
       console.error('[Repique Code] Audio:', err);
     }
-  });
-
-  btnStop.addEventListener('click', () => {
-    stopAudio();
-    resetTracks();
-    btnStop.disabled = true;
-    btnStart.textContent = 'Arrancar';
-    btnStart.classList.remove('activo');
     btnStart.disabled = false;
-    // También apaga el modo pintar y el modo baile
-    if (modoPintar) {
-      modoPintar = false;
-      btnPaint.classList.remove('activo');
-      paleta.classList.remove('visible');
-      ultimoPtoBuf  = null;
-      ultimoGesture = null;
-      colorSeleccion = null;
-      ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
-    }
-    if (modoBaile) {
-      apagarBaile();
-      ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
-    }
+    pintarStart();
+    if (!state.audioIniciado) btnStart.textContent = 'Reintentar';
   });
 
   volInput.addEventListener('input', () => setVolumen(parseFloat(volInput.value)));
 
-  // ── Controles de pintura ──────────────────────────────────────────────────────
+  // ── Modos: música 🎵 / pintura ✏ / baile 🕺 ───────────────────────────────────
+  const btnMusica    = document.getElementById('btn-musica');
   const btnBaile     = document.getElementById('btn-baile');
   const paletaBaile  = document.getElementById('paleta-baile');
 
+  function apagarPintura() {
+    modoPintar = false;
+    paleta.classList.remove('visible');
+    ultimoPtoBuf   = null;
+    ultimoGesture  = null;
+    colorSeleccion = null;
+    zoomActivo     = false;
+    ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+  }
+
+  /** Música es el modo base: se está en él cuando no hay pintura ni baile */
+  function pintarModos() {
+    btnPaint.classList.toggle('activo', modoPintar);
+    btnBaile.classList.toggle('activo', modoBaile);
+    btnMusica.classList.toggle('activo', !modoPintar && !modoBaile);
+  }
+
   function apagarBaile() {
     modoBaile = false;
-    btnBaile.classList.remove('activo');
     paletaBaile.classList.remove('visible');
     // Un loop ya sonando SIGUE aunque salgas del baile (a dibujar, etc.); solo
     // se corta con el botón verde. Si estaba armando/grabando, se cancela.
@@ -1460,17 +1608,23 @@ async function init() {
     else                  { b.textContent = '🔁 loop'; }
   }
 
+  // 🎵 Música: el modo base, apagar los otros dos alcanza para volver a él
+  btnMusica.addEventListener('click', () => {
+    if (modoPintar) apagarPintura();
+    if (modoBaile)  { apagarBaile(); ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height); }
+    pintarModos();
+  });
+
   btnPaint.addEventListener('click', () => {
+    // Volver a tocar ✏ estando en pintura devuelve a música
     modoPintar = !modoPintar;
-    if (modoPintar && modoBaile) apagarBaile();
-    btnPaint.classList.toggle('activo', modoPintar);
-    paleta.classList.toggle('visible', modoPintar);
-    if (!modoPintar) {
-      ultimoPtoBuf = null;
-      zoomActivo   = false;
-      _borrando    = false;
-      ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+    if (modoPintar) {
+      if (modoBaile) apagarBaile();
+      paleta.classList.add('visible');
+    } else {
+      apagarPintura();
     }
+    pintarModos();
   });
 
   // ── Modo baile ────────────────────────────────────────────────────────────────
@@ -1479,17 +1633,13 @@ async function init() {
     if (modoBaile) {
       apagarBaile();
       ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
+      pintarModos();
       return;
     }
-    if (modoPintar) {
-      modoPintar = false;
-      btnPaint.classList.remove('activo');
-      paleta.classList.remove('visible');
-      ultimoPtoBuf = null; ultimoGesture = null; colorSeleccion = null; _borrando = false;
-    }
+    if (modoPintar) apagarPintura();
     modoBaile = true;
-    btnBaile.classList.add('activo');
     paletaBaile.classList.add('visible');
+    pintarModos();
     pintarLoop(getLooperEstado()); // si un loop quedó sonando, el botón verde lo refleja
     // Arrancar el audio solo, para que el baile suene aunque no hayas tocado "Arrancar"
     if (!state.audioIniciado) {
@@ -1497,13 +1647,11 @@ async function init() {
       try {
         await startAudio();
         status.textContent = '';
-        btnStart.textContent = 'Sonando';
-        btnStart.classList.add('activo');
-        btnStop.disabled = false;
       } catch (err) {
         status.textContent = err.message || 'Error de audio';
         console.error('[Repique Code] Audio (baile):', err);
       }
+      pintarStart();
     }
   });
 
@@ -1622,10 +1770,26 @@ async function init() {
   const estiloBtns  = document.querySelectorAll('.estilo-btn');
   const tamBtns     = document.querySelectorAll('.tam-btn');
   const btnEspejo   = document.getElementById('btn-espejo');
+  const btnMandala  = document.getElementById('btn-mandala');
   const btnDeshacer = document.getElementById('btn-deshacer');
+
+  // El botón de fractal es especial: la primera pulsación activa el estilo, y cada
+  // pulsación siguiente (con el estilo ya activo) pasa a la variante siguiente.
+  const btnFractal = document.querySelector('.estilo-btn[data-estilo="fractal"]');
+  function pintarFractal() {
+    // El ⟳ avisa que el botón cicla; el resto de los estilos no lo llevan. Va en
+    // un span porque a 0.58rem el glifo es ilegible: necesita cuerpo propio.
+    btnFractal.innerHTML =
+      '<span class="ciclo">⟳</span>' + FRACTALES[fractalIdx].label;
+  }
+  pintarFractal();
 
   estiloBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      if (btn === btnFractal && estiloActual === 'fractal') {
+        fractalIdx = (fractalIdx + 1) % FRACTALES.length;
+        pintarFractal();
+      }
       estiloActual = btn.dataset.estilo;
       estiloBtns.forEach(b => b.classList.toggle('activo', b === btn));
     });
@@ -1638,11 +1802,19 @@ async function init() {
     });
   });
 
-  const ESPEJO_LABELS = ['espejo: no', 'espejo ×2', 'mandala ×6'];
+  // Espejo y mandala son botones independientes pero excluyentes entre sí:
+  // son dos geometrías de réplica distintas, no se pueden encadenar.
+  function pintarEspejo() {
+    btnEspejo.classList.toggle('activo', espejoModo === 1);
+    btnMandala.classList.toggle('activo', espejoModo === 2);
+  }
   btnEspejo.addEventListener('click', () => {
-    espejoModo = (espejoModo + 1) % 3;
-    btnEspejo.textContent = ESPEJO_LABELS[espejoModo];
-    btnEspejo.classList.toggle('activo', espejoModo > 0);
+    espejoModo = espejoModo === 1 ? 0 : 1;
+    pintarEspejo();
+  });
+  btnMandala.addEventListener('click', () => {
+    espejoModo = espejoModo === 2 ? 0 : 2;
+    pintarEspejo();
   });
 
   btnDeshacer.addEventListener('click', () => {

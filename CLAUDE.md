@@ -16,7 +16,7 @@
 
 Instrumento musical controlado por gestos de manos. Usa MediaPipe para detectar manos por cámara y Tone.js para síntesis de audio. Publicado en `estudioprompt.com/lab/repique-code` como iframe embebido.
 
-Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado). Tiene tres modos: **normal** (drone + secuenciador por gestos de forma), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos).
+Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado) y **abre en modo pintura**. Tiene tres modos excluyentes en `#fila-modos`: **música 🎵** (drone + secuenciador por gestos de forma; es el modo base, se está en él cuando no hay ninguno de los otros dos), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos; arranca en el efecto `orbe`). El botón `Arrancar` es un interruptor: enciende y apaga el audio.
 
 ## Arquitectura
 

@@ -92,9 +92,12 @@ En cada cuadro (~60 veces por segundo), el bucle de `main.js` hace:
 
 | Modo | Cómo se activa | Qué hace |
 |---|---|---|
-| **Instrumento** (normal) | por defecto | Un secuenciador de ritmo de fondo + un *drone* cuya nota cambia con la **forma** de las manos (rectángulo = Do, trapecios = Re/Mi/Fa/Sol, pinzas = La/Si…) |
-| **Pintura ✏** | botón ✏ | Las manos pintan sobre el canvas (colores, estilos, espejo/mandala, deshacer); el trazo "late" con el ritmo |
+| **Música 🎵** | botón 🎵 — es el modo base: se está en él cuando no hay ninguno de los otros dos encendido | Un secuenciador de ritmo de fondo + un *drone* cuya nota cambia con la **forma** de las manos (rectángulo = Do, trapecios = Re/Mi/Fa/Sol, pinzas = La/Si…) |
+| **Pintura ✏** | botón ✏ — **la app abre acá** | Las manos pintan sobre el canvas (colores, estilos, espejo/mandala, deshacer); el trazo "late" con el ritmo |
 | **Baile 🕺** | botón 🕺 | Los **movimientos** disparan efectos visuales y **sonidos**; cada gesto se puede asociar a un sonido elegido |
+
+Los tres son excluyentes y viven en una misma fila (`#fila-modos`). El botón
+`Arrancar` es aparte y funciona como interruptor: enciende y apaga el audio.
 
 ---
 

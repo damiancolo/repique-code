@@ -1975,46 +1975,64 @@ async function init() {
     ultimoGesture = null;
   });
 
-  // ── Guardar el dibujo como PNG (fondo negro + trazos) ────────────────────────
-  const btnGuardar = document.getElementById('btn-guardar');
-  btnGuardar.addEventListener('click', () => {
+  // ── Componer la imagen final: cámara en gris + el dibujo encima ──────────────
+  // Dos usos con dos criterios distintos:
+  //  · descarga local  → cámara NÍTIDA. La imagen se la queda la persona, no sale
+  //    de su dispositivo, y se tiene que reconocer.
+  //  · imagen publicada (QR) → cámara DESENFOCADA. Ahí se sabe que estuvo alguien
+  //    pero no quién: presencia sí, identidad no.
+  //
+  // El desenfoque se hace achicando y volviendo a agrandar, NO con ctx.filter,
+  // por dos motivos: un ctx.filter no soportado se ignora EN SILENCIO y saldría
+  // la cara nítida sin que nadie se entere; y así la fuerza escala sola con la
+  // resolución (un blur en px fijos desenfoca menos cuanto más grande la
+  // pantalla). El grisado sí va por ctx.filter: si falla sale en color, que es un
+  // problema estético, no de privacidad.
+  const ANCHO_DESENFOQUE = 137; // ancho reducido, referido a un guardado de 1920 px
+
+  /** @param {number} desenfoque 0 = nítida · >0 = ancho reducido de referencia */
+  function componerImagen(desenfoque = 0) {
     const W = canvas.width, H = canvas.height;
-    const out  = document.createElement('canvas');
+    const out = document.createElement('canvas');
     out.width  = W;
     out.height = H;
     const octx = out.getContext('2d');
     octx.fillStyle = '#000';
     octx.fillRect(0, 0, W, H);
-    // Fondo: la escena de la cámara espejada, en gris y DESENFOCADA. La persona
-    // queda presente —la silueta, la pose, el gesto— pero no identificable: se
-    // sabe que estuvo ahí, no quién es. Valor elegido mirando caras reales.
-    //
-    // El desenfoque se hace achicando y volviendo a agrandar, NO con ctx.filter,
-    // por dos motivos: un ctx.filter no soportado se ignora EN SILENCIO y saldría
-    // la cara nítida sin que nadie se entere; y así la fuerza escala sola con la
-    // resolución (un blur en px fijos desenfoca menos cuanto más grande la
-    // pantalla). El grisado sí va por ctx.filter: si falla sale en color, que es
-    // un problema estético, no de privacidad.
-    const ANCHO_DESENFOQUE = 137; // ancho reducido, referido a un guardado de 1920 px
     try {
-      const aw = Math.max(2, Math.round(W * ANCHO_DESENFOQUE / 1920));
-      const ah = Math.max(2, Math.round(aw * H / W));
-      const chico = document.createElement('canvas');
-      chico.width  = aw;
-      chico.height = ah;
-      const cctx = chico.getContext('2d');
-      cctx.save();
-      cctx.scale(-1, 1);
-      cctx.translate(-aw, 0);
-      cctx.filter = 'grayscale(1)';
-      cctx.imageSmoothingEnabled = true;
-      cctx.drawImage(video, 0, 0, aw, ah);
-      cctx.restore();
-      octx.imageSmoothingEnabled = true;
-      octx.drawImage(chico, 0, 0, aw, ah, 0, 0, W, H);
+      if (desenfoque > 0) {
+        const aw = Math.max(2, Math.round(W * desenfoque / 1920));
+        const ah = Math.max(2, Math.round(aw * H / W));
+        const chico = document.createElement('canvas');
+        chico.width  = aw;
+        chico.height = ah;
+        const cctx = chico.getContext('2d');
+        cctx.save();
+        cctx.scale(-1, 1);
+        cctx.translate(-aw, 0);
+        cctx.filter = 'grayscale(1)';
+        cctx.imageSmoothingEnabled = true;
+        cctx.drawImage(video, 0, 0, aw, ah);
+        cctx.restore();
+        octx.imageSmoothingEnabled = true;
+        octx.drawImage(chico, 0, 0, aw, ah, 0, 0, W, H);
+      } else {
+        octx.save();
+        octx.scale(-1, 1);
+        octx.translate(-W, 0);
+        octx.filter = 'grayscale(1)';
+        octx.drawImage(video, 0, 0, W, H);
+        octx.restore();
+        octx.filter = 'none';
+      }
     } catch (_) { /* sin cámara: queda el fondo negro */ }
-    // El dibujo completo encima
-    octx.drawImage(bufCanvas, 0, 0);
+    octx.drawImage(bufCanvas, 0, 0); // los trazos siempre nítidos y a color
+    return out;
+  }
+
+  const btnGuardar = document.getElementById('btn-guardar');
+  btnGuardar.addEventListener('click', () => {
+    const out = componerImagen(0); // descarga local: cámara nítida
     const a = document.createElement('a');
     a.download = 'repique-code-pintura.png';
     a.href = out.toDataURL('image/png');

@@ -222,8 +222,19 @@
       cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
     }
-    #btn-limpiar:hover, #btn-guardar:hover, .tool-btn:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
+    #btn-limpiar:hover, .tool-btn:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
     .tool-btn.activo { border-color: #e63946; color: #e63946; }
+
+    /* Guardar = llevarse la obra. Va en verde (el mismo del looper) y con algo
+       más de cuerpo, porque es la única acción que la persona se lleva a casa. */
+    #btn-guardar {
+      align-self: flex-start;
+      border-color: #4ade80;
+      color: #4ade80;
+      font-size: 0.62rem;
+      padding: 0.3rem 0.9rem;
+    }
+    #btn-guardar:hover { border-color: #86efac; color: #86efac; }
 
     /* Los seis fractales van en botones de una letra, como los tamaños s/m/l */
     .frac-btn { min-width: 22px; text-align: center; }
@@ -878,12 +889,11 @@
         <button class="tool-btn tam-btn activo" data-tam="1" title="Trazo medio">m</button>
         <button class="tool-btn tam-btn" data-tam="2" title="Trazo grueso">l</button>
         <button class="tool-btn" id="btn-espejo" title="Replica el trazo reflejado en el eje vertical">espejo ×2</button>
-        <button class="tool-btn" id="btn-mandala" title="Replica el trazo rotado seis veces alrededor del centro">mandala ×6</button>
+        <button class="tool-btn activo" id="btn-mandala" title="Replica el trazo rotado seis veces alrededor del centro">mandala ×6</button>
       </div>
       <div id="fila-tools-3">
         <button class="tool-btn" id="btn-deshacer" title="Deshacer el último trazo">↩ deshacer</button>
         <button id="btn-limpiar">limpiar</button>
-        <button id="btn-guardar" title="Descargar el dibujo como PNG">guardar</button>
       </div>
     </div>
     <div id="paleta-baile">
@@ -919,6 +929,10 @@
       <span>Vol</span>
       <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8">
     </div>
+    <!-- Guardar vive FUERA de #paleta: es la acción de llevarse la obra y tiene
+         que estar siempre a mano, no solo en modo pintura. El dibujo se conserva
+         al cambiar de modo, así que guarda igual desde música o baile. -->
+    <button id="btn-guardar" title="Descargar el dibujo como PNG">guardar</button>
     <div id="fila-ritmo">
       <button id="btn-ritmo" title="Ver ritmo / cambiar">♩</button>
       <span id="ritmo-nombre">CANDOMByte</span>
@@ -1032,6 +1046,7 @@
       <p><strong>Fractales</strong> → del trazo brotan formas que se repiten a escalas cada vez menores. Son seis, cada uno con su botón de una letra: <strong>o</strong> círculos (burbujas tangentes) · <strong>h</strong> helecho (fronda que se bifurca) · <strong>n</strong> copo (cristal de seis brazos) · <strong>r</strong> rayo (relámpago quebrado) · <strong>c</strong> coral (mata tupida) · <strong>t</strong> triángulo (Sierpinski, el geométrico).</p>
       <p><strong>Espejo ×2</strong> y <strong>mandala ×6</strong> → dos botones: el trazo se replica reflejado o rotado seis veces.</p>
       <p><strong>↩ Deshacer</strong> (hasta 4 pasos) · <strong>limpiar</strong> · <strong>guardar</strong> → descarga tu dibujo en PNG.</p>
+      <p>En la imagen guardada tus trazos van nítidos, y detrás queda la escena de la cámara <strong>en gris y desenfocada</strong>: se ve que estuviste ahí, pero no se reconoce a nadie.</p>
       <p>El dibujo <strong>late con el beat</strong> mientras suena la música.</p>
 
       <div class="gd-sep"></div>

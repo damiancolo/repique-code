@@ -150,7 +150,9 @@ async function init() {
   const BARRIDO_FRACTAL = 0.42;      // ~24° de inclinación hacia atrás, tipo helecho
   let estiloActual = 'linea';        // linea | neon | fractal | arcoiris
   let tamIdx       = 1;
-  let espejoModo   = 0;              // 0 = no · 1 = espejo ×2 · 2 = mandala ×6
+  let espejoModo   = 2;              // 0 = no · 1 = espejo ×2 · 2 = mandala ×6
+                                     // Arranca en mandala: el primer garabato ya
+                                     // sale simétrico y con forma, sin saber nada.
   let _hue         = 0;              // estado del arcoíris
 
   // ── Deshacer (snapshots del buffer) ──────────────────────────────────────────
@@ -1962,6 +1964,7 @@ async function init() {
     espejoModo = espejoModo === 2 ? 0 : 2;
     pintarEspejo();
   });
+  pintarEspejo(); // que el estado inicial mande, y no la clase escrita en el HTML
 
   btnDeshacer.addEventListener('click', () => {
     const prev = _snapshots.pop();
@@ -1982,16 +1985,33 @@ async function init() {
     const octx = out.getContext('2d');
     octx.fillStyle = '#000';
     octx.fillRect(0, 0, W, H);
-    // Fondo: la escena de la cámara espejada en gris (como en pantalla, pero a
-    // plena vista) para que la imagen quede completa, no solo los trazos
+    // Fondo: la escena de la cámara espejada, en gris y DESENFOCADA. La persona
+    // queda presente —la silueta, la pose, el gesto— pero no identificable: se
+    // sabe que estuvo ahí, no quién es. Valor elegido mirando caras reales.
+    //
+    // El desenfoque se hace achicando y volviendo a agrandar, NO con ctx.filter,
+    // por dos motivos: un ctx.filter no soportado se ignora EN SILENCIO y saldría
+    // la cara nítida sin que nadie se entere; y así la fuerza escala sola con la
+    // resolución (un blur en px fijos desenfoca menos cuanto más grande la
+    // pantalla). El grisado sí va por ctx.filter: si falla sale en color, que es
+    // un problema estético, no de privacidad.
+    const ANCHO_DESENFOQUE = 137; // ancho reducido, referido a un guardado de 1920 px
     try {
-      octx.save();
-      octx.scale(-1, 1);
-      octx.translate(-W, 0);
-      octx.filter = 'grayscale(1)';
-      octx.drawImage(video, 0, 0, W, H);
-      octx.restore();
-      octx.filter = 'none';
+      const aw = Math.max(2, Math.round(W * ANCHO_DESENFOQUE / 1920));
+      const ah = Math.max(2, Math.round(aw * H / W));
+      const chico = document.createElement('canvas');
+      chico.width  = aw;
+      chico.height = ah;
+      const cctx = chico.getContext('2d');
+      cctx.save();
+      cctx.scale(-1, 1);
+      cctx.translate(-aw, 0);
+      cctx.filter = 'grayscale(1)';
+      cctx.imageSmoothingEnabled = true;
+      cctx.drawImage(video, 0, 0, aw, ah);
+      cctx.restore();
+      octx.imageSmoothingEnabled = true;
+      octx.drawImage(chico, 0, 0, aw, ah, 0, 0, W, H);
     } catch (_) { /* sin cámara: queda el fondo negro */ }
     // El dibujo completo encima
     octx.drawImage(bufCanvas, 0, 0);

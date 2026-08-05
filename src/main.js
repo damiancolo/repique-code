@@ -267,6 +267,10 @@ async function init() {
   const ZONAS_PUNTERO = [
     'panel', 'tempo-slider-wrap', 'filtro-slider-wrap', 'menu-ritmo',
     'ritmo-viz', 'config-sonidos', 'guia-detalle-panel', 'btn-vinculos',
+    // El cartel de guardado va acá o la persona no puede aceptarlo con la mano:
+    // en la instalación nadie toca el ordenador, y decidir si se publica su
+    // propia imagen es justo lo último que debería obligar a agacharse al teclado.
+    'cartel-caja',
   ];
   const MARGEN_ZONA = 45;
 
@@ -1939,14 +1943,121 @@ async function init() {
     return out;
   }
 
-  const btnGuardar = document.getElementById('btn-guardar');
-  btnGuardar.addEventListener('click', () => {
-    const out = componerImagen(0); // descarga local: cámara nítida
+  // ── Guardar: cartel → publicar o descargar ────────────────────────────────
+  //
+  // El botón guardar ya no baja el archivo directo. Abre un cartel que muestra
+  // LA IMAGEN REAL que se publicaría (cámara desenfocada + trazos nítidos) y
+  // deja elegir. Ver la imagen explica el desenfoque mejor que cualquier texto,
+  // que es justamente el motivo de que el cartel pueda ser tan corto.
+  //
+  // Dos rutas distintas a propósito:
+  //   publicar        → sube la versión DESENFOCADA, que queda pública
+  //   solo descargar  → baja la versión NÍTIDA al dispositivo, sin publicar nada
+  //
+  // ENDPOINT_GUARDAR vacío = todavía no hay servidor donde subir. El cartel
+  // funciona igual y publicar queda deshabilitado con su explicación. Cuando
+  // exista la ruta, se completa esta constante y se enciende solo.
+  const ENDPOINT_GUARDAR = '';
+  const TIMEOUT_SUBIDA   = 12000; // ms — pasado esto asumimos que no hay red
+
+  const btnGuardar      = document.getElementById('btn-guardar');
+  const cartel          = document.getElementById('cartel-guardar');
+  const cartelPreview   = document.getElementById('cartel-preview');
+  const cartelEstado    = document.getElementById('cartel-estado');
+  const btnPublicar     = document.getElementById('btn-publicar');
+  const btnSoloDescarga = document.getElementById('btn-solo-descargar');
+  const btnCartelCerrar = document.getElementById('btn-cartel-cerrar');
+
+  function descargarPNG(canvasImg, nombre) {
     const a = document.createElement('a');
-    a.download = 'repique-code-pintura.png';
-    a.href = out.toDataURL('image/png');
+    a.download = nombre;
+    a.href = canvasImg.toDataURL('image/png');
     a.click();
+  }
+
+  function cerrarCartel() {
+    cartel.classList.remove('visible');
+    cartelEstado.textContent = '';
+    cartelEstado.classList.remove('error');
+    btnPublicar.disabled = false;
+  }
+
+  btnGuardar.addEventListener('click', () => {
+    // La vista previa es exactamente lo que se publicaría, no una aproximación.
+    const previa = componerImagen(ANCHO_DESENFOQUE);
+    cartelPreview.width  = previa.width;
+    cartelPreview.height = previa.height;
+    cartelPreview.getContext('2d').drawImage(previa, 0, 0);
+
+    cartelEstado.textContent = '';
+    cartelEstado.classList.remove('error');
+
+    if (!ENDPOINT_GUARDAR) {
+      btnPublicar.disabled = true;
+      cartelEstado.textContent = 'Publicar todavía no está disponible.';
+    } else {
+      btnPublicar.disabled = false;
+    }
+
+    cartel.classList.add('visible');
   });
+
+  btnSoloDescarga.addEventListener('click', () => {
+    descargarPNG(componerImagen(0), 'repique-code-pintura.png'); // nítida
+    cerrarCartel();
+  });
+
+  btnCartelCerrar.addEventListener('click', cerrarCartel);
+
+  btnPublicar.addEventListener('click', async () => {
+    if (!ENDPOINT_GUARDAR) return;
+
+    btnPublicar.disabled = true;
+    cartelEstado.classList.remove('error');
+    cartelEstado.textContent = 'Subiendo…';
+
+    try {
+      const blob = await new Promise((res, rej) => {
+        componerImagen(ANCHO_DESENFOQUE)
+          .toBlob(b => (b ? res(b) : rej(new Error('sin blob'))), 'image/png');
+      });
+
+      // AbortController y no solo el timeout del fetch: la wifi de un centro
+      // cívico puede aceptar la conexión y después no contestar nunca.
+      const corte = new AbortController();
+      const reloj = setTimeout(() => corte.abort(), TIMEOUT_SUBIDA);
+
+      const r = await fetch(ENDPOINT_GUARDAR, {
+        method: 'POST',
+        body: blob,
+        headers: { 'Content-Type': 'image/png' },
+        signal: corte.signal,
+      });
+      clearTimeout(reloj);
+
+      if (!r.ok) throw new Error(`servidor respondió ${r.status}`);
+      const { slug } = await r.json();
+      if (!slug) throw new Error('el servidor no devolvió nombre');
+
+      mostrarResultado(slug);
+    } catch (_) {
+      // PLAN B. Nunca dejar a la persona con las manos vacías delante del
+      // público: si la subida falla, se lleva el archivo igual y se le dice.
+      descargarPNG(componerImagen(0), 'repique-code-pintura.png');
+      cartelEstado.classList.add('error');
+      cartelEstado.textContent =
+        'No se pudo publicar (sin conexión). Te descargamos el dibujo al dispositivo.';
+      btnPublicar.disabled = false;
+    }
+  });
+
+  // Pendiente: la pantalla del resultado (LA PALABRA en grande + el QR debajo).
+  // Va cuando exista el endpoint, porque hasta entonces no hay slug real que
+  // mostrar. La palabra tiene que quedar MÁS GRANDE que el QR: el QR exige el
+  // teléfono en la mano en ese momento; la palabra te la llevás en la cabeza.
+  function mostrarResultado(slug) {
+    cartelEstado.textContent = slug;
+  }
 
   // ── Slider lineal de tempo ────────────────────────────────────────────────────
   const sliderTrack = document.getElementById('tempo-slider-track');

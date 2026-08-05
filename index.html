@@ -775,6 +775,107 @@
       to   { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
+    /* ── Cartel de guardado ───────────────────────────────────────────────────
+       Aparece al apretar guardar. La regla que manda acá: NO es un formulario
+       legal. La persona está parada delante de una obra, con gente esperando.
+       Ve la imagen real que se va a publicar (que explica más que cualquier
+       párrafo), lee dos líneas, y elige. Nada más. */
+    #cartel-guardar {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(6px);
+    }
+    #cartel-guardar.visible { display: flex; }
+
+    #cartel-caja {
+      width: min(88vw, 420px);
+      max-height: 88vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: #0b0b0b;
+      padding: 1.4rem 1.3rem 1.2rem;
+      text-align: center;
+    }
+
+    #cartel-titulo {
+      margin: 0 0 0.5rem;
+      font-size: 0.82rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.92);
+      letter-spacing: 0.02em;
+      line-height: 1.4;
+    }
+    #cartel-texto {
+      margin: 0 0 1rem;
+      font-size: 0.68rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.55;
+    }
+
+    /* La vista previa es el argumento principal del cartel: que se vea que la
+       cara sale desenfocada vale más que explicarlo. */
+    #cartel-preview {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid rgba(255,255,255,0.14);
+      margin-bottom: 1.1rem;
+    }
+
+    #cartel-botones {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    #cartel-botones button {
+      background: none;
+      font-family: inherit;
+      font-size: 0.66rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.5rem 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.45);
+    }
+    #cartel-botones button:hover {
+      border-color: rgba(255,255,255,0.5);
+      color: rgba(255,255,255,0.75);
+    }
+    /* Publicar en verde, igual que guardar: es la acción que la persona se lleva */
+    #btn-publicar {
+      border-color: #4ade80 !important;
+      color: #4ade80 !important;
+      font-size: 0.72rem !important;
+      padding: 0.6rem 0.9rem !important;
+    }
+    #btn-publicar:hover { border-color: #86efac !important; color: #86efac !important; }
+    #btn-publicar[disabled] {
+      opacity: 0.35;
+      cursor: default;
+      border-color: rgba(255,255,255,0.2) !important;
+      color: rgba(255,255,255,0.4) !important;
+    }
+
+    #cartel-estado {
+      margin: 0.9rem 0 0;
+      min-height: 1.1em;
+      font-size: 0.62rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.5;
+    }
+    #cartel-estado.error { color: #f4a259; }
+
     /* ── Overlay Vínculos ── */
     #vinculos-overlay {
       position: fixed;
@@ -1125,6 +1226,23 @@
     <iframe id="vinculos-iframe" src="" frameborder="0" allow="camera; microphone; autoplay"></iframe>
     <canvas id="vinculos-canvas"></canvas>
     <button id="btn-cerrar-vinculos">✕</button>
+  </div>
+
+  <!-- Cartel de guardado: qué se publica + vista previa real + elegir -->
+  <div id="cartel-guardar">
+    <div id="cartel-caja">
+      <p id="cartel-titulo">Esto se va a publicar en una página propia</p>
+      <p id="cartel-texto">
+        La cámara sale desenfocada a propósito:<br>se ve que estuviste, no quién sos.
+      </p>
+      <canvas id="cartel-preview"></canvas>
+      <div id="cartel-botones">
+        <button id="btn-publicar">publicar</button>
+        <button id="btn-solo-descargar">solo descargar</button>
+        <button id="btn-cartel-cerrar">volver al dibujo</button>
+      </div>
+      <p id="cartel-estado"></p>
+    </div>
   </div>
 
   <script type="module" src="./src/main.js"></script>

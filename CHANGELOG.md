@@ -27,11 +27,26 @@ fork tenga su propia demo en vivo.
 - El modo baile arranca en el efecto **orbe**.
 
 **Pincel fractal** (4 ago) — reemplaza al spray. Del trazo brotan formas que se
-repiten a escalas menores, y el botón cicla entre seis geometrías: **círculos**
-(burbujas tangentes), **helecho**, **copo** (cristal de seis brazos), **rayo**,
-**coral** y **triángulo** (Sierpinski). El azar va por un LCG con semilla fija por
-estampa que cada réplica reinicia antes de dibujar: sin eso, con mandala ×6 cada
-brazo dibujaría un árbol distinto y se rompería la simetría.
+repiten a escalas menores, en seis geometrías con un botón de una letra cada una:
+**o** círculos (burbujas tangentes), **h** helecho, **n** copo (cristal de seis
+brazos), **r** rayo, **c** coral y **t** triángulo (Sierpinski). El azar va por un
+LCG con semilla fija por estampa que cada réplica reinicia antes de dibujar: sin
+eso, con mandala ×6 cada brazo dibujaría un árbol distinto y se rompería la
+simetría.
+
+**Puntero de mano** (5 ago) — se puede manejar la app sin tocar el ordenador. Con
+la **mano derecha abierta** sobre la zona de los controles aparece una flecha en
+la punta del índice; lo que quede debajo se marca y la **pinza** hace clic. No hay
+lista de botones: se resuelve con `elementFromPoint` + `.click()`, así que sirve
+para todo lo que haya en pantalla, y además emite `mouseover` para los menús que
+se abren al pasar por encima.
+- La llave es abrir la mano entera porque la pinza sola ya toca La/Si en modo
+  música. Mientras el puntero está encendido esa mano se excluye del resto del
+  procesamiento; si no, el mismo gesto que hace clic tocaría una nota.
+- Sólo actúa cerca de los controles: el resto de la pantalla queda libre.
+- La lateralidad sale de `handedness` de MediaPipe. Ojo con la documentación: dice
+  que la etiqueta supone imagen espejada, pero con el video tal como lo entrega
+  esta app `'Right'` **es** la mano derecha real. Verificado con cámara.
 
 **Candados cerrados de entrada** (4 ago) — tempo y graves ya no se mueven con los
 gestos hasta que se abre su candado a mano, así se pueden hacer notas sin

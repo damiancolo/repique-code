@@ -2,7 +2,7 @@
  * main.js — Bootstrap de Repique Code
  */
 
-import { initHands, detectarManos, calcularGestos, detectarVictoria } from './hands.js';
+import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
 import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
@@ -130,19 +130,21 @@ async function init() {
   const TAM_LINEA    = [3, 6, 12];   // s / m / l
   const TAM_BROCHA   = [20, 32, 52];
   // ── Fractales ────────────────────────────────────────────────────────────────
-  // El botón «fractal» cicla entre estas cuatro geometrías. `paso` es cada cuántos
-  // px recorridos se estampa un árbol y `largo` el de la primera rama: el paso es
-  // siempre ~2.5× el largo a propósito, porque si se estampa más seguido los
-  // árboles se solapan y el trazo se lee como una escalera en vez de como ramas.
-  // `tallo` es el grosor de la línea continua respecto al trazo normal: el rayo lo
-  // lleva muy fino porque si no el tallo pesa más que el relámpago y lo tapa.
+  // Un botón de una letra por geometría (o h n r c t), como los tamaños s/m/l.
+  // El orden DEBE coincidir con los `data-frac` de #fila-fractales en index.html.
+  // `paso` es cada cuántos px recorridos se estampa un árbol y `largo` el de la
+  // primera rama: el paso es siempre ~2.5× el largo a propósito, porque si se
+  // estampa más seguido los árboles se solapan y el trazo se lee como una
+  // escalera en vez de como ramas. `tallo` es el grosor de la línea continua
+  // respecto al trazo normal: el rayo lo lleva muy fino porque si no el tallo
+  // pesa más que el relámpago y lo tapa.
   const FRACTALES = [
-    { id: 'circulos',  label: 'fractal círculos',  paso: [34, 52, 80], largo: [ 9, 14, 22], tallo: 0.28 },
-    { id: 'helecho',   label: 'fractal helecho',   paso: [30, 48, 76], largo: [12, 20, 32], tallo: 0.35 },
-    { id: 'copo',      label: 'fractal copo',      paso: [34, 54, 84], largo: [10, 16, 26], tallo: 0.30 },
-    { id: 'rayo',      label: 'fractal rayo',      paso: [30, 46, 70], largo: [ 8, 13, 20], tallo: 0.14 },
-    { id: 'coral',     label: 'fractal coral',     paso: [24, 38, 58], largo: [11, 17, 27], tallo: 0.30 },
-    { id: 'triangulo', label: 'fractal triángulo', paso: [32, 50, 78], largo: [11, 18, 29], tallo: 0.25 },
+    { id: 'circulos',  paso: [34, 52, 80], largo: [ 9, 14, 22], tallo: 0.28 },
+    { id: 'helecho',   paso: [30, 48, 76], largo: [12, 20, 32], tallo: 0.35 },
+    { id: 'copo',      paso: [34, 54, 84], largo: [10, 16, 26], tallo: 0.30 },
+    { id: 'rayo',      paso: [30, 46, 70], largo: [ 8, 13, 20], tallo: 0.14 },
+    { id: 'coral',     paso: [24, 38, 58], largo: [11, 17, 27], tallo: 0.30 },
+    { id: 'triangulo', paso: [32, 50, 78], largo: [11, 18, 29], tallo: 0.25 },
   ];
   let fractalIdx = 0;
   const BARRIDO_FRACTAL = 0.42;      // ~24° de inclinación hacia atrás, tipo helecho
@@ -249,6 +251,141 @@ async function init() {
   /** Puño: todos los dedos cerrados */
   function esPuno(mano) {
     return FINGER_TIPS.every((tip, i) => mano[tip].y >= mano[FINGER_PIPS[i]].y - 0.02);
+  }
+
+  // ── Puntero de mano: mano abierta → flecha en el índice, pinza → clic ────────
+  // La pinza sola no alcanzaba como disparador: ya toca La/Si en modo música. La
+  // llave es abrir la mano entera, que no la usa ningún otro gesto.
+  const punteroEl = document.getElementById('puntero');
+  const PUNTERO_ON_FRAMES  = 3;     // frames de mano abierta para encenderlo
+  const PUNTERO_OFF_FRAMES = 12;    // frames sin gesto válido para apagarlo
+  const PINZA_CIERRA = 0.055;       // pulgar-índice: por debajo, clic
+  const PINZA_ABRE   = 0.080;       // histéresis, si no un clic se repite solo
+
+  // Sólo la mano derecha maneja el puntero. VERIFICADO CON CÁMARA (5 ago 2026):
+  // MediaPipe reporta 'Right' para la mano derecha real con el video tal como lo
+  // entrega esta app. La documentación dice que la etiqueta supone imagen
+  // espejada, lo que hacía esperar lo contrario — no es así. No "corregir" esto
+  // por lo que dicen los docs: se probó y responde a la mano correcta.
+  const MANO_DERECHA = 'Right';
+
+  // …y sólo cerca de los controles. Fuera de estas cajas el puntero ni aparece,
+  // así la mano queda libre para tocar, pintar y bailar en el resto de la pantalla.
+  const ZONAS_PUNTERO = [
+    'panel', 'tempo-slider-wrap', 'filtro-slider-wrap', 'menu-ritmo',
+    'ritmo-viz', 'config-sonidos', 'guia-detalle-panel', 'btn-vinculos',
+  ];
+  const MARGEN_ZONA = 45;
+
+  function _enZonaBotones(sx, sy) {
+    for (const id of ZONAS_PUNTERO) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue; // oculto → no cuenta
+      if (sx >= r.left - MARGEN_ZONA && sx <= r.right  + MARGEN_ZONA &&
+          sy >= r.top  - MARGEN_ZONA && sy <= r.bottom + MARGEN_ZONA) return true;
+    }
+    return false;
+  }
+  let _punteroActivo = false;
+  let _punteroOn     = 0;
+  let _punteroOff    = 0;
+  let _punteroPinza  = false;
+  let _punteroTarget = null;
+
+  const _distPulgarIndice = m => Math.hypot(m[4].x - m[8].x, m[4].y - m[8].y);
+  const _ext = (m, tip, pip) => m[tip].y < m[pip].y - 0.02;
+
+  /** Mano abierta: los cuatro dedos extendidos y el pulgar lejos del índice */
+  function manoAbierta(m) {
+    return _ext(m, 8, 6) && _ext(m, 12, 10) && _ext(m, 16, 14) && _ext(m, 20, 18)
+        && _distPulgarIndice(m) > 0.12;
+  }
+
+  /** Al hacer la pinza el índice baja, pero medio/anular/meñique siguen arriba */
+  function manoSostienePuntero(m) {
+    return _ext(m, 12, 10) && _ext(m, 16, 14) && _ext(m, 20, 18);
+  }
+
+  function _marcarTarget(el) {
+    if (el === _punteroTarget) return;
+    if (_punteroTarget) {
+      _punteroTarget.classList.remove('puntero-sobre');
+      _punteroTarget.dispatchEvent(new MouseEvent('mouseout',   { bubbles: true }));
+      _punteroTarget.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+    }
+    _punteroTarget = el;
+    if (el) {
+      el.classList.add('puntero-sobre');
+      // Varios menús (ritmos, viz) se abren por mouseover, no por :hover de CSS
+      el.dispatchEvent(new MouseEvent('mouseover',  { bubbles: true }));
+      el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+    }
+  }
+
+  function apagarPuntero() {
+    _punteroActivo = false;
+    _punteroOn = 0; _punteroOff = 0;
+    _punteroPinza = false;
+    punteroEl.classList.remove('visible', 'pinza');
+    _marcarTarget(null);
+  }
+
+  /** Primera mano derecha que cumpla `test` y esté sobre la zona de controles */
+  function _candidataPuntero(manos, test) {
+    for (let i = 0; i < manos.length; i++) {
+      if (lateralidad(i) !== MANO_DERECHA) continue;
+      const m = manos[i];
+      if (!test(m)) continue;
+      // Canvas espejado: la X se invierte igual que en el render
+      const sx = (1 - m[8].x) * window.innerWidth;
+      const sy = m[8].y * window.innerHeight;
+      if (!_enZonaBotones(sx, sy)) continue;
+      return { m, sx, sy };
+    }
+    return null;
+  }
+
+  /**
+   * Actualiza el puntero y devuelve la mano que lo maneja (o null), para que el
+   * modo activo la excluya de sus propios gestos.
+   */
+  function actualizarPuntero(manos) {
+    // Encender exige la mano abierta entera; una vez encendido basta con
+    // sostener medio/anular/meñique, que son los que quedan arriba al pinzar.
+    const c = _candidataPuntero(manos, _punteroActivo ? manoSostienePuntero : manoAbierta);
+
+    if (!_punteroActivo) {
+      if (!c) { _punteroOn = 0; return null; }
+      if (++_punteroOn < PUNTERO_ON_FRAMES) return null;
+      _punteroActivo = true;
+      _punteroOff = 0;
+      punteroEl.classList.add('visible');
+    }
+
+    if (!c) {
+      if (++_punteroOff >= PUNTERO_OFF_FRAMES) apagarPuntero();
+      return null;
+    }
+    _punteroOff = 0;
+
+    punteroEl.style.transform = `translate(${c.sx}px, ${c.sy}px)`;
+
+    // El puntero tiene pointer-events:none, así que nunca se encuentra a sí mismo
+    const bajo = document.elementFromPoint(c.sx, c.sy);
+    _marcarTarget(bajo ? bajo.closest('button, a[href]') : null);
+
+    const d = _distPulgarIndice(c.m);
+    if (!_punteroPinza && d < PINZA_CIERRA) {
+      _punteroPinza = true;
+      punteroEl.classList.add('pinza');
+      if (_punteroTarget) _punteroTarget.click();
+    } else if (_punteroPinza && d > PINZA_ABRE) {
+      _punteroPinza = false;
+      punteroEl.classList.remove('pinza');
+    }
+    return c.m;
   }
 
   /** Shaka 🤙: pulgar arriba + meñique arriba, índice/medio/anular cerrados */
@@ -1240,7 +1377,11 @@ async function init() {
     const dt = _lastFrameTime ? Math.min((timestamp - _lastFrameTime) / 1000, 0.05) : 0.016;
     _lastFrameTime = timestamp;
     try {
-    const manos = detectarManos(video);
+    const manosTodas = detectarManos(video);
+    // La mano que maneja el puntero se saca del resto: si no, la misma pinza que
+    // hace clic tocaría un La en modo música o soltaría un trazo en pintura.
+    const manoPuntero = actualizarPuntero(manosTodas);
+    const manos = manoPuntero ? manosTodas.filter(m => m !== manoPuntero) : manosTodas;
 
     if (modoPintar) {
       // ── Modo pintar ────────────────────────────────────────────────────────
@@ -1773,27 +1914,32 @@ async function init() {
   const btnMandala  = document.getElementById('btn-mandala');
   const btnDeshacer = document.getElementById('btn-deshacer');
 
-  // El botón de fractal es especial: la primera pulsación activa el estilo, y cada
-  // pulsación siguiente (con el estilo ya activo) pasa a la variante siguiente.
-  const btnFractal = document.querySelector('.estilo-btn[data-estilo="fractal"]');
-  function pintarFractal() {
-    // El ⟳ avisa que el botón cicla; el resto de los estilos no lo llevan. Va en
-    // un span porque a 0.58rem el glifo es ilegible: necesita cuerpo propio.
-    btnFractal.innerHTML =
-      '<span class="ciclo">⟳</span>' + FRACTALES[fractalIdx].label;
+  // Estilos y fractales son dos filas pero UN solo estilo activo: elegir un
+  // fractal apaga línea/neón/arcoíris y viceversa.
+  const fracBtns = document.querySelectorAll('.frac-btn');
+
+  function pintarEstilos() {
+    const esFractal = estiloActual === 'fractal';
+    estiloBtns.forEach(b => b.classList.toggle('activo', !esFractal && b.dataset.estilo === estiloActual));
+    fracBtns.forEach(b => b.classList.toggle('activo', esFractal && +b.dataset.frac === fractalIdx));
   }
-  pintarFractal();
 
   estiloBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      if (btn === btnFractal && estiloActual === 'fractal') {
-        fractalIdx = (fractalIdx + 1) % FRACTALES.length;
-        pintarFractal();
-      }
       estiloActual = btn.dataset.estilo;
-      estiloBtns.forEach(b => b.classList.toggle('activo', b === btn));
+      pintarEstilos();
     });
   });
+
+  fracBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      estiloActual = 'fractal';
+      fractalIdx   = +btn.dataset.frac;
+      _fracAcum    = 0; // que el primer árbol del fractal nuevo no salga pegado
+      pintarEstilos();
+    });
+  });
+  pintarEstilos();
 
   tamBtns.forEach(btn => {
     btn.addEventListener('click', () => {

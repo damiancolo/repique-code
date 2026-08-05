@@ -8,6 +8,7 @@ export const PUNTA_IDS = [4, 8, 12, 16, 20];
 
 let handLandmarker = null;
 let ultimoTimestamp = -1;
+let ultimaLateralidad = []; // paralelo a los landmarks de la última detección
 
 export async function initHands() {
   const vision = await FilesetResolver.forVisionTasks(
@@ -30,7 +31,19 @@ export function detectarManos(video) {
   if (ahora <= ultimoTimestamp) return [];
   ultimoTimestamp = ahora;
   const resultado = handLandmarker.detectForVideo(video, ahora);
+  ultimaLateralidad = (resultado.handedness ?? []).map(h => h[0]?.categoryName ?? '');
   return resultado.landmarks ?? [];
+}
+
+/**
+ * 'Left' | 'Right' de la mano i de la última detección, tal cual lo reporta
+ * MediaPipe. Probado con cámara (5 ago 2026): con el video tal como lo entrega
+ * esta app la etiqueta coincide con la mano REAL — 'Right' es la derecha. La
+ * documentación sugiere lo contrario (dice que asume imagen espejada); en la
+ * práctica no hay que invertir nada.
+ */
+export function lateralidad(i) {
+  return ultimaLateralidad[i] ?? '';
 }
 
 // índice, medio, anular, meñique  →  tracks: madera, chico, repique, piano

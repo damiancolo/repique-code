@@ -180,12 +180,20 @@
       flex-wrap: wrap;
       max-width: 240px;
     }
-    #fila-tools, #fila-tools-2, #fila-tools-3 {
+    #fila-tools, #fila-tools-2, #fila-tools-3, #fila-fractales {
       display: flex;
       align-items: center;
       gap: 0.3rem;
       flex-wrap: wrap;
       max-width: 240px; /* mismo ancho que la fila de colores: la paleta no se ensancha */
+    }
+
+    .fila-label {
+      font-size: 0.46rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+      margin-right: 0.1rem;
     }
 
     .color-btn {
@@ -217,13 +225,8 @@
     #btn-limpiar:hover, #btn-guardar:hover, .tool-btn:hover { border-color: rgba(255,255,255,0.5); color: rgba(255,255,255,0.7); }
     .tool-btn.activo { border-color: #e63946; color: #e63946; }
 
-    /* Marca de "este botón cicla" — a cuerpo del texto el glifo no se lee */
-    .ciclo {
-      font-size: 1.5em;
-      letter-spacing: 0;
-      vertical-align: -0.1em;
-      margin-right: 0.32em;
-    }
+    /* Los seis fractales van en botones de una letra, como los tamaños s/m/l */
+    .frac-btn { min-width: 22px; text-align: center; }
 
     #fila-loop { display: flex; align-items: center; gap: 0.3rem; }
     #btn-loop.armado { border-color: #f4a259; color: #f4a259; }
@@ -697,6 +700,30 @@
     .slider-lock:hover  { opacity: 0.7; }
     .slider-lock.locked { opacity: 1; }
 
+    /* ── Puntero de mano (mano abierta → flecha, pinza → clic) ── */
+    #puntero {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 9999;
+      display: none;
+      pointer-events: none; /* si no, elementFromPoint se encontraría a sí mismo */
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+    }
+    #puntero.visible { display: block; }
+    #puntero svg {
+      display: block;
+      transform-origin: 3px 2px;
+      transition: transform 0.09s ease-out;
+    }
+    #puntero.pinza svg      { transform: scale(0.62); }
+    #puntero.pinza svg path { fill: #e63946; }
+
+    .puntero-sobre {
+      outline: 2px solid #e63946;
+      outline-offset: 2px;
+    }
+
     /* ── Botón Vínculos (gesto shaka) ── */
     #btn-vinculos {
       position: fixed;
@@ -834,9 +861,17 @@
         <button class="tool-btn estilo-btn activo" data-estilo="linea" title="Trazo sólido">línea</button>
         <button class="tool-btn estilo-btn" data-estilo="neon" title="Trazo con resplandor">neón</button>
         <button class="tool-btn estilo-btn" data-estilo="arcoiris" title="El color rota al trazar">arcoíris</button>
-        <!-- Último a propósito: su etiqueta cambia de largo al ciclar variantes, y
-             al final de la fila el reflujo no empuja a los otros estilos. -->
-        <button class="tool-btn estilo-btn" data-estilo="fractal" title="Pulsá otra vez para cambiar de fractal"><span class="ciclo">⟳</span>fractal círculos</button>
+      </div>
+      <!-- Los seis fractales, uno por botón. El orden DEBE coincidir con FRACTALES
+           en main.js: el data-frac es el índice en ese array. -->
+      <div id="fila-fractales">
+        <span class="fila-label">fractal</span>
+        <button class="tool-btn frac-btn" data-frac="0" title="Círculos — burbujas tangentes">o</button>
+        <button class="tool-btn frac-btn" data-frac="1" title="Helecho — fronda que se bifurca">h</button>
+        <button class="tool-btn frac-btn" data-frac="2" title="Copo — cristal de seis brazos">n</button>
+        <button class="tool-btn frac-btn" data-frac="3" title="Rayo — relámpago quebrado">r</button>
+        <button class="tool-btn frac-btn" data-frac="4" title="Coral — mata tupida">c</button>
+        <button class="tool-btn frac-btn" data-frac="5" title="Triángulo — Sierpinski">t</button>
       </div>
       <div id="fila-tools-2">
         <button class="tool-btn tam-btn" data-tam="0" title="Trazo fino">s</button>
@@ -919,6 +954,7 @@
       <tr><td>✌️ Victoria</td><td>Desbloquear</td></tr>
       <tr><td>☝🤞 Puntas juntas</td><td>Sliders tempo/graves — sobre la barra</td></tr>
       <tr><td>🎵 ✏ 🕺 Modos</td><td>Música / pintura / baile</td></tr>
+      <tr><td>🖐 Derecha abierta</td><td>Puntero sobre los controles — pinza 🤏 = clic</td></tr>
     </table>
     <div class="sep"></div>
     <table>
@@ -938,6 +974,13 @@
       <p><strong>Arrancar</strong> enciende el audio y el secuenciador; el mismo botón pasa a <strong>Parar</strong> y los apaga.</p>
       <p>Posicioná las manos frente a la cámara para interactuar.</p>
       <p>Debajo están los <strong>tres modos</strong>: <strong>🎵 música</strong> (las formas de tus manos son notas) · <strong>✏ pintura</strong> (dibujás con los dedos) · <strong>🕺 baile</strong> (cada movimiento dispara un sonido). La app abre en <strong>pintura</strong>.</p>
+
+      <div class="gd-sep"></div>
+      <h3>Puntero de mano — manejar la app sin tocar el ordenador</h3>
+      <p>Llevá la <strong>mano derecha abierta</strong> (los cuatro dedos estirados y el pulgar separado) <strong>sobre la zona de los controles</strong> y aparece una <strong>flecha en la punta del índice</strong>. Movés la mano, movés la flecha.</p>
+      <p>Lo que quede debajo de la flecha se <strong>marca en rojo</strong>. Hacé la <strong>pinza 🤏</strong> (pulgar contra índice) y es un clic: sirve para todos los botones — modos, colores, estilos, ritmos, candados, todo.</p>
+      <p>Fuera de la zona de controles el puntero no aparece, así el resto de la pantalla queda libre para tocar, pintar y bailar. Baja la mano o cerrala y desaparece solo.</p>
+      <p>Mientras el puntero está encendido, <strong>esa mano no toca ni dibuja</strong>: se dedica a apuntar. La izquierda sigue funcionando normal.</p>
 
       <div class="gd-sep"></div>
       <h3>Ritmos — botón ♩</h3>
@@ -985,8 +1028,8 @@
       <p><strong>🖖 Índice + medio + anular</strong> → brocha gorda semitransparente.</p>
       <p><strong>✊ Puño + UN dedo</strong> (mantener 2 s) → seleccionar color por gesto:</p>
       <p style="padding-left:0.8rem">Índice = rojo · Medio = azul · Anular = verde · Meñique = amarillo · Pulgar = naranja</p>
-      <p>Paleta: <strong>12 colores</strong> · estilos <strong>línea / neón / fractal / arcoíris</strong> · tamaños <strong>s / m / l</strong>.</p>
-      <p><strong>⟳ Fractal</strong> → del trazo brotan formas que se repiten a escalas cada vez menores. El <strong>⟳</strong> quiere decir que el botón cicla: volvé a pulsarlo para pasar al siguiente. <strong>Círculos</strong> (burbujas tangentes) · <strong>helecho</strong> (fronda que se bifurca) · <strong>copo</strong> (cristal de seis brazos) · <strong>rayo</strong> (relámpago quebrado) · <strong>coral</strong> (mata tupida) · <strong>triángulo</strong> (Sierpinski, el geométrico).</p>
+      <p>Paleta: <strong>12 colores</strong> · estilos <strong>línea / neón / arcoíris</strong> + <strong>6 fractales</strong> · tamaños <strong>s / m / l</strong>.</p>
+      <p><strong>Fractales</strong> → del trazo brotan formas que se repiten a escalas cada vez menores. Son seis, cada uno con su botón de una letra: <strong>o</strong> círculos (burbujas tangentes) · <strong>h</strong> helecho (fronda que se bifurca) · <strong>n</strong> copo (cristal de seis brazos) · <strong>r</strong> rayo (relámpago quebrado) · <strong>c</strong> coral (mata tupida) · <strong>t</strong> triángulo (Sierpinski, el geométrico).</p>
       <p><strong>Espejo ×2</strong> y <strong>mandala ×6</strong> → dos botones: el trazo se replica reflejado o rotado seis veces.</p>
       <p><strong>↩ Deshacer</strong> (hasta 4 pasos) · <strong>limpiar</strong> · <strong>guardar</strong> → descarga tu dibujo en PNG.</p>
       <p>El dibujo <strong>late con el beat</strong> mientras suena la música.</p>
@@ -1035,6 +1078,14 @@
       <p>Los samples de percusión son de <strong>Freesound</strong> (CC0 y CC-BY): MrRentAPercussionist, BoilingSand, soundbytez, Uberproduktion, oceansonmars y Sajmund. El detalle completo está en <a href="https://github.com/damiancolo/repique-code/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a>.</p>
       <p>Hecho con <a href="https://ai.google.dev/edge/mediapipe" target="_blank" rel="noopener">MediaPipe</a> y <a href="https://tonejs.github.io/" target="_blank" rel="noopener">Tone.js</a> por <a href="https://estudioprompt.com" target="_blank" rel="noopener">Estudioprompt</a>.</p>
     </div>
+  </div>
+
+  <!-- Puntero de mano: aparece con la mano abierta, hace clic con la pinza -->
+  <div id="puntero" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="27" height="27">
+      <path d="M3 2 L3 19.2 L7.6 14.9 L10.5 21.4 L13.6 19.9 L10.7 13.6 L16.8 13.4 Z"
+            fill="#fff" stroke="#111" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
   </div>
 
   <!-- Botón Vínculos (aparece con gesto shaka 🤙) -->

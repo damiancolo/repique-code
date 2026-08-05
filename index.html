@@ -209,6 +209,15 @@
     .color-btn.activo { border-color: #fff; }
     .color-btn[style*="ffffff"].activo { border-color: #e63946; }
 
+    /* Negro: más grande que los demás y con borde propio, porque sobre el fondo
+       negro de la app un círculo negro sin contorno sería invisible. */
+    .color-btn-xl {
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(255,255,255,0.45);
+    }
+    .color-btn-xl.activo { border: 2px solid #e63946; }
+
     #btn-limpiar, #btn-guardar, .tool-btn {
       background: none;
       border: 1px solid rgba(255,255,255,0.2);
@@ -872,6 +881,12 @@
         <button class="tool-btn estilo-btn activo" data-estilo="linea" title="Trazo sólido">línea</button>
         <button class="tool-btn estilo-btn" data-estilo="neon" title="Trazo con resplandor">neón</button>
         <button class="tool-btn estilo-btn" data-estilo="arcoiris" title="El color rota al trazar">arcoíris</button>
+        <!-- El negro va acá y no en #fila-colores porque es el color que borra
+             sobre la cámara: se usa mucho y merece un blanco fácil de acertar,
+             sobre todo apuntando con la mano. Es un .color-btn más, y como está
+             DESPUÉS de #fila-colores en el DOM le toca el índice 12 — el mismo
+             que ocupa el negro al final de COLORES_PINCEL en main.js. -->
+        <button class="color-btn color-btn-xl" style="background:#000" title="Negro"></button>
       </div>
       <!-- Los seis fractales, uno por botón. El orden DEBE coincidir con FRACTALES
            en main.js: el data-frac es el índice en ese array. -->
@@ -1038,11 +1053,10 @@
 
       <div class="gd-sep"></div>
       <h3>Modo pintura — botón ✏</h3>
-      <p><strong>☝ Solo índice</strong> → traza con el estilo activo.</p>
+      <p><strong>☝ Solo índice</strong> → traza con el estilo activo. <strong>Siempre</strong>: ningún otro gesto lo interrumpe.</p>
       <p><strong>🖖 Índice + medio + anular</strong> → brocha gorda semitransparente.</p>
-      <p><strong>✊ Puño + UN dedo</strong> (mantener 2 s) → seleccionar color por gesto:</p>
-      <p style="padding-left:0.8rem">Índice = rojo · Medio = azul · Anular = verde · Meñique = amarillo · Pulgar = naranja</p>
-      <p>Paleta: <strong>12 colores</strong> · estilos <strong>línea / neón / arcoíris</strong> + <strong>6 fractales</strong> · tamaños <strong>s / m / l</strong>.</p>
+      <p>Paleta: <strong>13 colores</strong> (el <strong>negro</strong>, más grande, junto a arcoíris) · estilos <strong>línea / neón / arcoíris</strong> + <strong>6 fractales</strong> · tamaños <strong>s / m / l</strong>.</p>
+      <p>Para cambiar de color sin tocar el ordenador, usá el <strong>puntero de mano</strong> (🖐 abierta + pinza 🤏).</p>
       <p><strong>Fractales</strong> → del trazo brotan formas que se repiten a escalas cada vez menores. Son seis, cada uno con su botón de una letra: <strong>o</strong> círculos (burbujas tangentes) · <strong>h</strong> helecho (fronda que se bifurca) · <strong>n</strong> copo (cristal de seis brazos) · <strong>r</strong> rayo (relámpago quebrado) · <strong>c</strong> coral (mata tupida) · <strong>t</strong> triángulo (Sierpinski, el geométrico).</p>
       <p><strong>Espejo ×2</strong> y <strong>mandala ×6</strong> → dos botones: el trazo se replica reflejado o rotado seis veces.</p>
       <p><strong>↩ Deshacer</strong> (hasta 4 pasos) · <strong>limpiar</strong> · <strong>guardar</strong> → descarga tu dibujo en PNG.</p>

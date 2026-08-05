@@ -114,6 +114,10 @@ async function init() {
   const COLORES_PINCEL = [
     '#e63946', '#ff6b35', '#f4d03f', '#a3e635', '#27ae60', '#2dd4bf',
     '#38bdf8', '#4a90e2', '#a855f7', '#ec4899', '#ffffff', '#C44A1A',
+    // El negro va ÚLTIMO y su botón vive fuera de #fila-colores, junto a
+    // «arcoíris»: como está después en el DOM, querySelectorAll('.color-btn')
+    // le sigue asignando este índice.
+    '#000000',
   ];
   // Versión translúcida para la brocha, derivada del pincel
   const COLORES_BROCHA = COLORES_PINCEL.map(hex => {
@@ -122,9 +126,6 @@ async function init() {
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r},${g},${b},0.22)`;
   });
-  // Gesto de dedo → índice en la paleta (mantiene los tonos bien distintos):
-  // ☝ índice=rojo · ✌ medio=azul · 💍 anular=verde · 🤙 meñique=amarillo · 👍 pulgar=naranja
-  const DEDO_A_COLOR = [0, 7, 4, 2, 1];
 
   // ── Estilos, tamaños y espejo ────────────────────────────────────────────────
   const TAM_LINEA    = [3, 6, 12];   // s / m / l
@@ -166,9 +167,6 @@ async function init() {
     _snapshots.push(c);
     if (_snapshots.length > SNAPSHOTS_MAX) _snapshots.shift();
   }
-  // Índices landmark de las puntas y articulaciones PIP de los 4 dedos
-  const FINGER_TIPS = [8, 12, 16, 20]; // índice, medio, anular, meñique
-  const FINGER_PIPS = [6, 10, 14, 18];
   let modoPintar     = true;   // la app abre directamente en modo pintura
   let colorIdx       = 0;
   // Pintura viva: el dibujo late con el beat del secuenciador
@@ -191,8 +189,6 @@ async function init() {
   let _distManosPrev = null;          // distancia entre palmas en el frame anterior
   let ultimoPtoBuf   = null;
   let ultimoGesture  = null;
-  let colorSeleccion = null; // { idx, inicio, sx, sy }
-  const MS_SELECCION = 2000;
 
   // Offscreen buffer — mismo tamaño que canvas para coords 1:1
   const bufCanvas = document.createElement('canvas');
@@ -248,11 +244,6 @@ async function init() {
   /** Índice extendido (señalar) — sin importar los demás dedos */
   function indiceApunta(mano) {
     return mano[8].y < mano[6].y - 0.02;
-  }
-
-  /** Puño: todos los dedos cerrados */
-  function esPuno(mano) {
-    return FINGER_TIPS.every((tip, i) => mano[tip].y >= mano[FINGER_PIPS[i]].y - 0.02);
   }
 
   // ── Puntero de mano: mano abierta → flecha en el índice, pinza → clic ────────
@@ -423,22 +414,6 @@ async function init() {
     vinculosCtx.beginPath();
     vinculosCtx.arc(px, py, sz, 0, Math.PI * 2);
     vinculosCtx.fill();
-  }
-
-  /**
-   * En la mano "selectora": detecta exactamente un dedo/pulgar extendido.
-   * 0=índice(rojo) 1=medio(azul) 2=anular(verde) 3=meñique(amarillo) 4=pulgar(naranja)
-   */
-  function detectarDedoColor(mano) {
-    // Solo evaluar los 4 dedos principales (sin pulgar)
-    const ext      = FINGER_TIPS.map((tip, i) => mano[tip].y < mano[FINGER_PIPS[i]].y - 0.03);
-    const thumbUp  = mano[4].y < mano[2].y - 0.04;
-    const extCount = ext.filter(Boolean).length;
-    // Pulgar solo (los demás cerrados) → naranja
-    if (thumbUp && extCount === 0) return 4;
-    // Exactamente un dedo extendido (el pulgar puede estar libre, no importa)
-    if (extCount === 1) return ext.indexOf(true);
-    return null;
   }
 
   function aplicarTrazo(mano, gesture) {
@@ -730,41 +705,9 @@ async function init() {
     }
   }
 
-  function renderPaintCanvas(manos, gestureMano, seleccionInfo) {
+  function renderPaintCanvas(manos, gestureMano) {
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
     drawBufConPulso();
-
-    // ── Indicador de selección de color ──────────────────────────────────────
-    if (seleccionInfo) {
-      const { pal, inicio, sx, sy } = seleccionInfo;
-      const progress = Math.min((Date.now() - inicio) / MS_SELECCION, 1);
-      const color    = COLORES_PINCEL[pal];
-      const R        = 26;
-
-      // Aro de fondo
-      ctxPaint.beginPath();
-      ctxPaint.arc(sx, sy, R, 0, Math.PI * 2);
-      ctxPaint.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctxPaint.lineWidth = 5;
-      ctxPaint.stroke();
-
-      // Aro de progreso
-      ctxPaint.beginPath();
-      ctxPaint.arc(sx, sy, R, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
-      ctxPaint.strokeStyle = color;
-      ctxPaint.lineWidth = 5;
-      ctxPaint.stroke();
-
-      // Punto central del color
-      ctxPaint.beginPath();
-      ctxPaint.arc(sx, sy, 9, 0, Math.PI * 2);
-      ctxPaint.fillStyle = color;
-      ctxPaint.globalAlpha = 0.85;
-      ctxPaint.fill();
-      ctxPaint.globalAlpha = 1;
-
-      return;
-    }
 
     // ── Cursor según gesto activo ─────────────────────────────────────────────
     if (gestureMano) {
@@ -1387,55 +1330,22 @@ async function init() {
 
     if (modoPintar) {
       // ── Modo pintar ────────────────────────────────────────────────────────
-      const puños   = manos.filter(m => esPuno(m));
-      const noPuños = manos.filter(m => !esPuno(m));
-
-      // ── Comprobar selección de color SÓLO si hay dedo claro ─────────────
-      // (un puño + EXACTAMENTE un dedo reconocido en la otra mano)
-      let dedoIdxSel = null;
-      let selectorMano = null;
-      if (puños.length === 1 && noPuños.length >= 1) {
-        const d = detectarDedoColor(noPuños[0]);
-        if (d !== null) { dedoIdxSel = d; selectorMano = noPuños[0]; }
+      // Un índice estirado SIEMPRE dibuja. Antes, un puño en la otra mano abría
+      // la selección de color por gesto y cortaba el trazo a mitad de camino.
+      // Esa vía se eliminó: los colores se eligen con el ratón o con el puntero
+      // de mano (🖐 abierta + pinza), que llega a todos los botones.
+      let gestureMano = null;
+      for (const m of manos) {
+        const g = detectarGesturePintura(m);
+        if (g) { gestureMano = { mano: m, gesture: g }; break; }
       }
-
-      if (dedoIdxSel !== null) {
-        // ── Selección de color ─────────────────────────────────────────────
-        ultimoPtoBuf = null; ultimoGesture = null;
-        const tip = dedoIdxSel < 4 ? FINGER_TIPS[dedoIdxSel] : 4;
-        const sx = (1 - selectorMano[tip].x) * canvas.width;
-        const sy = selectorMano[tip].y * canvas.height;
-        if (colorSeleccion && colorSeleccion.idx === dedoIdxSel) {
-          const elapsed = Date.now() - colorSeleccion.inicio;
-          if (elapsed >= MS_SELECCION) {
-            colorIdx = colorSeleccion.pal;
-            colorBtns.forEach((b, j) => b.classList.toggle('activo', j === colorIdx));
-            colorSeleccion = null;
-          } else {
-            colorSeleccion.sx = sx; colorSeleccion.sy = sy;
-          }
-        } else {
-          colorSeleccion = { idx: dedoIdxSel, pal: DEDO_A_COLOR[dedoIdxSel], inicio: Date.now(), sx, sy };
-        }
-        renderFrame(ctx, video, canvas, [], null, null);
-        renderPaintCanvas(manos, null, colorSeleccion);
-
+      if (gestureMano) {
+        aplicarTrazo(gestureMano.mano, gestureMano.gesture);
       } else {
-        // ── Dibujo normal (aunque haya un puño, no interfiere) ─────────────
-        colorSeleccion = null;
-        let gestureMano = null;
-        for (const m of manos) {
-          const g = detectarGesturePintura(m);
-          if (g) { gestureMano = { mano: m, gesture: g }; break; }
-        }
-        if (gestureMano) {
-          aplicarTrazo(gestureMano.mano, gestureMano.gesture);
-        } else {
-          ultimoPtoBuf = null; ultimoGesture = null;
-        }
-        renderFrame(ctx, video, canvas, [], null, null);
-        renderPaintCanvas(manos, gestureMano, null);
+        ultimoPtoBuf = null; ultimoGesture = null;
       }
+      renderFrame(ctx, video, canvas, [], null, null);
+      renderPaintCanvas(manos, gestureMano);
     } else if (modoBaile) {
       // ── Modo baile: las manos generan efectos, no controlan la música ──────
       trackBaileHands(manos, dt);
@@ -1715,7 +1625,6 @@ async function init() {
     paleta.classList.remove('visible');
     ultimoPtoBuf   = null;
     ultimoGesture  = null;
-    colorSeleccion = null;
     zoomActivo     = false;
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
   }

@@ -929,6 +929,28 @@
       color: #fff;
     }
 
+    /* «Escanea aquí» — pedido del owner: bien grande y pegado al QR.
+       Grande respecto del resto de textos chicos (0.6-0.7rem), pero MUY por
+       debajo del nombre: la jerarquía sigue siendo palabra > todo lo demás. */
+    #res-escanea {
+      margin: 0 0 0.7rem;
+      font-size: clamp(1.15rem, 5vw, 1.5rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #4ade80;
+      line-height: 1.1;
+    }
+    #res-escanea::after {
+      content: '↓';
+      display: block;
+      font-size: 0.9em;
+      font-weight: 300;
+      line-height: 1;
+      margin-top: 0.15rem;
+      opacity: 0.85;
+    }
+
     /* El QR, deliberadamente más chico que la palabra.
        138px NO es un número al azar: medido en pantalla, el bloque del nombre
        ocupa ~21.700 px² y a este tamaño el QR ocupa ~19.000. Con los 168px que
@@ -1352,10 +1374,10 @@
       <h2 id="res-nombre">
         <span id="res-nombre-a"></span><span id="res-nombre-b"></span>
       </h2>
+      <p id="res-escanea">escanea aquí</p>
       <canvas id="res-qr"></canvas>
       <p id="res-url"></p>
       <p id="res-ayuda">
-        Apuntá con la cámara del teléfono.<br>
         O acordate de la palabra y entrá cuando quieras.
       </p>
       <button id="btn-res-cerrar">seguir dibujando</button>

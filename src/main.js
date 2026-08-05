@@ -271,6 +271,8 @@ async function init() {
     // en la instalación nadie toca el ordenador, y decidir si se publica su
     // propia imagen es justo lo último que debería obligar a agacharse al teclado.
     'cartel-caja',
+    // Y el resultado, por lo mismo: hay que poder cerrarlo y seguir dibujando.
+    'res-caja',
   ];
   const MARGEN_ZONA = 45;
 
@@ -1954,10 +1956,12 @@ async function init() {
   //   publicar        → sube la versión DESENFOCADA, que queda pública
   //   solo descargar  → baja la versión NÍTIDA al dispositivo, sin publicar nada
   //
-  // ENDPOINT_GUARDAR vacío = todavía no hay servidor donde subir. El cartel
-  // funciona igual y publicar queda deshabilitado con su explicación. Cuando
-  // exista la ruta, se completa esta constante y se enciende solo.
-  const ENDPOINT_GUARDAR = '';
+  // El endpoint NO está en /api/ y no es un descuido: Vercel acapara ese espacio
+  // de nombres en el sitio que lo aloja, y además su plan no admite más funciones.
+  // Vaciar esta constante deshabilita publicar y deja solo la descarga local, que
+  // es también lo que hace el plan B cuando no hay red.
+  const ENDPOINT_GUARDAR = 'https://estudioprompt.com/rc/publicar';
+  const BASE_PAGINAS     = 'https://estudioprompt.com/rc';
   const TIMEOUT_SUBIDA   = 12000; // ms — pasado esto asumimos que no hay red
 
   const btnGuardar      = document.getElementById('btn-guardar');
@@ -1967,6 +1971,13 @@ async function init() {
   const btnPublicar     = document.getElementById('btn-publicar');
   const btnSoloDescarga = document.getElementById('btn-solo-descargar');
   const btnCartelCerrar = document.getElementById('btn-cartel-cerrar');
+
+  const resultado   = document.getElementById('resultado-guardado');
+  const resNombreA  = document.getElementById('res-nombre-a');
+  const resNombreB  = document.getElementById('res-nombre-b');
+  const resQR       = document.getElementById('res-qr');
+  const resUrl      = document.getElementById('res-url');
+  const btnResCerrar = document.getElementById('btn-res-cerrar');
 
   function descargarPNG(canvasImg, nombre) {
     const a = document.createElement('a');
@@ -2009,6 +2020,11 @@ async function init() {
 
   btnCartelCerrar.addEventListener('click', cerrarCartel);
 
+  btnResCerrar.addEventListener('click', () => {
+    resultado.classList.remove('visible');
+    cerrarCartel();
+  });
+
   btnPublicar.addEventListener('click', async () => {
     if (!ENDPOINT_GUARDAR) return;
 
@@ -2036,10 +2052,10 @@ async function init() {
       clearTimeout(reloj);
 
       if (!r.ok) throw new Error(`servidor respondió ${r.status}`);
-      const { slug } = await r.json();
+      const { slug, k } = await r.json();
       if (!slug) throw new Error('el servidor no devolvió nombre');
 
-      mostrarResultado(slug);
+      await mostrarResultado(slug, k);
     } catch (_) {
       // PLAN B. Nunca dejar a la persona con las manos vacías delante del
       // público: si la subida falla, se lleva el archivo igual y se le dice.
@@ -2051,12 +2067,40 @@ async function init() {
     }
   });
 
-  // Pendiente: la pantalla del resultado (LA PALABRA en grande + el QR debajo).
-  // Va cuando exista el endpoint, porque hasta entonces no hay slug real que
-  // mostrar. La palabra tiene que quedar MÁS GRANDE que el QR: el QR exige el
-  // teléfono en la mano en ese momento; la palabra te la llevás en la cabeza.
-  function mostrarResultado(slug) {
-    cartelEstado.textContent = slug;
+  // ── La pantalla del resultado ─────────────────────────────────────────────
+  //
+  // LA PALABRA VA MÁS GRANDE QUE EL QR, y no es una decisión estética.
+  // El QR exige tener el teléfono en la mano, con batería y cámara, en ese
+  // momento exacto. La palabra te la podés acordar, anotar, o decírsela a
+  // alguien, y tipearla a la noche desde tu casa. Eso es lo que hace que el
+  // sistema de nombres trabaje de verdad en vez de ser un adorno.
+  async function mostrarResultado(slug, k) {
+    const url = `${BASE_PAGINAS}/${slug}?k=${k}`;
+    const [a, b] = slug.split('-');
+
+    resNombreA.textContent = a;
+    resNombreB.textContent = b;
+    resUrl.textContent = `${BASE_PAGINAS.replace('https://', '')}/${slug}`;
+
+    try {
+      // La librería va EMPAQUETADA, no desde un CDN: la wifi del centro cívico
+      // puede fallar, y el modelo de MediaPipe ya depende de la red. No sumar
+      // otra dependencia externa justo en el momento del resultado.
+      const { default: QRCode } = await import('qrcode');
+      await QRCode.toCanvas(resQR, url, {
+        width: 220,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'M',
+      });
+      resQR.style.display = 'block';
+    } catch (_) {
+      // Sin QR la palabra sigue sirviendo, que era justamente la idea.
+      resQR.style.display = 'none';
+    }
+
+    cartel.classList.remove('visible');
+    resultado.classList.add('visible');
   }
 
   // ── Slider lineal de tempo ────────────────────────────────────────────────────

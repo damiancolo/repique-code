@@ -876,6 +876,106 @@
     }
     #cartel-estado.error { color: #f4a259; }
 
+    /* ── Pantalla del resultado ───────────────────────────────────────────────
+       LA PALABRA VA MÁS GRANDE QUE EL QR, y no es estética. El QR exige tener el
+       teléfono en la mano, con batería y cámara, en ese momento. La palabra te la
+       podés acordar, anotar o decírsela a alguien, y tipearla a la noche desde tu
+       casa. Eso es lo que hace que el sistema de nombres sirva de verdad. */
+    #resultado-guardado {
+      position: fixed;
+      inset: 0;
+      z-index: 65;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.93);
+      backdrop-filter: blur(8px);
+    }
+    #resultado-guardado.visible { display: flex; }
+
+    #res-caja {
+      width: min(90vw, 460px);
+      max-height: 92vh;
+      overflow-y: auto;
+      text-align: center;
+      padding: 1.5rem;
+    }
+
+    #res-titulo {
+      margin: 0 0 1.4rem;
+      font-size: 0.6rem;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* El nombre: lo más grande de la pantalla, lejos */
+    #res-nombre {
+      margin: 0 0 1.6rem;
+      line-height: 0.92;
+      letter-spacing: -0.02em;
+      overflow-wrap: anywhere;
+    }
+    #res-nombre span { display: block; }
+    #res-nombre-a {
+      font-size: clamp(2.2rem, 11vw, 3.4rem);
+      font-weight: 200;
+      color: rgba(255,255,255,0.72);
+    }
+    #res-nombre-b {
+      font-size: clamp(2.6rem, 13vw, 4rem);
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* El QR, deliberadamente más chico que la palabra.
+       138px NO es un número al azar: medido en pantalla, el bloque del nombre
+       ocupa ~21.700 px² y a este tamaño el QR ocupa ~19.000. Con los 168px que
+       tenía antes el QR ocupaba MÁS que la palabra (28.200) y la jerarquía se
+       invertía sin que se notara a simple vista. Si tocás este valor, medí. */
+    #res-qr {
+      display: block;
+      margin: 0 auto 0.9rem;
+      width: 138px;
+      height: 138px;
+      background: #fff;
+      padding: 7px;
+      border-radius: 2px;
+    }
+
+    #res-url {
+      margin: 0 0 1.6rem;
+      font-size: 0.62rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.4);
+      overflow-wrap: anywhere;
+    }
+
+    #res-ayuda {
+      margin: 0 0 1.4rem;
+      font-size: 0.72rem;
+      font-weight: 300;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.55);
+    }
+
+    #btn-res-cerrar {
+      background: none;
+      border: 1px solid #4ade80;
+      color: #4ade80;
+      font-family: inherit;
+      font-size: 0.68rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.6rem 1.6rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #btn-res-cerrar:hover { border-color: #86efac; color: #86efac; }
+
     /* ── Overlay Vínculos ── */
     #vinculos-overlay {
       position: fixed;
@@ -1242,6 +1342,23 @@
         <button id="btn-cartel-cerrar">volver al dibujo</button>
       </div>
       <p id="cartel-estado"></p>
+    </div>
+  </div>
+
+  <!-- Resultado: la palabra en grande, el QR debajo y más chico -->
+  <div id="resultado-guardado">
+    <div id="res-caja">
+      <p id="res-titulo">Tu dibujo ya tiene página</p>
+      <h2 id="res-nombre">
+        <span id="res-nombre-a"></span><span id="res-nombre-b"></span>
+      </h2>
+      <canvas id="res-qr"></canvas>
+      <p id="res-url"></p>
+      <p id="res-ayuda">
+        Apuntá con la cámara del teléfono.<br>
+        O acordate de la palabra y entrá cuando quieras.
+      </p>
+      <button id="btn-res-cerrar">seguir dibujando</button>
     </div>
   </div>
 

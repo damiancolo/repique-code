@@ -136,9 +136,17 @@ ellos sobre `bufCtx`.
 }
 ```
 
-Mirá los cuatro estilos existentes como referencia: `linea` (sólido), `neon`
-(glow + núcleo blanco), `spray` (puntos aleatorios en disco) y `arcoiris`
-(el hue rota con la distancia).
+Mirá los estilos existentes como referencia: `linea` (sólido), `neon` (glow +
+núcleo blanco) y `arcoiris` (el hue rota con la distancia). El cuarto, `fractal`,
+es un caso aparte: no dibuja siempre, sino que **estampa un árbol recursivo cada
+tantos píxeles recorridos**, y la geometría concreta sale de la tabla `FRACTALES`
+(seis entradas, un botón de una letra cada una en `#fila-fractales`).
+
+⚠️ Si tu pincel usa azar y querés que funcione con **mandala ×6**, no llames a
+`Math.random()` dentro del trazo: `trazarSegmento` dibuja el mismo segmento seis
+veces y cada réplica saldría distinta, rompiendo la simetría. Mirá cómo lo
+resuelve el fractal: un LCG (`_rnd`) con semilla fija por estampa que cada réplica
+**reinicia** antes de dibujar.
 
 **2. Agregá el botón** en `index.html`, junto a los otros:
 
@@ -151,9 +159,11 @@ pincel hereda **gratis** el espejo ×2, el mandala ×6 (`trazarSegmento` replica
 cualquier estilo) y el latido con el beat (el pulso opera sobre el canvas
 completo, no sobre el trazo).
 
-**Colores**: la paleta son 12 swatches en `#fila-colores` (index.html) + el
-array `COLORES_PINCEL` — **el orden HTML tiene que coincidir con el array**.
-`DEDO_A_COLOR` mapea el gesto de puño + un dedo a índices de esa paleta.
+**Colores**: 13 swatches + el array `COLORES_PINCEL` — **el orden del HTML tiene
+que coincidir con el array**. Doce viven en `#fila-colores`; el negro va aparte,
+junto a «arcoíris», más grande. El índice se calcula sobre
+`querySelectorAll('.color-btn')`, o sea por **orden en el DOM**: por eso el negro,
+que está después, es el último del array.
 
 ### Cambiar los samples
 

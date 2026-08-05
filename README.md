@@ -37,8 +37,8 @@ Tres modos, todos con las manos:
 
 | Modo | Qué pasa |
 |---|---|
-| 🥁 **Normal** | Formás figuras con pulgares e índices → un drone cambia de nota. La altura de las manos mueve el filtro, la apertura el volumen. De fondo corre un secuenciador de 16 pasos. |
-| ✏️ **Pintura** | Tu índice dibuja en el aire. 12 colores, 4 estilos (línea, neón, spray, arcoíris), espejo y mandala. El trazo **late con cada negra** de la música. |
+| 🎵 **Música** | Formás figuras con pulgares e índices → un drone cambia de nota. La altura de las manos mueve el filtro, la apertura el volumen. De fondo corre un secuenciador de 16 pasos. |
+| ✏️ **Pintura** | Tu índice dibuja en el aire — **la app abre acá**. 13 colores, estilos línea / neón / arcoíris, **6 pinceles fractales**, espejo ×2 y mandala ×6. El trazo **late con cada negra** de la música. |
 | 🕺 **Baile** | Tus movimientos disparan sonidos: manos que suben, que caen, que barren, que se juntan. 13 gestos × 4 familias de timbres, con un looper que los graba y los repite en clave. |
 
 ### Los ritmos

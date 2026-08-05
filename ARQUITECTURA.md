@@ -135,8 +135,36 @@ secuenciar en una grilla musical y encadenar efectos. En Repique Code:
   izquierda) y 5 de dos manos (separar, juntar/aplaudir, manos al cielo, ambas
   suben, ambas bajan). Los gestos de dos manos tienen prioridad para que no se
   solapen sonidos.
+- **Dibujo** (modo pintura): índice estirado = trazo; índice + medio + anular =
+  brocha. Nada interrumpe el trazo — si hay un índice estirado, dibuja.
 - **Atajos por gesto**: bloqueo de tempo (dos pinzas), control de sliders
   (puntas juntas), etc.
+
+### El puntero de mano
+
+La app se puede manejar **sin tocar el ordenador**. Con la **mano derecha abierta**
+sobre la zona de los controles aparece una flecha en la punta del índice, y la
+**pinza** hace clic.
+
+No hay lista de botones: se resuelve con `document.elementFromPoint()` +
+`.click()`, así que alcanza a cualquier cosa que haya en pantalla. Además emite
+`mouseover` para los menús que se abren al pasar por encima.
+
+Tres decisiones que lo hacen funcionar:
+
+- **La llave es abrir la mano entera**, no la pinza sola: la pinza ya toca La/Si en
+  modo música. Una vez encendido basta con sostener medio, anular y meñique, que
+  son los que quedan arriba al pinzar.
+- **La mano del puntero se excluye del resto del procesamiento** mientras está
+  activo. Si no, el mismo gesto que hace clic tocaría una nota o soltaría un trazo.
+  La otra mano sigue funcionando normal.
+- **Sólo actúa cerca de los controles**, para que el resto de la pantalla quede
+  libre para tocar, pintar y bailar.
+
+⚠️ La lateralidad sale de `handedness` de MediaPipe. La documentación dice que la
+etiqueta supone imagen espejada, lo que hace esperar que venga invertida — **con el
+video tal como lo entrega esta app, no lo está**: `'Right'` es la mano derecha
+real. Verificado con cámara. No lo "corrijas" siguiendo los docs.
 
 ---
 

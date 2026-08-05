@@ -30,6 +30,16 @@ src/
   state.js          — { bpm, volumen, audioIniciado }
 ```
 
+## Puntero de mano (main.js)
+
+La app se maneja **sin tocar el ordenador**: **mano derecha abierta** sobre la zona de controles → flecha en la punta del índice (`#puntero`, DOM fijo con `pointer-events:none`); **pinza** → clic.
+
+- Sin lista de botones: `document.elementFromPoint()` + `.closest('button, a[href]')` + `.click()`. Emite además `mouseover`/`mouseenter` para los menús que se abren al pasar por encima.
+- Encender exige `manoAbierta` (4 dedos extendidos + pulgar a >0.12 del índice); sostener basta con `manoSostienePuntero` (medio/anular/meñique arriba), que son los que quedan extendidos al pinzar. **La pinza sola no sirve de llave**: ya toca La/Si en modo música.
+- La mano del puntero **se excluye del resto del procesamiento** (`manos.filter(m => m !== manoPuntero)` en el loop). Si no, el mismo gesto que hace clic tocaría una nota.
+- Sólo actúa dentro de `ZONAS_PUNTERO` (+45 px de margen). Las cajas con `width===0` se saltean, así los paneles ocultos no cuentan.
+- ⚠️ `MANO_DERECHA = 'Right'`. La doc de MediaPipe dice que la etiqueta supone imagen espejada, lo que hace esperar lo contrario. **Verificado con cámara: es 'Right'.** No cambiarlo por lo que digan los docs.
+
 ## Gestos implementados
 
 El cuadrilátero se forma con pulgares e índices de ambas manos.

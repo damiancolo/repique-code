@@ -9,6 +9,18 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Modo acordes: acompañar a alguien que canta** (6 ago)
+- Interruptor `♬ acordes` en música. Las mismas ocho formas dejan de ser notas
+  sueltas y pasan a ser **los acordes de una tonalidad** — I, ii, iii, IV, V, vi,
+  vii° y la dominante con séptima.
+- **Selector de tonalidad**, las doce. Cambiar de tono no cambia ningún gesto: la
+  misma canción en el tono que le venga bien a la voz. Se transporta en caliente,
+  sin rehacer el gesto.
+- **Tres tercios de pantalla**: cuanto más arriba están las manos, más agudo el
+  registro. En el tercio grave el acorde pierde la tercera, como haría cualquier
+  pianista abajo.
+- Los acordes son **diatónicos**: no hay manera de tocar uno que desafine.
+
 **Las notas suenan sin «Arrancar»** (6 ago)
 - En **🎵 música** la nota de la forma suena **en cuanto la forma aparece**: no hay
   que pulsar nada. La voz de notas (el drone del cuadrilátero) se enciende sola,

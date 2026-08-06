@@ -126,6 +126,53 @@ ritmo**.
 - `notasAuto` (main.js) se apaga al pulsar **Parar**: silencio es silencio, las
   notas no vuelven solas. Se reactiva con `Arrancar` o volviendo a 🎵.
 
+## Modo acordes (acordes.js + audio.js + main.js)
+
+Interruptor `♬ acordes` dentro de música (paleta `#paleta-musica`, que aparece
+con el modo igual que la de colores en pintura). Cada forma pasa a ser **el
+acorde de ese grado** en la tonalidad elegida.
+
+- **`src/acordes.js` es un módulo PURO**: no importa Tone ni toca el DOM. Entra
+  forma + altura, salen frecuencias. Así se razona y se prueba la música sin
+  arrancar el audio. `TONALIDADES` (12), `GRADO_POR_FORMA`, `frecuenciasAcorde`,
+  `nombreAcorde` (devuelve cifrado **y** nombre latino: quien canta lee `Dm`
+  pero piensa «Re menor»).
+- **Grados**: rectángulo=I, trapecio piso=II, techo=III, izq=IV, der=V, pinza
+  der=VI, pinza izq=VII, pulgares arriba=**V7**. `dos_triangulos` queda fuera:
+  el modo acid no tiene acorde.
+- **Calidad diatónica, no elegible.** En Do el II es Dm y no hay forma de que
+  salga D. Por eso no hace falta control de mayor/menor.
+- **Plegado de la fundamental a Do3–Do4** (`PISO`/`TECHO`). Es lo que hace que
+  dos acordes seguidos queden cerca sea cual sea la tonalidad — sin esto el
+  acompañamiento pega saltos de registro al cambiar de grado.
+- **Voicing abierto** fundamental·quinta·octava·décima. La dominante cambia la
+  octava por la séptima (`[r, quinta, 7ª, décima]`) para ocupar los mismos 16
+  semitonos: con un voicing más abierto, en el tercio agudo se iba a 1480 Hz.
+- **Tres tercios** por `centroY` con histéresis (`LIM_AGUDO` .36, `LIM_GRAVE`
+  .64, `MARGEN` .04 en main.js; render.js los dibuja y **debe copiar los mismos
+  valores**). Grave = sin tercera y una octava abajo. ⚠️ El disminuido es la
+  excepción: su «quinta» es un trítono y a 90 Hz es barro, así que baja sólo la
+  fundamental.
+- **Compromiso por TIEMPO y por lecturas a la vez** (`ACORDE_MS`=100,
+  `ACORDE_LECTURAS`=3, `ACORDE_GRACIA`=50). Sólo por cuadros el instrumento
+  respondería distinto en cada máquina; sólo por tiempo, una cámara lenta se
+  comprometería con una única lectura. La gracia evita que un parpadeo del
+  detector corte el acorde.
+- **Se compara el ACORDE, no el gesto**: si la mano tiembla entre dos posturas
+  que dan lo mismo, no pasa nada.
+- **Cuatro voces sostenidas** en audio.js (`vocesAcorde`) que nunca se sueltan:
+  cambiar de acorde es deslizar sus frecuencias (`portamento` .09). Por eso los
+  cambios se funden — un golpe en cada cambio le marcaría el tiempo a quien
+  canta. Filtro propio **cerrado en 1500 Hz**: la voz humana vive entre 300 Hz y
+  3 kHz y todo lo que ponga energía ahí compite con ella.
+- ⚠️ **En modo acordes se desactiva el candado de dos pinzas.** VI es pinza
+  derecha y VII pinza izquierda: al pasar de uno a otro se atraviesa el gesto de
+  bloqueo. También se saltean el filtro por altura (esa altura ahora es el
+  registro) y el modo acid.
+- Sin cuantización al pulso: el modo arranca **sin ritmo**, y quien canta sin
+  banda hace rubato. Si algún día se enciende el candombe debajo, ahí sí tendría
+  sentido que los cambios esperen al pulso.
+
 ## Flujo de audio
 
 `startAudio()` en `audio.js`:

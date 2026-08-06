@@ -4,8 +4,9 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
+import { setModoAcordes, sonarAcorde, startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
+import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde } from './acordes.js';
 
 const video         = document.getElementById('video');
 const canvas        = document.getElementById('canvas');
@@ -23,6 +24,13 @@ const colorBtns     = document.querySelectorAll('.color-btn');
 const btnRitmo      = document.getElementById('btn-ritmo');
 const menuRitmo     = document.getElementById('menu-ritmo');
 const ritmoBtns     = document.querySelectorAll('.ritmo-btn');
+const paletaMusica  = document.getElementById('paleta-musica');
+const btnAcordes    = document.getElementById('btn-acordes');
+const filaTono      = document.getElementById('fila-tono');
+const btnTono       = document.getElementById('btn-tono');
+const registroNombre = document.getElementById('registro-nombre');
+const menuTono      = document.getElementById('menu-tono');
+const menuTonoGrilla = document.getElementById('menu-tono-grilla');
 const vinculosCanvas = document.getElementById('vinculos-canvas');
 const vinculosCtx    = vinculosCanvas.getContext('2d');
 
@@ -90,6 +98,77 @@ async function init() {
     if (ahora - _ultimoIntento < REINTENTO_NOTAS) return;
     _ultimoIntento = ahora;
     startNotas();
+  }
+
+  // ── Modo acordes ────────────────────────────────────────────────────────────
+  // Cada forma es un acorde de la tonalidad, y el tercio de pantalla donde esté
+  // el centro de la figura decide el registro.
+  let modoAcordes  = false;
+  let tonalidad    = 'C';
+  let registroTono = 'medio';
+  let vistaAcordes = null;   // lo que render.js pinta arriba a la derecha
+
+  // Fronteras de los tres tercios (0 = arriba de la pantalla) con MARGEN de
+  // histéresis: se sube cruzando por arriba y se baja cruzando por abajo. Sin
+  // esto, una mano temblando en la frontera saltaría de registro sin parar.
+  const LIM_AGUDO = 0.36;
+  const LIM_GRAVE = 0.64;
+  const MARGEN    = 0.04;
+
+  function registroDe(cy) {
+    if (registroTono === 'agudo' && cy > LIM_AGUDO + MARGEN) registroTono = 'medio';
+    else if (registroTono === 'grave' && cy < LIM_GRAVE - MARGEN) registroTono = 'medio';
+    if (registroTono === 'medio') {
+      if (cy < LIM_AGUDO - MARGEN)      registroTono = 'agudo';
+      else if (cy > LIM_GRAVE + MARGEN) registroTono = 'grave';
+    }
+    return registroTono;
+  }
+
+  // Compromiso por TIEMPO y por lecturas, las dos cosas a la vez. Sólo por
+  // cuadros, el instrumento respondería distinto en cada máquina (4 cuadros son
+  // 60 ms en un portátil y 260 en un teléfono). Sólo por tiempo, en una cámara
+  // lenta 100 ms podrían ser UNA lectura, o sea comprometerse con lo primero
+  // que se vio. Pidiendo las dos, se comporta igual en las dos máquinas.
+  const ACORDE_MS      = 100; // hay que sostener la forma esto
+  const ACORDE_LECTURAS = 3;  // ...y verla al menos estas veces
+  const ACORDE_GRACIA  = 50;  // si el detector pierde la mano, no cortar el acorde
+  let _acCandidato = null, _acDesde = 0, _acLecturas = 0;
+  let _acVistoEn   = 0;
+  let _acSonando   = null;
+
+  function resetAcordes() {
+    _acCandidato = null; _acLecturas = 0; _acSonando = null;
+    vistaAcordes = modoAcordes ? { activo: true } : null;
+  }
+
+  function pasoAcordes(forma, centroY, ahora) {
+    const grado = forma ? GRADO_POR_FORMA[forma] : null;
+    const lectura = grado ? { grado, registro: registroDe(centroY) } : null;
+
+    if (lectura) _acVistoEn = ahora;
+    // Dentro de la gracia no se toca nada: sostiene lo último que sonaba
+    if (!lectura) {
+      if (ahora - _acVistoEn >= ACORDE_GRACIA) { _acCandidato = null; _acLecturas = 0; }
+      return;
+    }
+
+    const mismo = _acCandidato
+      && _acCandidato.grado === lectura.grado
+      && _acCandidato.registro === lectura.registro;
+    if (!mismo) { _acCandidato = lectura; _acDesde = ahora; _acLecturas = 1; return; }
+    _acLecturas++;
+
+    if (ahora - _acDesde < ACORDE_MS || _acLecturas < ACORDE_LECTURAS) return;
+
+    // Comparar el ACORDE que va a sonar, no el gesto: si la mano tiembla entre
+    // dos posturas que dan lo mismo, no pasa absolutamente nada.
+    if (_acSonando && _acSonando.grado === lectura.grado && _acSonando.registro === lectura.registro) return;
+    _acSonando = { ...lectura };
+    sonarAcorde(frecuenciasAcorde(tonalidad, lectura.grado, lectura.registro));
+    const n = nombreAcorde(tonalidad, lectura.grado);
+    vistaAcordes = { activo: true, ...n, registro: lectura.registro };
+    registroNombre.textContent = lectura.registro;
   }
 
   // Cualquier toque en la página vale como permiso para abrir el audio
@@ -1388,8 +1467,11 @@ async function init() {
       // ── Modo normal ────────────────────────────────────────────────────────
       const { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid } = calcularGestos(manos);
 
-      // Dos pinzas → bloquea
-      if (dosPinzas) {
+      // Dos pinzas → bloquea. En modo acordes NO: el VI es la pinza derecha y
+      // el VII la izquierda, así que al pasar de uno al otro se atraviesa el
+      // gesto de bloqueo y el instrumento se trabaría a cada rato. Además el
+      // candado congela tempo y nota, que en acordes no significan nada.
+      if (dosPinzas && !modoAcordes) {
         victoriaCount = 0; victoriaActivo = false;
         dosPinzasCount++;
         if (dosPinzasCount >= FRAMES_DOS_PINZAS && !dosPinzasActivo) {
@@ -1421,7 +1503,11 @@ async function init() {
 
       // Cuadrilátero → filtro (altura) / área / nota  [BPM solo por slider]
       if (ancho !== null) {
-        if (formaConfirmada === 'dos_triangulos' && !bloqueoTotal) {
+        // En acordes el cuadrilátero es un acorde y nada más: ni filtro por
+        // altura (esa altura ahora es el registro) ni modo acid.
+        if (modoAcordes) {
+          // nada que hacer acá
+        } else if (formaConfirmada === 'dos_triangulos' && !bloqueoTotal) {
           actualizarWow(centroY, ancho, subtipoAcid);
         } else if (!filtroLocked && !locked) {
           // Manos arriba (centroY bajo) = agudos, manos abajo (centroY alto) = graves.
@@ -1440,7 +1526,9 @@ async function init() {
           areaHold = AREA_HOLD_MAX;
           actualizarArea(area);
 
-          if (forma === formaCandidato) {
+          if (modoAcordes) {
+            pasoAcordes(forma, centroY, timestamp);
+          } else if (forma === formaCandidato) {
             framesCandidato++;
             if (framesCandidato >= FRAMES_FORMA && forma !== formaConfirmada) {
               formaConfirmada = forma;
@@ -1456,6 +1544,7 @@ async function init() {
         else { actualizarArea(0); }
         formaCandidato  = null;
         framesCandidato = 0;
+        if (modoAcordes) pasoAcordes(null, null, timestamp);
       }
 
       // Gesto dos dedos pegados → control relativo de tempo o filtro (según slider)
@@ -1497,7 +1586,7 @@ async function init() {
       }
 
       // Cambio de modo normal ↔ techno/acid — bloqueado con candados puestos
-      if (state.notasIniciadas) {
+      if (state.notasIniciadas && !modoAcordes) {
         const tecno = formaConfirmada === 'dos_triangulos' && !bloqueoTotal;
         if (tecno !== enModoTecno) {
           setModoTecno(tecno);
@@ -1518,7 +1607,7 @@ async function init() {
         shakaActivo = false;
       }
 
-      renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada);
+      renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada, vistaAcordes);
       // Limpiar paint canvas en modo normal
       ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
     }
@@ -1670,9 +1759,14 @@ async function init() {
 
   /** Música es el modo base: se está en él cuando no hay pintura ni baile */
   function pintarModos() {
+    const enMusica = !modoPintar && !modoBaile;
     btnPaint.classList.toggle('activo', modoPintar);
     btnBaile.classList.toggle('activo', modoBaile);
-    btnMusica.classList.toggle('activo', !modoPintar && !modoBaile);
+    btnMusica.classList.toggle('activo', enMusica);
+    // La paleta de música aparece con el modo, igual que la de colores en
+    // pintura y la de efectos en baile
+    paletaMusica.classList.toggle('visible', enMusica);
+    if (!enMusica) menuTono.classList.remove('visible');
   }
 
   function apagarBaile() {
@@ -1707,6 +1801,56 @@ async function init() {
     notasAuto = true;
     asegurarNotas(); // entrar a música ya deja las notas listas para sonar
     pintarModos();
+  });
+
+  // ── Acordes y tonalidad ───────────────────────────────────────────────────────
+  function pintarTono() {
+    const t = TONALIDADES.find(x => x.id === tonalidad);
+    btnTono.textContent = t.nombre;
+    btnTono.title = `Tonalidad: ${t.nombre} (${t.cifrado}) — la misma canción en el tono que te venga bien`;
+    menuTonoGrilla.querySelectorAll('.tono-btn').forEach(b =>
+      b.classList.toggle('activo', b.dataset.tono === tonalidad));
+  }
+
+  TONALIDADES.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'tono-btn';
+    b.dataset.tono = t.id;
+    b.innerHTML = `${t.nombre}<small>${t.cifrado}</small>`;
+    b.addEventListener('click', () => {
+      tonalidad = t.id;
+      pintarTono();
+      // Transportar en caliente: el acorde que está sonando se muda al tono
+      // nuevo sin que haya que rehacer el gesto
+      if (modoAcordes && _acSonando) {
+        sonarAcorde(frecuenciasAcorde(tonalidad, _acSonando.grado, _acSonando.registro));
+        vistaAcordes = { activo: true, ...nombreAcorde(tonalidad, _acSonando.grado), registro: _acSonando.registro };
+      }
+      menuTono.classList.remove('visible');
+    });
+    menuTonoGrilla.appendChild(b);
+  });
+  pintarTono();
+
+  btnAcordes.addEventListener('click', () => {
+    resumeContextSync(); // el clic es el permiso que pide el navegador
+    modoAcordes = !modoAcordes;
+    btnAcordes.classList.toggle('activo', modoAcordes);
+    filaTono.classList.toggle('visible', modoAcordes);
+    registroNombre.textContent = '';
+    resetAcordes();
+    setModoAcordes(modoAcordes);
+    notasAuto = true;
+    asegurarNotas();
+    if (!modoAcordes) menuTono.classList.remove('visible');
+  });
+
+  btnTono.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menuTono.classList.toggle('visible');
+  });
+  btnTono.addEventListener('mouseenter', () => {
+    if (modoAcordes) menuTono.classList.add('visible');
   });
 
   btnPaint.addEventListener('click', () => {
@@ -2441,6 +2585,9 @@ async function init() {
     // El clic afuera cierra solo el menú — el viz queda hasta que lo cierre su botón
     if (!menuRitmo.contains(e.target) && e.target !== btnRitmo && !ritmoViz.contains(e.target)) {
       menuRitmo.classList.remove('visible');
+    }
+    if (!menuTono.contains(e.target) && e.target !== btnTono) {
+      menuTono.classList.remove('visible');
     }
   });
 

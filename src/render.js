@@ -37,7 +37,12 @@ const LABEL_FORMA = {
   dos_triangulos:'▲ ▲   Acid',
 };
 
-export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma) {
+// Los tres tercios del modo acordes. Deben coincidir con LIM_AGUDO/LIM_GRAVE
+// de main.js: acá sólo se dibujan.
+const TERCIO_AGUDO = 0.36;
+const TERCIO_GRAVE = 0.64;
+
+export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acordes) {
   const w = canvas.width;
   const h = canvas.height;
 
@@ -53,6 +58,8 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma) {
   ctx.restore();
   ctx.filter = 'none';
   ctx.globalAlpha = 1;
+
+  if (acordes && acordes.activo) dibujarTercios(ctx, w, h, acordes.registro);
 
   if (forma === 'dos_triangulos' && manos.length >= 2) {
     dibujarDosTriangulos(ctx, manos, w, h);
@@ -74,12 +81,53 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma) {
     ctx.font = '300 13px "Space Grotesk", system-ui, sans-serif';
     ctx.textAlign = 'right';
     if (state.audioIniciado) ctx.fillText(`${state.bpm} bpm`, w - 24, 32);
-    if (forma && LABEL_FORMA[forma]) {
+    const y = state.audioIniciado ? 54 : 32;
+
+    if (acordes && acordes.activo) {
+      // El acorde en grande y en cifrado, que es lo que se lee de un vistazo;
+      // el nombre y el registro debajo, más chicos
+      if (acordes.cifrado) {
+        ctx.fillStyle = 'rgba(230,57,70,0.9)';
+        ctx.font = '600 30px "Space Grotesk", system-ui, sans-serif';
+        ctx.fillText(acordes.cifrado, w - 24, y + 22);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.font = '300 12px "Space Grotesk", system-ui, sans-serif';
+        ctx.fillText(`${acordes.nombre} · ${acordes.registro}`, w - 24, y + 40);
+      }
+    } else if (forma && LABEL_FORMA[forma]) {
       ctx.fillStyle = 'rgba(230,57,70,0.75)';
-      ctx.fillText(LABEL_FORMA[forma], w - 24, state.audioIniciado ? 54 : 32);
+      ctx.fillText(LABEL_FORMA[forma], w - 24, y);
     }
     ctx.textAlign = 'left';
   }
+}
+
+/** Las tres franjas del modo acordes, con la activa apenas encendida */
+function dibujarTercios(ctx, w, h, registro) {
+  const y1 = h * TERCIO_AGUDO;
+  const y2 = h * TERCIO_GRAVE;
+
+  const activa = { agudo: [0, y1], medio: [y1, y2], grave: [y2, h] }[registro];
+  if (activa) {
+    ctx.fillStyle = 'rgba(230,57,70,0.05)';
+    ctx.fillRect(0, activa[0], w, activa[1] - activa[0]);
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 10]);
+  ctx.beginPath();
+  ctx.moveTo(0, y1); ctx.lineTo(w, y1);
+  ctx.moveTo(0, y2); ctx.lineTo(w, y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.font = '300 10px "Space Grotesk", system-ui, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('AGUDO', 24, y1 - 12);
+  ctx.fillText('MEDIO', 24, y2 - 12);
+  ctx.fillText('GRAVE', 24, h - 12);
 }
 
 function dibujarDosTriangulos(ctx, manos, w, h) {

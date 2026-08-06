@@ -1165,6 +1165,81 @@ function _droneSuelta() {
   droneAire.triggerRelease();
 }
 
+// ─── Voz de acordes (modo acordes) ───────────────────────────────────────────
+// Cuatro voces que se atacan UNA VEZ y ya no se sueltan: cambiar de acorde es
+// deslizar sus frecuencias a las del acorde nuevo. Por eso los cambios se
+// funden en vez de golpear — y un golpe en cada cambio le marcaría el tiempo a
+// quien canta, justo lo que no queremos.
+//
+// El filtro está cerrado en 1500 Hz a propósito. La voz humana vive entre los
+// 300 Hz y los 3 kHz: todo lo que ponga energía ahí compite con ella, se la oye
+// apagada y termina empujando para hacerse lugar. Un acompañamiento tiene que
+// dejarle ese aire libre.
+const VOCES_ACORDE   = 4;
+const acordeGain     = new Tone.Gain(0);
+const acordeFiltro   = new Tone.Filter({ type: 'lowpass', frequency: 1500, rolloff: -12, Q: 0.5 });
+const acordeVerb     = new Tone.Freeverb({ roomSize: 0.82, dampening: 2200, wet: 1 });
+const acordeVerbEnv  = new Tone.Gain(0.3);
+
+const vocesAcorde = Array.from({ length: VOCES_ACORDE }, (_, i) => {
+  const gain  = new Tone.Gain(0);
+  const synth = new Tone.Synth({
+    oscillator: { type: 'fattriangle', count: 2, spread: 8 + i * 4 },
+    envelope: { attack: 0.5, decay: 0, sustain: 1, release: 1.4 },
+    portamento: 0.09,   // el deslizamiento entre acordes
+    volume: -7 - i * 2, // las voces de arriba, más suaves
+  });
+  synth.connect(gain);
+  return { synth, gain };
+});
+
+let _modoAcordes    = false;
+let _acordeAtacado  = false;
+
+function _acordeAtaque() {
+  if (_acordeAtacado) return;
+  vocesAcorde.forEach(v => v.synth.triggerAttack(v.synth.frequency.value || 220));
+  _acordeAtacado = true;
+}
+
+function _acordeSuelta() {
+  if (!_acordeAtacado) return;
+  vocesAcorde.forEach(v => v.synth.triggerRelease());
+  _acordeAtacado = false;
+}
+
+/** Entrar o salir del modo acordes. La voz de nota suelta y la de acordes son
+ *  excluyentes: la que no manda se va a cero. */
+export function setModoAcordes(activo) {
+  _modoAcordes = activo;
+  if (!state.notasIniciadas) return;
+  if (activo) {
+    droneGain.gain.rampTo(0, 0.25);
+    _droneSuelta();
+    _acordeAtaque();
+  } else {
+    acordeGain.gain.rampTo(0, 0.25);
+    _acordeSuelta();
+    _droneAtaque('C3');
+    droneFormaActual = null;
+  }
+}
+
+export function estaEnModoAcordes() { return _modoAcordes; }
+
+/** Deslizar las voces al acorde nuevo. Las voces que sobran (el tercio grave
+ *  usa tres) se apagan en vez de doblar una nota. */
+export function sonarAcorde(frecuencias) {
+  if (!frecuencias || !state.notasIniciadas) return;
+  _acordeAtaque();
+  vocesAcorde.forEach((v, i) => {
+    const f = frecuencias[i];
+    if (f === undefined) { v.gain.gain.rampTo(0, 0.25); return; }
+    v.synth.frequency.rampTo(f, 0.09);
+    v.gain.gain.rampTo(1, 0.22);
+  });
+}
+
 const NOTA_POR_FORMA = {
   rectangulo:    'C3',   // Do
   trapecio_piso: 'D3',   // Re
@@ -1410,6 +1485,14 @@ function asegurarCadena() {
   droneGain.connect(droneVerbEnv);
   droneVerbEnv.connect(droneVerb);
   droneVerb.connect(masterComp);
+
+  // Voz de acordes — cadena propia, con su filtro cerrado y su reverb
+  vocesAcorde.forEach(v => v.gain.connect(acordeFiltro));
+  acordeFiltro.connect(acordeGain);
+  acordeGain.connect(masterComp);
+  acordeGain.connect(acordeVerbEnv);
+  acordeVerbEnv.connect(acordeVerb);
+  acordeVerb.connect(masterComp);
 }
 
 let _notasArrancando = false;
@@ -1438,8 +1521,10 @@ export async function startNotas() {
     if (Tone.context.state !== 'running') return false;
 
     asegurarCadena();
-    droneGain.gain.value = 0; // el área de las manos lo levanta
-    _droneAtaque('C3');
+    droneGain.gain.value  = 0; // el área de las manos los levanta
+    acordeGain.gain.value = 0;
+    if (_modoAcordes) _acordeAtaque();
+    else              _droneAtaque('C3');
     droneFormaActual = 'rectangulo';
     state.notasIniciadas = true;
     return true;
@@ -1475,7 +1560,8 @@ export async function startAudio() {
   // cortaría la nota que la mano está sosteniendo en ese momento.
   crearSecuencias();
   if (!state.notasIniciadas) {
-    _droneAtaque('C3');
+    if (_modoAcordes) _acordeAtaque();
+    else              _droneAtaque('C3');
     droneFormaActual = 'rectangulo';
     state.notasIniciadas = true;
   }
@@ -1493,7 +1579,9 @@ export async function startAudio() {
 export function stopAudio() {
   pararLooper();
   _droneSuelta();
+  _acordeSuelta();
   droneGain.gain.rampTo(0, 0.3);
+  acordeGain.gain.rampTo(0, 0.3);
   Tone.getTransport().stop();
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s?.dispose());
   loopPlayer?.stop();
@@ -1518,7 +1606,8 @@ export function actualizarFiltro(t) {
 
 export function actualizarArea(area) {
   const ganancia = Math.min(area / 0.06, 1);
-  droneGain.gain.rampTo(ganancia, 0.18);
+  if (_modoAcordes) acordeGain.gain.rampTo(ganancia, 0.18);
+  else              droneGain.gain.rampTo(ganancia, 0.18);
 }
 
 export function actualizarNota(forma) {

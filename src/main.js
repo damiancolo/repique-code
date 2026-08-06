@@ -1903,7 +1903,15 @@ async function init() {
   // resolución (un blur en px fijos desenfoca menos cuanto más grande la
   // pantalla). El grisado sí va por ctx.filter: si falla sale en color, que es un
   // problema estético, no de privacidad.
-  const ANCHO_DESENFOQUE = 137; // ancho reducido, referido a un guardado de 1920 px
+  // Ancho al que se reduce la cámara antes de reagrandarla, referido a un guardado
+  // de 1920 px. Cuanto más bajo, más fuerte el desenfoque.
+  //
+  // Estuvo en 137, elegido por el owner mirando caras reales en un banco de pruebas.
+  // Bajado a 110 el 5 ago 2026 después de ver dibujos publicados de verdad: lo
+  // identificable no depende solo de este número, depende de CUÁNTO OCUPA LA CABEZA
+  // dentro del encuadre, y en una instalación la gente se acerca a la cámara. Con la
+  // cara ocupando medio cuadro, 137 se quedaba corto.
+  const ANCHO_DESENFOQUE = 110;
 
   /** @param {number} desenfoque 0 = nítida · >0 = ancho reducido de referencia */
   function componerImagen(desenfoque = 0) {

@@ -9,6 +9,20 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Tres correcciones** (6 ago)
+- **El primer clic en 🎵 no hacía nada.** Había que darle dos. `apagarPintura()`
+  asignaba a una variable que ya no existe (`zoomActivo`), y como los módulos ES
+  son estrictos eso lanza en vez de crear un global: la excepción se llevaba
+  puesto el resto del handler. Vivía ahí desde la 1.5, escondida, hasta que la
+  paleta de música le dio algo visible que romper.
+- **Guardar podía no abrir nada.** Si los canvas quedaban en 0 (página cargada
+  sin tamaño, iframe todavía sin medidas), componer la imagen lanzaba y el
+  cartel no llegaba a abrirse. Ahora los canvas nunca son 0 y se reajustan solos,
+  y la vista previa va en `try`: si falla, el cartel se abre igual.
+- **En el cartel de guardar no había ningún «guardar».** Decía «solo descargar».
+  Ahora dice **«guardar en mi aparato»**, que es lo que hace, y hace juego con el
+  botón que abre el cartel.
+
 **Música entra en acordes, y las notas eligen instrumento** (6 ago)
 - Entrar a 🎵 ya te deja **en acordes**. Acompañar es lo que se quiere hacer con
   esto; la nota suelta pasa a ser lo que se pide aparte, con el botón `♪ notas`.

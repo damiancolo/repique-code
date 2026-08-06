@@ -40,13 +40,19 @@ const vinculosCanvas = document.getElementById('vinculos-canvas');
 const vinculosCtx    = vinculosCanvas.getContext('2d');
 
 async function init() {
+  // Nunca dejar los canvas en 0: si la página carga oculta o dentro de un
+  // iframe que todavía no tiene tamaño, innerWidth es 0, y un canvas de ancho 0
+  // hace que drawImage lance. Eso rompía guardar en silencio — la excepción
+  // mataba el handler antes de abrir el cartel, así que el botón no hacía nada.
   function redimensionar() {
-    canvas.width          = window.innerWidth;
-    canvas.height         = window.innerHeight;
-    canvasPaint.width     = window.innerWidth;
-    canvasPaint.height    = window.innerHeight;
-    vinculosCanvas.width  = window.innerWidth;
-    vinculosCanvas.height = window.innerHeight;
+    const w = Math.max(1, window.innerWidth);
+    const h = Math.max(1, window.innerHeight);
+    canvas.width          = w;
+    canvas.height         = h;
+    canvasPaint.width     = w;
+    canvasPaint.height    = h;
+    vinculosCanvas.width  = w;
+    vinculosCanvas.height = h;
   }
   redimensionar();
   window.addEventListener('resize', redimensionar);
@@ -1440,6 +1446,13 @@ async function init() {
   function loop(timestamp) {
     const dt = _lastFrameTime ? Math.min((timestamp - _lastFrameTime) / 1000, 0.05) : 0.016;
     _lastFrameTime = timestamp;
+    // Dos comparaciones de enteros por cuadro que se pagan solas: si la página
+    // arrancó sin tamaño (iframe oculto) y lo gana después sin disparar
+    // `resize`, los canvas se ajustan igual en el cuadro siguiente.
+    if (window.innerWidth > 0 &&
+        (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight)) {
+      redimensionar();
+    }
     try {
     const manosTodas = detectarManos(video);
     // La mano que maneja el puntero se saca del resto: si no, la misma pinza que
@@ -1757,11 +1770,16 @@ async function init() {
   const paletaBaile  = document.getElementById('paleta-baile');
 
   function apagarPintura() {
+    // ⚠️ Acá había un `zoomActivo = false` de una función de zoom que ya no
+    // existe. Los módulos ES son estrictos, así que asignar a una variable no
+    // declarada NO crea un global: lanza ReferenceError. Como la app abre en
+    // pintura, esta función es lo primero que corre al tocar 🎵 — y la excepción
+    // se llevaba puesto el resto del handler, incluido el pintado de la paleta.
+    // Resultado: el primer clic en música no hacía nada y había que darle dos.
     modoPintar = false;
     paleta.classList.remove('visible');
     ultimoPtoBuf   = null;
     ultimoGesture  = null;
-    zoomActivo     = false;
     ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
   }
 
@@ -2258,13 +2276,20 @@ async function init() {
     imagenPublicar  = componerImagen(ANCHO_DESENFOQUE);
     imagenDescargar = componerImagen(0);
 
-    // La vista previa es literalmente el canvas que se va a subir, no otro.
-    cartelPreview.width  = imagenPublicar.width;
-    cartelPreview.height = imagenPublicar.height;
-    cartelPreview.getContext('2d').drawImage(imagenPublicar, 0, 0);
-
     cartelEstado.textContent = '';
     cartelEstado.classList.remove('error');
+
+    // La vista previa es literalmente el canvas que se va a subir, no otro.
+    // Va en try: si la previa falla, el cartel TIENE que abrirse igual. Antes
+    // una excepción acá dejaba el botón guardar sin hacer nada visible.
+    try {
+      cartelPreview.width  = imagenPublicar.width;
+      cartelPreview.height = imagenPublicar.height;
+      cartelPreview.getContext('2d').drawImage(imagenPublicar, 0, 0);
+    } catch (err) {
+      console.error('[Repique Code] vista previa:', err);
+      cartelEstado.textContent = 'No se pudo mostrar la vista previa.';
+    }
 
     if (!ENDPOINT_GUARDAR) {
       btnPublicar.disabled = true;

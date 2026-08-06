@@ -267,6 +267,24 @@ dos bundles.
 npm install
 ```
 
+## Trampas que ya nos costaron una sesión
+
+- **Asignar a una variable no declarada NO crea un global.** Los módulos ES son
+  estrictos: lanza `ReferenceError`. Un `zoomActivo = false` sobrevivió meses en
+  `apagarPintura()` después de que se borrara la función de zoom, y hacía que
+  **el primer clic en 🎵 no hiciera nada** — la excepción mataba el resto del
+  handler. Si un botón «no hace nada», mirar la consola antes que el CSS.
+- **Un canvas de ancho 0 hace que `drawImage` lance.** Si la página carga sin
+  tamaño (iframe todavía sin medidas), `innerWidth` es 0 y guardar moría en
+  silencio. `redimensionar()` clampa a 1 y el loop reajusta si el tamaño cambió
+  sin que llegara un `resize`.
+- **Para depurar la interfaz sin cámara**: copiar `index.html` a un archivo
+  temporal e inyectar antes del `<script type="module">` un
+  `navigator.mediaDevices.getUserMedia` falso que devuelva
+  `canvas.captureStream()`. `init()` no aborta, se registran todos los handlers
+  y se pueden pulsar los botones desde la consola. Es la única forma de
+  reproducir bugs de UI en un entorno sin webcam.
+
 ## Notas técnicas
 
 - MediaPipe se carga desde CDN (no bundle local) — requiere internet

@@ -1146,6 +1146,97 @@ const droneVibrato = new Tone.Vibrato({ frequency: 4.2, depth: 0.045, wet: 1 });
 const droneVerb    = new Tone.Freeverb({ roomSize: 0.8, dampening: 2500, wet: 1 });
 const droneVerbEnv = new Tone.Gain(0.32); // cuánta reverb; el resto va seco
 
+// ─── Instrumentos de la voz de notas ─────────────────────────────────────────
+// Todos comparten la misma arquitectura de dos capas (fundamental + octava), así
+// que cambiar de instrumento es sólo reconfigurar los dos sintes y su cadena.
+// Lo que los diferencia de verdad es la ENVOLVENTE: los de sustain alto se
+// sostienen mientras haya manos, los de sustain bajo suenan y se apagan solos,
+// que es lo que hace que una cuerda pulsada se sienta pulsada.
+export const INSTRUMENTOS = [
+  {
+    id: 'aire', nombre: 'Aire',
+    osc:  { type: 'fattriangle', count: 3, spread: 14 },
+    env:  { attack: 0.35, decay: 0.7, sustain: 0.75, release: 1.6 },
+    vol:  -1,
+    oscAire: { type: 'sine' },
+    envAire: { attack: 0.6, decay: 0, sustain: 1, release: 2.2 },
+    volAire: -18,
+    filtro: 2400, vibrato: { frequency: 4.2, depth: 0.045 }, reverb: 0.32,
+  },
+  {
+    id: 'cuerda', nombre: 'Cuerda',
+    // Pulsada: ataque instantáneo y caída larga hasta casi nada. Cada forma
+    // nueva vuelve a pulsarla.
+    osc:  { type: 'fatsawtooth', count: 2, spread: 16 },
+    env:  { attack: 0.006, decay: 1.6, sustain: 0.12, release: 1.2 },
+    vol:  -2,
+    oscAire: { type: 'triangle' },
+    envAire: { attack: 0.004, decay: 0.9, sustain: 0.05, release: 0.9 },
+    volAire: -10,
+    filtro: 3200, vibrato: { frequency: 3.5, depth: 0.012 }, reverb: 0.22,
+  },
+  {
+    id: 'cana', nombre: 'Caña',
+    // Soplada: entra despacio y respira. El vibrato es el más hondo de todos.
+    osc:  { type: 'sine' },
+    env:  { attack: 0.22, decay: 0, sustain: 1, release: 0.9 },
+    vol:  -3,
+    oscAire: { type: 'triangle' },
+    envAire: { attack: 0.5, decay: 0, sustain: 1, release: 1.1 },
+    volAire: -22,
+    filtro: 3000, vibrato: { frequency: 5.4, depth: 0.11 }, reverb: 0.42,
+  },
+  {
+    id: 'organo', nombre: 'Órgano',
+    // Dos senoidales a la octava es literalmente un registro de órgano. Entra y
+    // sale rápido, como una tecla.
+    osc:  { type: 'sine' },
+    env:  { attack: 0.02, decay: 0, sustain: 1, release: 0.25 },
+    vol:  -2,
+    oscAire: { type: 'sine' },
+    envAire: { attack: 0.02, decay: 0, sustain: 1, release: 0.25 },
+    volAire: -8,
+    filtro: 3500, vibrato: { frequency: 6, depth: 0.006 }, reverb: 0.26,
+  },
+  {
+    id: 'campana', nombre: 'Campana',
+    // FM con armonicidad no entera: así suenan los metales, con parciales que
+    // no encajan en la serie armónica.
+    osc:  { type: 'fmsine', harmonicity: 3.01, modulationIndex: 9 },
+    env:  { attack: 0.004, decay: 2.6, sustain: 0.06, release: 2.4 },
+    vol:  -3,
+    oscAire: { type: 'sine' },
+    envAire: { attack: 0.004, decay: 1.4, sustain: 0.03, release: 1.8 },
+    volAire: -12,
+    filtro: 4500, vibrato: { frequency: 3, depth: 0.004 }, reverb: 0.5,
+  },
+];
+
+let _instrumento = 'aire';
+
+export function getInstrumento() { return _instrumento; }
+
+export function setInstrumento(id) {
+  const p = INSTRUMENTOS.find(i => i.id === id);
+  if (!p) return;
+  _instrumento = id;
+  // `set` es la vía idiomática de Tone: el OmniOscillator resuelve solo el tipo
+  // y sus parámetros extra (count/spread de los «fat», harmonicity de los «fm»).
+  try {
+    drone.set({ oscillator: p.osc, envelope: p.env, volume: p.vol });
+    droneAire.set({ oscillator: p.oscAire, envelope: p.envAire, volume: p.volAire });
+    droneFiltro.frequency.rampTo(p.filtro, 0.2);
+    droneVibrato.frequency.value = p.vibrato.frequency;
+    droneVibrato.depth.rampTo(p.vibrato.depth, 0.2);
+    droneVerbEnv.gain.rampTo(p.reverb, 0.2);
+  } catch (err) {
+    console.error('[Repique Code] instrumento:', err);
+  }
+  // Si la voz estaba sonando, se vuelve a pulsar para oír el timbre nuevo ya
+  // — sobre todo en los de caída, donde si no habría que esperar a la próxima forma.
+  if (state.notasIniciadas && !_modoAcordes) _droneRepulsar();
+}
+
 // Las tres notas de la voz se mueven juntas: la fundamental y su octava.
 // `actualizarWow` (modo acid) también entra por acá, si no el aire se quedaría
 // clavado en la nota anterior.
@@ -1163,6 +1254,12 @@ function _droneAtaque(nota) {
 function _droneSuelta() {
   drone.triggerRelease();
   droneAire.triggerRelease();
+}
+
+/** Volver a pulsar la nota que ya está sonando, sin cambiarla */
+function _droneRepulsar() {
+  drone.triggerAttack(drone.frequency.value);
+  droneAire.triggerAttack(droneAire.frequency.value);
 }
 
 // ─── Voz de acordes (modo acordes) ───────────────────────────────────────────

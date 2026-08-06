@@ -7,6 +7,7 @@ import { renderFrame } from './render.js';
 import { setModoAcordes, sonarAcorde, startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
 import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde } from './acordes.js';
+import { INSTRUMENTOS, setInstrumento, getInstrumento } from './audio.js';
 
 const video         = document.getElementById('video');
 const canvas        = document.getElementById('canvas');
@@ -25,12 +26,16 @@ const btnRitmo      = document.getElementById('btn-ritmo');
 const menuRitmo     = document.getElementById('menu-ritmo');
 const ritmoBtns     = document.querySelectorAll('.ritmo-btn');
 const paletaMusica  = document.getElementById('paleta-musica');
-const btnAcordes    = document.getElementById('btn-acordes');
+const btnNotas      = document.getElementById('btn-notas');
 const filaTono      = document.getElementById('fila-tono');
 const btnTono       = document.getElementById('btn-tono');
 const registroNombre = document.getElementById('registro-nombre');
 const menuTono      = document.getElementById('menu-tono');
 const menuTonoGrilla = document.getElementById('menu-tono-grilla');
+const filaInstrumento  = document.getElementById('fila-instrumento');
+const btnInstrumento   = document.getElementById('btn-instrumento');
+const menuInstrumento  = document.getElementById('menu-instrumento');
+const menuInstLista    = document.getElementById('menu-instrumento-lista');
 const vinculosCanvas = document.getElementById('vinculos-canvas');
 const vinculosCtx    = vinculosCanvas.getContext('2d');
 
@@ -103,7 +108,10 @@ async function init() {
   // ── Modo acordes ────────────────────────────────────────────────────────────
   // Cada forma es un acorde de la tonalidad, y el tercio de pantalla donde esté
   // el centro de la figura decide el registro.
-  let modoAcordes  = false;
+  // Música ENTRA EN ACORDES. Es lo que la gente quiere hacer con esto —
+  // acompañar algo — y la nota suelta es el caso raro, no al revés. El botón de
+  // la paleta es el de notas: apagado = acordes.
+  let modoAcordes  = true;
   let tonalidad    = 'C';
   let registroTono = 'medio';
   let vistaAcordes = null;   // lo que render.js pinta arriba a la derecha
@@ -1766,7 +1774,10 @@ async function init() {
     // La paleta de música aparece con el modo, igual que la de colores en
     // pintura y la de efectos en baile
     paletaMusica.classList.toggle('visible', enMusica);
-    if (!enMusica) menuTono.classList.remove('visible');
+    if (!enMusica) {
+      menuTono.classList.remove('visible');
+      menuInstrumento.classList.remove('visible');
+    }
   }
 
   function apagarBaile() {
@@ -1832,17 +1843,24 @@ async function init() {
   });
   pintarTono();
 
-  btnAcordes.addEventListener('click', () => {
+  /** Refleja acordes ↔ notas en la paleta: cada uno muestra su propio control */
+  function pintarVozMusica() {
+    btnNotas.classList.toggle('activo', !modoAcordes);
+    filaTono.classList.toggle('visible', modoAcordes);
+    filaInstrumento.classList.toggle('visible', !modoAcordes);
+    if (modoAcordes) menuInstrumento.classList.remove('visible');
+    else             menuTono.classList.remove('visible');
+  }
+
+  btnNotas.addEventListener('click', () => {
     resumeContextSync(); // el clic es el permiso que pide el navegador
     modoAcordes = !modoAcordes;
-    btnAcordes.classList.toggle('activo', modoAcordes);
-    filaTono.classList.toggle('visible', modoAcordes);
     registroNombre.textContent = '';
     resetAcordes();
     setModoAcordes(modoAcordes);
+    pintarVozMusica();
     notasAuto = true;
     asegurarNotas();
-    if (!modoAcordes) menuTono.classList.remove('visible');
   });
 
   btnTono.addEventListener('click', (e) => {
@@ -1852,6 +1870,41 @@ async function init() {
   btnTono.addEventListener('mouseenter', () => {
     if (modoAcordes) menuTono.classList.add('visible');
   });
+
+  // ── Instrumento de la voz de notas ────────────────────────────────────────────
+  function pintarInstrumento() {
+    const i = INSTRUMENTOS.find(x => x.id === getInstrumento());
+    btnInstrumento.textContent = i.nombre;
+    menuInstLista.querySelectorAll('.inst-btn').forEach(b =>
+      b.classList.toggle('activo', b.dataset.inst === i.id));
+  }
+
+  INSTRUMENTOS.forEach(inst => {
+    const b = document.createElement('button');
+    b.className = 'inst-btn';
+    b.dataset.inst = inst.id;
+    b.textContent = inst.nombre;
+    b.addEventListener('click', () => {
+      setInstrumento(inst.id);
+      pintarInstrumento();
+      menuInstrumento.classList.remove('visible');
+    });
+    menuInstLista.appendChild(b);
+  });
+  pintarInstrumento();
+
+  btnInstrumento.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menuInstrumento.classList.toggle('visible');
+  });
+  btnInstrumento.addEventListener('mouseenter', () => {
+    if (!modoAcordes) menuInstrumento.classList.add('visible');
+  });
+
+  // Estado inicial de la voz de música: acordes encendidos de entrada
+  setModoAcordes(modoAcordes);
+  resetAcordes();
+  pintarVozMusica();
 
   btnPaint.addEventListener('click', () => {
     resumeContextSync();
@@ -2588,6 +2641,9 @@ async function init() {
     }
     if (!menuTono.contains(e.target) && e.target !== btnTono) {
       menuTono.classList.remove('visible');
+    }
+    if (!menuInstrumento.contains(e.target) && e.target !== btnInstrumento) {
+      menuInstrumento.classList.remove('visible');
     }
   });
 

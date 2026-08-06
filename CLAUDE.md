@@ -128,9 +128,13 @@ ritmo**.
 
 ## Modo acordes (acordes.js + audio.js + main.js)
 
-Interruptor `♬ acordes` dentro de música (paleta `#paleta-musica`, que aparece
-con el modo igual que la de colores en pintura). Cada forma pasa a ser **el
-acorde de ese grado** en la tonalidad elegida.
+**Música ENTRA EN ACORDES** (`modoAcordes = true` de arranque). Acompañar es lo
+que la gente quiere hacer con esto y la nota suelta es el caso raro, así que el
+interruptor de la paleta `#paleta-musica` es **`♪ notas`**: apagado = acordes.
+Cada forma es **el acorde de ese grado** en la tonalidad elegida.
+
+La paleta muestra el control del modo en el que estés: con acordes, la
+tonalidad (`#fila-tono`); con notas, el instrumento (`#fila-instrumento`).
 
 - **`src/acordes.js` es un módulo PURO**: no importa Tone ni toca el DOM. Entra
   forma + altura, salen frecuencias. Así se razona y se prueba la música sin
@@ -172,6 +176,29 @@ acorde de ese grado** en la tonalidad elegida.
 - Sin cuantización al pulso: el modo arranca **sin ritmo**, y quien canta sin
   banda hace rubato. Si algún día se enciende el candombe debajo, ahí sí tendría
   sentido que los cambios esperen al pulso.
+
+## Instrumentos de la voz de notas (audio.js — INSTRUMENTOS)
+
+Cinco timbres para el modo de nota suelta: **Aire** (el original, pad tibio, por
+defecto), **Cuerda** (pulsada), **Caña** (soplada), **Órgano**, **Campana** (FM).
+`setInstrumento(id)` / `getInstrumento()`; botón `#btn-instrumento` + menú
+`#menu-instrumento`.
+
+Todos comparten la arquitectura de dos capas (fundamental + octava), así que
+cambiar de instrumento es reconfigurar los dos sintes y su cadena — nada más.
+**Lo que de verdad los diferencia es la envolvente**: sustain alto = se sostiene
+mientras haya manos; sustain bajo = suena y se apaga solo, que es lo que hace
+que una cuerda pulsada se sienta pulsada.
+
+- Se aplica con `synth.set({ oscillator, envelope, volume })`, la vía idiomática
+  de Tone: el OmniOscillator resuelve solo el tipo y sus parámetros extra
+  (`count`/`spread` de los «fat», `harmonicity` de los «fm»). Saltar entre
+  familias (fat → fm → sine) está probado y no lanza.
+- Al cambiar se hace `_droneRepulsar()`: sin eso, en los de caída habría que
+  esperar a la próxima forma para oír el timbre nuevo.
+- ⚠️ **Los volúmenes están nivelados a oído-medido** (picos entre −4 y −10 dB).
+  Si agregás uno, medilo: la primera versión tenía Caña y Órgano 8 dB por encima
+  de Cuerda y cambiar de instrumento era un salto de volumen.
 
 ## Flujo de audio
 

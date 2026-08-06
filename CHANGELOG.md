@@ -9,6 +9,13 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Música entra en acordes, y las notas eligen instrumento** (6 ago)
+- Entrar a 🎵 ya te deja **en acordes**. Acompañar es lo que se quiere hacer con
+  esto; la nota suelta pasa a ser lo que se pide aparte, con el botón `♪ notas`.
+- Cinco instrumentos para la voz de nota suelta: **Aire · Cuerda · Caña · Órgano
+  · Campana**. Lo que los diferencia de verdad es la envolvente — Cuerda y
+  Campana suenan y se apagan solas, las otras se sostienen mientras haya manos.
+
 **Modo acordes: acompañar a alguien que canta** (6 ago)
 - Interruptor `♬ acordes` en música. Las mismas ocho formas dejan de ser notas
   sueltas y pasan a ser **los acordes de una tonalidad** — I, ii, iii, IV, V, vi,

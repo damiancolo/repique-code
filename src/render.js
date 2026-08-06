@@ -67,14 +67,16 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma) {
     }
   }
 
-  if (state.audioIniciado) {
+  // El nombre de la nota se ve siempre que la voz de notas esté sonando, haya
+  // ritmo o no. El bpm solo cuando hay ritmo: sin transporte no dice nada.
+  if (state.notasIniciadas) {
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '300 13px "Space Grotesk", system-ui, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${state.bpm} bpm`, w - 24, 32);
+    if (state.audioIniciado) ctx.fillText(`${state.bpm} bpm`, w - 24, 32);
     if (forma && LABEL_FORMA[forma]) {
       ctx.fillStyle = 'rgba(230,57,70,0.75)';
-      ctx.fillText(LABEL_FORMA[forma], w - 24, 54);
+      ctx.fillText(LABEL_FORMA[forma], w - 24, state.audioIniciado ? 54 : 32);
     }
     ctx.textAlign = 'left';
   }

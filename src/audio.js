@@ -1114,13 +1114,57 @@ const synthBombo = new Tone.MembraneSynth({
   volume: 9,
 });
 
-// ─── Drone ────────────────────────────────────────────────────────────────────
+// ─── Voz de notas (el «drone» de las formas) ─────────────────────────────────
+// Antes era un triángulo pelado a volumen +6: sonaba a sirena y se ponía por
+// delante de todo. Ahora son dos capas afinadas a la misma nota, tibias y
+// bajas, pensadas para ACOMPAÑAR una canción, no para taparla:
+//
+//   drone     · fundamental en `fattriangle` — tres osciladores apenas
+//               desafinados entre sí. Ese batido lento es lo que la vuelve
+//               amable; un triángulo solo suena a test de audio.
+//   droneAire · la misma nota una octava arriba, senoidal y muy por debajo:
+//               le pone brillo sin agregar aspereza.
+//
+// Las dos pasan por un lowpass tibio (se come el filo de los armónicos) y de
+// ahí salen por dos vías, seca y con reverb, para que la nota tenga aire.
+// El vibrato es mínimo a propósito: da vida, y pasado de rosa marea.
 const droneGain = new Tone.Gain(0);
 const drone = new Tone.Synth({
-  oscillator: { type: 'triangle' },
-  envelope: { attack: 0.4, decay: 0, sustain: 1, release: 1.2 },
-  volume: 6,
+  oscillator: { type: 'fattriangle', count: 3, spread: 14 },
+  envelope: { attack: 0.35, decay: 0.7, sustain: 0.75, release: 1.6 },
+  portamento: 0.04, // un hilo de glissando entre notas, no un barrido
+  volume: -1,
 });
+const droneAire = new Tone.Synth({
+  oscillator: { type: 'sine' },
+  envelope: { attack: 0.6, decay: 0, sustain: 1, release: 2.2 },
+  portamento: 0.04,
+  volume: -18,
+});
+const droneFiltro  = new Tone.Filter({ type: 'lowpass', frequency: 2400, rolloff: -12, Q: 0.4 });
+const droneVibrato = new Tone.Vibrato({ frequency: 4.2, depth: 0.045, wet: 1 });
+const droneVerb    = new Tone.Freeverb({ roomSize: 0.8, dampening: 2500, wet: 1 });
+const droneVerbEnv = new Tone.Gain(0.32); // cuánta reverb; el resto va seco
+
+// Las tres notas de la voz se mueven juntas: la fundamental y su octava.
+// `actualizarWow` (modo acid) también entra por acá, si no el aire se quedaría
+// clavado en la nota anterior.
+function _droneFrecuencia(hz, tiempo = 0.08) {
+  drone.frequency.rampTo(hz, tiempo);
+  droneAire.frequency.rampTo(hz * 2, tiempo);
+}
+
+function _droneAtaque(nota) {
+  const hz = Tone.Frequency(nota).toFrequency();
+  drone.triggerAttack(hz);
+  droneAire.triggerAttack(hz * 2);
+}
+
+function _droneSuelta() {
+  drone.triggerRelease();
+  droneAire.triggerRelease();
+}
+
 const NOTA_POR_FORMA = {
   rectangulo:    'C3',   // Do
   trapecio_piso: 'D3',   // Re
@@ -1337,6 +1381,73 @@ export function resumeContextSync() {
   } catch (_) {}
 }
 
+// La cadena se arma una sola vez y la comparten la voz de notas y el ritmo
+function asegurarCadena() {
+  if (masterGain) return;
+  masterGain = new Tone.Gain(state.volumen);
+  // Synths → filtro → distorsion → chebyshev → ganancia → salida
+  [synthPiano, synthRepique, synthChico, synthMadera,
+   synthChicoMano, synthChicoPalo, synthRepiqueCand, synthPianoCand].forEach(s => s.connect(filtro));
+  filtro.connect(distorsion);
+  distorsion.connect(chebyshev);
+  chebyshev.connect(masterGain);
+  masterGain.connect(masterComp);
+  masterComp.connect(masterLimiter);
+  masterLimiter.toDestination();
+  synthBombo.connect(masterGain); // bypass filtro — siempre profundo
+  synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
+  fxVerb.connect(masterGain);     // bus de efectos de gestos (delay → reverb)
+  impactSub.connect(masterGain);  // el sub del impacto va limpio, sin reverb
+  sfxDry.connect(masterGain);     // bus seco de la biblioteca (percusión, sub)
+  // Voz de notas → vibrato → lowpass tibio → droneGain (el volumen que manda
+  // el área de las manos) → dos vías: seca y con reverb. Bypasea el filtro de
+  // percusión, pero pasa por la dinámica de salida como todo lo demás.
+  drone.connect(droneVibrato);
+  droneAire.connect(droneVibrato);
+  droneVibrato.connect(droneFiltro);
+  droneFiltro.connect(droneGain);
+  droneGain.connect(masterComp);
+  droneGain.connect(droneVerbEnv);
+  droneVerbEnv.connect(droneVerb);
+  droneVerb.connect(masterComp);
+}
+
+let _notasArrancando = false;
+
+/**
+ * Enciende SOLO la voz de notas: el drone del cuadrilátero, sin ritmo ni
+ * transporte. Sirve para que la forma que hacen las manos suene en cuanto
+ * aparece en pantalla, sin haber pulsado "Arrancar".
+ *
+ * No lanza excepción: si el navegador todavía tiene el audio cerrado (hace
+ * falta un clic del usuario) devuelve `false` y se puede reintentar. El
+ * `Promise.race` es porque en Chrome `resume()` sobre un contexto bloqueado
+ * por la política de autoplay queda pendiente hasta que el usuario toque algo
+ * — sin el timeout esta función nunca volvería.
+ */
+export async function startNotas() {
+  if (state.notasIniciadas) return true;
+  if (_notasArrancando) return false;
+  _notasArrancando = true;
+  try {
+    resumeContextSync();
+    await Promise.race([
+      Tone.start().catch(() => {}),
+      new Promise(r => setTimeout(r, 400)),
+    ]);
+    if (Tone.context.state !== 'running') return false;
+
+    asegurarCadena();
+    droneGain.gain.value = 0; // el área de las manos lo levanta
+    _droneAtaque('C3');
+    droneFormaActual = 'rectangulo';
+    state.notasIniciadas = true;
+    return true;
+  } finally {
+    _notasArrancando = false;
+  }
+}
+
 export async function startAudio() {
   await Tone.start();
 
@@ -1350,26 +1461,7 @@ export async function startAudio() {
     throw new Error('AudioContext bloqueado. Intentá subir el volumen del dispositivo y volver a pulsar Arrancar.');
   }
 
-  if (!masterGain) {
-    masterGain = new Tone.Gain(state.volumen);
-    // Synths → filtro → distorsion → chebyshev → ganancia → salida
-    [synthPiano, synthRepique, synthChico, synthMadera,
-     synthChicoMano, synthChicoPalo, synthRepiqueCand, synthPianoCand].forEach(s => s.connect(filtro));
-    filtro.connect(distorsion);
-    distorsion.connect(chebyshev);
-    chebyshev.connect(masterGain);
-    masterGain.connect(masterComp);
-    masterComp.connect(masterLimiter);
-    masterLimiter.toDestination();
-    synthBombo.connect(masterGain); // bypass filtro — siempre profundo
-    synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
-    fxVerb.connect(masterGain);     // bus de efectos de gestos (delay → reverb)
-    impactSub.connect(masterGain);  // el sub del impacto va limpio, sin reverb
-    sfxDry.connect(masterGain);     // bus seco de la biblioteca (percusión, sub)
-    // Drone → droneGain → salida (bypasea el filtro de percusión, pero pasa por la dinámica)
-    drone.connect(droneGain);
-    droneGain.connect(masterComp);
-  }
+  asegurarCadena();
 
   // En móvil se saltea la carga de samples — síntesis directa, sin riesgo de cuelgue
   const esMobil = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -1378,10 +1470,15 @@ export async function startAudio() {
     await Promise.race([Tone.loaded(), new Promise(r => setTimeout(r, 4000))]);
   }
 
-  // Arrancar ritmo y drone — C3 coincide con droneFormaActual ('rectangulo')
+  // Arrancar ritmo y drone — C3 coincide con droneFormaActual ('rectangulo').
+  // Si la voz de notas ya estaba encendida no se vuelve a atacar el drone:
+  // cortaría la nota que la mano está sosteniendo en ese momento.
   crearSecuencias();
-  drone.triggerAttack('C3');
-  droneFormaActual = 'rectangulo';
+  if (!state.notasIniciadas) {
+    _droneAtaque('C3');
+    droneFormaActual = 'rectangulo';
+    state.notasIniciadas = true;
+  }
 
   Tone.getTransport().bpm.value = bpmInterno;
   Tone.getTransport().swingSubdivision = '16n';
@@ -1395,13 +1492,14 @@ export async function startAudio() {
 
 export function stopAudio() {
   pararLooper();
-  drone.triggerRelease();
+  _droneSuelta();
   droneGain.gain.rampTo(0, 0.3);
   Tone.getTransport().stop();
   [seqPiano, seqRepique, seqChico, seqMadera, seqBombo, seqStep].forEach(s => s?.dispose());
   loopPlayer?.stop();
   state.step = -1;
-  state.audioIniciado = false;
+  state.audioIniciado  = false;
+  state.notasIniciadas = false; // "Parar" es silencio: también se va la voz de notas
 }
 
 export function actualizarBPM(bpmObjetivo) {
@@ -1427,7 +1525,12 @@ export function actualizarNota(forma) {
   if (!forma || forma === droneFormaActual) return;
   droneFormaActual = forma;
   const nota = NOTA_POR_FORMA[forma];
-  if (nota) drone.frequency.rampTo(Tone.Frequency(nota).toFrequency(), 0.08);
+  if (!nota) return;
+  // Cada forma nueva vuelve a atacar la envolvente: eso es lo que la hace sonar
+  // como una NOTA y no como una sirena que se desliza. El ataque de 0.35 s la
+  // hace florecer en vez de golpear, el `portamento` del synth pone el hilo de
+  // glissando, y el debounce de forma (4 frames) evita ráfagas.
+  _droneAtaque(nota);
 }
 
 export function setVolumen(v) {
@@ -1505,7 +1608,8 @@ export function actualizarWow(centroY, ancho, subtipoAcid) {
     );
     if (idx !== _notaAcidIdx) {
       _notaAcidIdx = idx;
-      drone.frequency.rampTo(Tone.Frequency(escala[idx]).toFrequency(), 0.05);
+      // Sin re-ataque: acá el efecto es justamente el deslizarse por la escala
+      _droneFrecuencia(Tone.Frequency(escala[idx]).toFrequency(), 0.05);
     }
   }
 }

@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
-import { startAudio, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
+import { startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
 
 const video         = document.getElementById('video');
@@ -73,6 +73,32 @@ async function init() {
   let enModoTecno = false;
   let areaHold = 0;
   const AREA_HOLD_MAX = 10;
+
+  // ── Voz de notas sin "Arrancar" ─────────────────────────────────────────────
+  // En modo música la nota de la forma suena en cuanto la forma aparece: no hay
+  // que pulsar nada. "Arrancar" queda para el ritmo, que es lo que agrega.
+  // Los navegadores no abren el audio hasta que el usuario toca algo, así que
+  // se intenta desde tres lados: al entrar a música, al primer toque en la
+  // página, y en cada intento de forma (con un respiro entre reintentos).
+  let notasAuto     = true; // "Parar" lo apaga: silencio es silencio
+  let _ultimoIntento = 0;
+  const REINTENTO_NOTAS = 400; // ms
+
+  function asegurarNotas() {
+    if (state.notasIniciadas || !notasAuto) return;
+    const ahora = performance.now();
+    if (ahora - _ultimoIntento < REINTENTO_NOTAS) return;
+    _ultimoIntento = ahora;
+    startNotas();
+  }
+
+  // Cualquier toque en la página vale como permiso para abrir el audio
+  ['pointerdown', 'touchend', 'keydown'].forEach(ev =>
+    document.addEventListener(ev, () => {
+      resumeContextSync();
+      if (!state.audioIniciado) asegurarNotas();
+    }, { passive: true })
+  );
 
   // ── Lock de tempo/tono ───────────────────────────────────────────────────────
   const FRAMES_DOS_PINZAS = 8;
@@ -1407,7 +1433,10 @@ async function init() {
           actualizarSliderFiltro(tFiltro);
         }
 
-        if (state.audioIniciado) {
+        // Hay cuadrilátero en pantalla: que la nota suene, con ritmo o sin él
+        asegurarNotas();
+
+        if (state.notasIniciadas) {
           areaHold = AREA_HOLD_MAX;
           actualizarArea(area);
 
@@ -1422,7 +1451,7 @@ async function init() {
             framesCandidato = 1;
           }
         }
-      } else if (state.audioIniciado) {
+      } else if (state.notasIniciadas) {
         if (areaHold > 0) { areaHold--; }
         else { actualizarArea(0); }
         formaCandidato  = null;
@@ -1468,7 +1497,7 @@ async function init() {
       }
 
       // Cambio de modo normal ↔ techno/acid — bloqueado con candados puestos
-      if (state.audioIniciado) {
+      if (state.notasIniciadas) {
         const tecno = formaConfirmada === 'dos_triangulos' && !bloqueoTotal;
         if (tecno !== enModoTecno) {
           setModoTecno(tecno);
@@ -1601,9 +1630,13 @@ async function init() {
     if (state.audioIniciado) {
       stopAudio();
       resetTracks();
+      // Parar es parar del todo: las notas no vuelven solas hasta que el
+      // usuario pida audio otra vez (Arrancar, o volver a entrar a música)
+      notasAuto = false;
       pintarStart();
       return;
     }
+    notasAuto = true;
     btnStart.disabled = true;
     btnStart.textContent = 'Cargando…';
     status.textContent = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'Iniciando audio…' : 'Cargando samples…';
@@ -1668,12 +1701,16 @@ async function init() {
 
   // 🎵 Música: el modo base, apagar los otros dos alcanza para volver a él
   btnMusica.addEventListener('click', () => {
+    resumeContextSync(); // el clic es el permiso que pide el navegador
     if (modoPintar) apagarPintura();
     if (modoBaile)  { apagarBaile(); ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height); }
+    notasAuto = true;
+    asegurarNotas(); // entrar a música ya deja las notas listas para sonar
     pintarModos();
   });
 
   btnPaint.addEventListener('click', () => {
+    resumeContextSync();
     // Volver a tocar ✏ estando en pintura devuelve a música
     modoPintar = !modoPintar;
     if (modoPintar) {
@@ -1681,6 +1718,8 @@ async function init() {
       paleta.classList.add('visible');
     } else {
       apagarPintura();
+      notasAuto = true;
+      asegurarNotas(); // se vuelve a música: las notas quedan listas
     }
     pintarModos();
   });

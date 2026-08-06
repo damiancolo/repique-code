@@ -9,6 +9,15 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Las notas suenan sin «Arrancar»** (6 ago)
+- En **🎵 música** la nota de la forma suena **en cuanto la forma aparece**: no hay
+  que pulsar nada. La voz de notas (el drone del cuadrilátero) se enciende sola,
+  sin ritmo ni transporte detrás.
+- `Arrancar` deja de ser la llave del sonido y pasa a ser lo que agrega: el
+  **ritmo**. `Parar` sigue apagando todo, ritmo y notas.
+- El nombre de la nota en pantalla ya no espera al `Arrancar`: aparece con ella.
+
+
 El código se abre bajo licencia MIT. Se agregan `LICENSE`, `CREDITS.md`,
 `CONTRIBUTING.md`, este changelog y un workflow de GitHub Pages para que cualquier
 fork tenga su propia demo en vivo.

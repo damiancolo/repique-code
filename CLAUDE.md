@@ -16,7 +16,7 @@
 
 Instrumento musical controlado por gestos de manos. Usa MediaPipe para detectar manos por cámara y Tone.js para síntesis de audio. Publicado en `estudioprompt.com/lab/repique-code` como iframe embebido.
 
-Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado) y **abre en modo pintura**. Tiene tres modos excluyentes en `#fila-modos`: **música 🎵** (drone + secuenciador por gestos de forma; es el modo base, se está en él cuando no hay ninguno de los otros dos), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos; arranca en el efecto `orbe`). El botón `Arrancar` es un interruptor: enciende y apaga el audio.
+Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado) y **abre en modo pintura**. Tiene tres modos excluyentes en `#fila-modos`: **música 🎵** (drone + secuenciador por gestos de forma; es el modo base, se está en él cuando no hay ninguno de los otros dos), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos; arranca en el efecto `orbe`). El botón `Arrancar` es un interruptor del **ritmo**: las notas de música suenan solas (ver «Voz de notas sin Arrancar»).
 
 ## Arquitectura
 
@@ -100,6 +100,31 @@ Hover sobre el botón ♩ → muestra el viz del ritmo que está sonando actualm
 Junto al ♩ hay un `#ritmo-nombre` en rojo que siempre indica el ritmo activo.
 
 En el modo Libre ✎ el footer del viz tiene dos botones: **↺ limpiar** (borra todo) y **⟳ actualizar** (refresca la vista).
+
+## Voz de notas sin «Arrancar» (audio.js + main.js)
+
+En modo música la nota de la forma **suena en cuanto la forma aparece**, sin
+pulsar nada. `Arrancar` ya no es la llave del sonido: es lo que **agrega el
+ritmo**.
+
+- `startNotas()` (audio.js) enciende **sólo el drone**: arma la cadena
+  (`asegurarCadena()`, compartida con `startAudio()`), ataca `C3` con
+  `droneGain` en 0 y marca `state.notasIniciadas`. **No** crea secuencias ni
+  arranca el transporte.
+- `state.notasIniciadas` = "la voz de notas está sonando". `startAudio()`
+  también la pone en true (y no re-ataca el drone si ya sonaba: cortaría la nota
+  que la mano sostiene). `stopAudio()` apaga las dos.
+- En `main.js:loop`, los bloques de nota/área/tecno se guían por
+  `state.notasIniciadas`, no por `audioIniciado`.
+- **El navegador no abre el audio sin un gesto del usuario**, así que se intenta
+  desde tres lados: al entrar a 🎵 (o al salir de ✏), al primer
+  `pointerdown`/`touchend`/`keydown` de la página, y en cada frame con forma
+  (`asegurarNotas()`, con 400 ms de respiro entre reintentos). `startNotas()`
+  nunca lanza: devuelve `false` si sigue bloqueado. El `Promise.race` con
+  timeout es obligatorio — en Chrome `resume()` sobre un contexto bloqueado por
+  autoplay queda **pendiente para siempre** hasta que el usuario toque algo.
+- `notasAuto` (main.js) se apaga al pulsar **Parar**: silencio es silencio, las
+  notas no vuelven solas. Se reactiva con `Arrancar` o volviendo a 🎵.
 
 ## Flujo de audio
 

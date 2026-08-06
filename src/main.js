@@ -1994,19 +1994,38 @@ async function init() {
     a.click();
   }
 
+  // ⚠️ LAS IMÁGENES SE CONGELAN AL ABRIR EL CARTEL, Y ES LO MÁS IMPORTANTE DE ACÁ.
+  //
+  // Antes se componían dos veces: una para la vista previa y otra al pulsar
+  // publicar. Como la cámara nunca deja de correr, eran DOS FOTOGRAMAS DISTINTOS:
+  // la persona aceptaba una imagen y se publicaba otra. Eso vacía de sentido el
+  // cartel entero — el trato es «esto es exactamente lo que se va a publicar».
+  //
+  // Se capturan las dos versiones en el mismo instante (sin await entre medias,
+  // así que leen el mismo fotograma de `video`) y a partir de ahí NO SE VUELVE A
+  // MIRAR LA CÁMARA: publicar y descargar usan estas.
+  let imagenPublicar = null;  // desenfocada — la que se sube
+  let imagenDescargar = null; // nítida — la que baja al dispositivo
+
   function cerrarCartel() {
     cartel.classList.remove('visible');
     cartelEstado.textContent = '';
     cartelEstado.classList.remove('error');
     btnPublicar.disabled = false;
+    imagenPublicar = null;
+    imagenDescargar = null;
   }
 
   btnGuardar.addEventListener('click', () => {
-    // La vista previa es exactamente lo que se publicaría, no una aproximación.
-    const previa = componerImagen(ANCHO_DESENFOQUE);
-    cartelPreview.width  = previa.width;
-    cartelPreview.height = previa.height;
-    cartelPreview.getContext('2d').drawImage(previa, 0, 0);
+    // Las dos, del mismo fotograma. No separar estas dos líneas ni meter nada
+    // asíncrono entre ellas.
+    imagenPublicar  = componerImagen(ANCHO_DESENFOQUE);
+    imagenDescargar = componerImagen(0);
+
+    // La vista previa es literalmente el canvas que se va a subir, no otro.
+    cartelPreview.width  = imagenPublicar.width;
+    cartelPreview.height = imagenPublicar.height;
+    cartelPreview.getContext('2d').drawImage(imagenPublicar, 0, 0);
 
     cartelEstado.textContent = '';
     cartelEstado.classList.remove('error');
@@ -2022,7 +2041,8 @@ async function init() {
   });
 
   btnSoloDescarga.addEventListener('click', () => {
-    descargarPNG(componerImagen(0), 'repique-code-pintura.png'); // nítida
+    if (!imagenDescargar) return;
+    descargarPNG(imagenDescargar, 'repique-code-pintura.png'); // nítida, mismo fotograma
     cerrarCartel();
   });
 
@@ -2034,16 +2054,21 @@ async function init() {
   });
 
   btnPublicar.addEventListener('click', async () => {
-    if (!ENDPOINT_GUARDAR) return;
+    if (!ENDPOINT_GUARDAR || !imagenPublicar) return;
+
+    // Guardadas aparte: cerrarCartel() las pone a null, y el plan B de más abajo
+    // corre después de que eso pueda haber pasado.
+    const paraSubir = imagenPublicar;
+    const paraBajar = imagenDescargar;
 
     btnPublicar.disabled = true;
     cartelEstado.classList.remove('error');
     cartelEstado.textContent = 'Subiendo…';
 
     try {
+      // ESTA es la imagen que vio la persona en el cartel, no una nueva.
       const blob = await new Promise((res, rej) => {
-        componerImagen(ANCHO_DESENFOQUE)
-          .toBlob(b => (b ? res(b) : rej(new Error('sin blob'))), 'image/png');
+        paraSubir.toBlob(b => (b ? res(b) : rej(new Error('sin blob'))), 'image/png');
       });
 
       // AbortController y no solo el timeout del fetch: la wifi de un centro
@@ -2067,7 +2092,9 @@ async function init() {
     } catch (_) {
       // PLAN B. Nunca dejar a la persona con las manos vacías delante del
       // público: si la subida falla, se lleva el archivo igual y se le dice.
-      descargarPNG(componerImagen(0), 'repique-code-pintura.png');
+      // También el fotograma congelado: para cuando esto corre pueden haber
+      // pasado 12 segundos de timeout y la cámara está en otra cosa.
+      if (paraBajar) descargarPNG(paraBajar, 'repique-code-pintura.png');
       cartelEstado.classList.add('error');
       cartelEstado.textContent =
         'No se pudo publicar (sin conexión). Te descargamos el dibujo al dispositivo.';

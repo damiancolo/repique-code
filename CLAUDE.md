@@ -267,6 +267,22 @@ dos bundles.
 npm install
 ```
 
+## Tempo y graves: solo con el ratón
+
+Se retiró el gesto de **«dos dedos pegados»** (índice y mayor a menos de 0.08,
+`dosDeadosPegados`) que arrastraba los sliders, y también el mapeo de **altura de
+manos → filtro**. Con ellos se fueron `tempoLocked`/`filtroLocked`, los botones
+de candado 🔒 de los sliders y `dedosSobreSlider`.
+
+**Por qué**: esa postura es exactamente la que el dedo mayor necesita como
+modificador de acordes y notas (ver el mapa del mayor). Dejarla ocupada por un
+control de tempo bloqueaba el camino. Y un candado que ya no traba nada es peor
+que no tenerlo: promete un estado que no existe.
+
+Queda en pie el arrastre con el ratón sobre el **track** de cada slider (ojo:
+el listener está en `#tempo-slider-track`, no en el wrap) y el modo acid de los
+dos triángulos, que mueve el filtro porque ahí es un efecto y no un control.
+
 ## Trampas que ya nos costaron una sesión
 
 - **Asignar a una variable no declarada NO crea un global.** Los módulos ES son

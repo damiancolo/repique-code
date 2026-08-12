@@ -9,6 +9,15 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Tempo y graves salen de las manos** (6 ago)
+- Fuera el gesto de **dos dedos pegados** que arrastraba los sliders, y fuera el
+  mapeo de altura de manos → graves. Tempo y graves **se mueven solo con el
+  ratón**.
+- Con ellos se van los **candados 🔒** de los sliders: ya no había nada que
+  trabar, y un candado que no traba nada promete un estado que no existe.
+- El motivo no es simplificar por simplificar: índice y mayor juntos es
+  exactamente la postura que el dedo mayor necesita para lo que viene.
+
 **Tres correcciones** (6 ago)
 - **El primer clic en 🎵 no hacía nada.** Había que darle dos. `apagarPintura()`
   asignaba a una variable que ya no existe (`zoomActivo`), y como los módulos ES

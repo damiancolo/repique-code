@@ -793,19 +793,6 @@
       color: rgba(255,255,255,0.22);
       pointer-events: none;
     }
-    .slider-lock {
-      background: none;
-      border: none;
-      font-size: 0.62rem;
-      cursor: pointer;
-      opacity: 0.35;
-      padding: 0;
-      line-height: 1;
-      transition: opacity 0.15s;
-    }
-    .slider-lock:hover  { opacity: 0.7; }
-    .slider-lock.locked { opacity: 1; }
-
     /* ── Puntero de mano (mano abierta → flecha, pinza → clic) ── */
     #puntero {
       position: fixed;
@@ -1146,21 +1133,21 @@
 
   <div id="status">Iniciando cámara…</div>
   <div id="lock-indicator"></div>
-  <div id="tempo-slider-wrap" title="Tempo (arrastrar o gesto ☝🤞)">
+  <!-- Tempo y graves solo con el ratón: las manos ya no los tocan, así que
+       tampoco hay candado que abrir. -->
+  <div id="tempo-slider-wrap" title="Tempo — arrastrar con el ratón">
     <div id="tempo-slider-track">
       <div id="tempo-slider-fill"></div>
       <div id="tempo-slider-thumb"></div>
     </div>
     <span id="tempo-bpm-label">120</span>
-    <button class="slider-lock locked" id="tempo-lock" title="El tempo está bloqueado a los gestos — abrí el candado para moverlo con las manos">🔒</button>
   </div>
-  <div id="filtro-slider-wrap" title="Graves / agudos (arrastrar, gesto ☝🤞 o altura de las manos)">
+  <div id="filtro-slider-wrap" title="Graves / agudos — arrastrar con el ratón">
     <div id="filtro-slider-track">
       <div id="filtro-slider-fill"></div>
       <div id="filtro-slider-thumb"></div>
     </div>
     <span id="filtro-label">agudos</span>
-    <button class="slider-lock locked" id="filtro-lock" title="Graves/agudos está bloqueado a los gestos — abrí el candado para moverlo con las manos">🔒</button>
   </div>
 
   <div id="panel">
@@ -1311,7 +1298,6 @@
       <tr><td>🤞🤞 Cruzadas</td><td>Modo Acid</td></tr>
       <tr><td>🤏🤏 Pinza ×2</td><td>Bloquear tempo y graves</td></tr>
       <tr><td>✌️ Victoria</td><td>Desbloquear</td></tr>
-      <tr><td>☝🤞 Puntas juntas</td><td>Sliders tempo/graves — sobre la barra</td></tr>
       <tr><td>🎵 ✏ 🕺 Modos</td><td>Música / pintura / baile</td></tr>
       <tr><td>🖐 Derecha abierta</td><td>Puntero sobre los controles — pinza 🤏 = clic</td></tr>
     </table>
@@ -1355,12 +1341,9 @@
       <p><strong>↺ Limpiar</strong> → vacía el patrón. Los presets vuelven a su estado al recargar la página.</p>
 
       <div class="gd-sep"></div>
-      <h3>Sliders y candados</h3>
+      <h3>Sliders</h3>
       <p>Dos barras a la derecha: <strong>tempo</strong> (80–180 BPM) y <strong>graves/agudos</strong>.</p>
-      <p>Se mueven con el mouse o con el gesto <strong>☝🤞 puntas juntas</strong> sobre la barra (arriba = más).</p>
-      <p>El filtro también responde a la <strong>altura de tus manos</strong> con el cuadrilátero.</p>
-      <p>Los dos arrancan con el <strong>candado cerrado 🔒</strong>: los gestos NO tocan el tempo ni los graves, así podés hacer notas tranquilo. Abrí el candado <strong>🔓</strong> del slider que quieras controlar con las manos. El mouse los mueve siempre, con candado o sin él.</p>
-      <p><strong>🤏🤏 Dos pinzas</strong> → bloquea tempo + graves de una (las notas siguen libres). <strong>✌ Victoria</strong> → desbloquea.</p>
+      <p><strong>Se mueven solo con el ratón</strong>, arrastrando sobre la barra (arriba = más). Las manos no los tocan: así podés tocar tranquilo sin que se te vaya el tempo o se te cierren los graves sin querer.</p>
 
       <div class="gd-sep"></div>
       <h3>Cuadrilátero (dos manos)</h3>

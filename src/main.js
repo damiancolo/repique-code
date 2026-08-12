@@ -205,11 +205,8 @@ async function init() {
   // ── Sliders de tempo y filtro ────────────────────────────────────────────────
   let _bpmTarget   = 120;
   let _filtroT     = 0.73; // ≈ 4000 Hz, estado inicial del filtro
-  let _gestureDrag = null; // { tipo: 'bpm'|'filtro', startY, startVal }
-  // Los candados arrancan CERRADOS: tempo y graves no se mueven con los gestos
-  // hasta que se abre el candado a mano (el mouse siempre los mueve igual).
-  let tempoLocked  = true;  // candado manual del slider de tempo
-  let filtroLocked = true;  // candado manual del slider de graves/agudos
+  // Tempo y graves ya no tienen candado porque ya no hay nada que trabar: los
+  // gestos no los tocan. Solo se mueven arrastrando sus sliders con el ratón.
 
   // ── Vínculos ─────────────────────────────────────────────────────────────────
   const FRAMES_SHAKA  = 15;
@@ -341,23 +338,6 @@ async function init() {
     if (idxE && midE && rinE && !pinE) return 'brocha';
     if (idxE && !midE && !rinE && !pinE) return 'dibujar';
     return null;
-  }
-
-  /** Punta de mayor (12) pegada a la punta de índice (8) → control de tempo */
-  function dosDeadosPegados(mano) {
-    return Math.hypot(mano[8].x - mano[12].x, mano[8].y - mano[12].y) < 0.08;
-  }
-
-  /** Verifica que los dedos proyectados estén encima del área de un slider en pantalla */
-  function dedosSobreSlider(mano, wrapId) {
-    const rect = document.getElementById(wrapId).getBoundingClientRect();
-    // Coordenadas espejadas (igual que el canvas de render)
-    const sx = (1 - (mano[8].x + mano[12].x) / 2) * window.innerWidth;
-    const sy = ((mano[8].y + mano[12].y) / 2) * window.innerHeight;
-    const margenH = 55; // horizontal
-    const margenV = 55; // vertical — zona de enganche inicial
-    return sx >= rect.left - margenH && sx <= rect.right  + margenH &&
-           sy >= rect.top  - margenV && sy <= rect.bottom + margenV;
   }
 
   /** Índice extendido (señalar) — sin importar los demás dedos */
@@ -1522,22 +1502,12 @@ async function init() {
       // estado normal y el modo tecno/acid nunca se podría activar.
       const bloqueoTotal = locked;
 
-      // Cuadrilátero → filtro (altura) / área / nota  [BPM solo por slider]
+      // Cuadrilátero → área / nota. Tempo y graves NO se tocan con las manos:
+      // van solo con el ratón sobre sus sliders. El acid de los dos triángulos
+      // sigue moviendo el filtro porque ahí es un efecto, no un control.
       if (ancho !== null) {
-        // En acordes el cuadrilátero es un acorde y nada más: ni filtro por
-        // altura (esa altura ahora es el registro) ni modo acid.
-        if (modoAcordes) {
-          // nada que hacer acá
-        } else if (formaConfirmada === 'dos_triangulos' && !bloqueoTotal) {
+        if (!modoAcordes && formaConfirmada === 'dos_triangulos' && !bloqueoTotal) {
           actualizarWow(centroY, ancho, subtipoAcid);
-        } else if (!filtroLocked && !locked) {
-          // Manos arriba (centroY bajo) = agudos, manos abajo (centroY alto) = graves.
-          // Con candado (manual o dos pinzas) el filtro queda congelado — se
-          // pueden hacer notas sin mover los graves.
-          const tFiltro = Math.max(0, Math.min(1, mapear(centroY, 0.75, 0.15, 0, 1)));
-          actualizarFiltro(tFiltro);
-          _filtroT = tFiltro;
-          actualizarSliderFiltro(tFiltro);
         }
 
         // Hay cuadrilátero en pantalla: que la nota suene, con ritmo o sin él
@@ -1568,43 +1538,10 @@ async function init() {
         if (modoAcordes) pasoAcordes(null, null, timestamp);
       }
 
-      // Gesto dos dedos pegados → control relativo de tempo o filtro (según slider)
-      if (!_mouseDrag && !_mouseDragFiltro) {
-        const mano2 = manos.find(m => dosDeadosPegados(m));
-        if (mano2) {
-          const sy = ((mano2[8].y + mano2[12].y) / 2) * window.innerHeight;
-          if (!_gestureDrag) {
-            // Enganchar según sobre qué slider estén los dedos (si no hay candado)
-            if (!locked && !tempoLocked && dedosSobreSlider(mano2, 'tempo-slider-wrap')) {
-              _gestureDrag = { tipo: 'bpm', startY: sy, startVal: _bpmTarget };
-            } else if (!locked && !filtroLocked && dedosSobreSlider(mano2, 'filtro-slider-wrap')) {
-              _gestureDrag = { tipo: 'filtro', startY: sy, startVal: _filtroT };
-            }
-          }
-          if (_gestureDrag) {
-            // Tracking delta — funciona aunque los dedos se muevan fuera del área
-            const delta = _gestureDrag.startY - sy; // arriba = positivo
-            if (_gestureDrag.tipo === 'bpm') {
-              const bpm = Math.max(80, Math.min(180, _gestureDrag.startVal + delta * 0.7));
-              if (!locked && !tempoLocked) actualizarBPM(bpm);
-              _bpmTarget = bpm;
-              actualizarSlider(_bpmTarget);
-            } else {
-              _filtroT = Math.max(0, Math.min(1, _gestureDrag.startVal + delta / 150));
-              actualizarFiltro(_filtroT);
-              actualizarSliderFiltro(_filtroT);
-            }
-          }
-        } else {
-          _gestureDrag = null; // dedos sueltos → soltar el enganche
-        }
-        sliderThumb.style.background = (_gestureDrag && _gestureDrag.tipo === 'bpm')
-          ? 'rgba(255,255,255,0.95)'
-          : 'rgba(255,255,255,0.55)';
-        filtroThumb.style.background = (_gestureDrag && _gestureDrag.tipo === 'filtro')
-          ? 'rgba(255,255,255,0.95)'
-          : 'rgba(255,255,255,0.55)';
-      }
+      // Acá vivía el gesto de «dos dedos pegados» (índice y mayor juntos) para
+      // arrastrar tempo y graves. Se retiró: era índice y mayor a menos de 0.08,
+      // o sea exactamente la postura que el mayor necesita como modificador de
+      // acordes y notas. Tempo y graves se mueven solo con el ratón.
 
       // Cambio de modo normal ↔ techno/acid — bloqueado con candados puestos
       if (state.notasIniciadas && !modoAcordes) {
@@ -2427,7 +2364,7 @@ async function init() {
     filtroLabel.textContent = t > 0.66 ? 'agudos' : t > 0.33 ? 'medios' : 'graves';
   }
 
-  // Mouse drag — el mouse siempre funciona, los candados solo bloquean gestos
+  // Arrastre con el ratón sobre el track: la ÚNICA vía para tempo y graves
   let _mouseDrag = null;
   let _mouseDragFiltro = null;
   sliderTrack.addEventListener('mousedown', (e) => {
@@ -2454,19 +2391,9 @@ async function init() {
   });
   document.addEventListener('mouseup', () => { _mouseDrag = null; _mouseDragFiltro = null; });
 
-  // ── Candados de los sliders (bloquean los gestos, no el mouse) ───────────────
-  const tempoLockBtn  = document.getElementById('tempo-lock');
-  const filtroLockBtn = document.getElementById('filtro-lock');
-  tempoLockBtn.addEventListener('click', () => {
-    tempoLocked = !tempoLocked;
-    tempoLockBtn.textContent = tempoLocked ? '🔒' : '🔓';
-    tempoLockBtn.classList.toggle('locked', tempoLocked);
-  });
-  filtroLockBtn.addEventListener('click', () => {
-    filtroLocked = !filtroLocked;
-    filtroLockBtn.textContent = filtroLocked ? '🔒' : '🔓';
-    filtroLockBtn.classList.toggle('locked', filtroLocked);
-  });
+  // Los candados de los sliders se fueron con el gesto que bloqueaban. Un
+  // candado que no traba nada es peor que no tenerlo: promete un estado que ya
+  // no existe.
 
   actualizarSlider(_bpmTarget);
   actualizarSliderFiltro(_filtroT);
@@ -2694,10 +2621,6 @@ async function init() {
     _prevPointers = [];
     vinculosCtx.clearRect(0, 0, vinculosCanvas.width, vinculosCanvas.height);
   });
-}
-
-function mapear(valor, inMin, inMax, outMin, outMax) {
-  return outMin + ((valor - inMin) / (inMax - inMin)) * (outMax - outMin);
 }
 
 init();

@@ -1517,9 +1517,11 @@ async function init() {
           areaHold = AREA_HOLD_MAX;
           actualizarArea(area);
 
-          // Con UNO alcanza: en pleno toque no se mira la pantalla, y la línea
-          // ya muestra cuál de los dos mayores está afuera.
-          const complemento = !!(mayores && (mayores[0].estirado || mayores[1].estirado));
+          // Cuántos mayores están arriba: 0 la tríada, 1 la tensión, 2 el color.
+          // La línea entre los mayores muestra el estado sin tener que leer nada.
+          const complemento = mayores
+            ? (mayores[0].estirado ? 1 : 0) + (mayores[1].estirado ? 1 : 0)
+            : 0;
 
           if (modoAcordes) {
             pasoAcordes(forma, centroY, timestamp, complemento);
@@ -1544,8 +1546,8 @@ async function init() {
         else { actualizarArea(0); }
         formaCandidato  = null;
         framesCandidato = 0;
-        if (modoAcordes) pasoAcordes(null, null, timestamp, false);
-        else setComplementoNota(false);
+        if (modoAcordes) pasoAcordes(null, null, timestamp, 0);
+        else setComplementoNota(0);
       }
 
       // Acá vivía el gesto de «dos dedos pegados» (índice y mayor juntos) para

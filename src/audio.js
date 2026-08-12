@@ -1152,6 +1152,23 @@ const droneQuinta = new Tone.Synth({
   volume: -8,
 });
 const droneQuintaGain = new Tone.Gain(0);
+// Cuarta capa: LA TERCERA, con los dos mayores arriba. La nota pasa de línea
+// sola → quinta hueca → acorde entero. La tercera es la DIATÓNICA de cada nota
+// (mayor sobre do, menor sobre re…), que es lo que mantiene todo en tono.
+const droneTercera = new Tone.Synth({
+  oscillator: { type: 'fattriangle', count: 2, spread: 10 },
+  envelope: { attack: 0.4, decay: 0, sustain: 1, release: 1.6 },
+  portamento: 0.04,
+  volume: -10,
+});
+const droneTerceraGain = new Tone.Gain(0);
+
+// Semitonos de la tercera diatónica de cada forma dentro de la escala mayor
+const TERCERA_POR_FORMA = {
+  rectangulo: 4, trapecio_piso: 3, trapecio_techo: 3, trapecio_izq: 4,
+  trapecio_der: 4, la: 3, si: 3, do_alto: 4,
+};
+let _terceraSemis = 4;
 const droneFiltro  = new Tone.Filter({ type: 'lowpass', frequency: 2400, rolloff: -12, Q: 0.4 });
 const droneVibrato = new Tone.Vibrato({ frequency: 4.2, depth: 0.045, wet: 1 });
 const droneVerb    = new Tone.Freeverb({ roomSize: 0.8, dampening: 2500, wet: 1 });
@@ -1239,6 +1256,7 @@ export function setInstrumento(id) {
     // La quinta usa el timbre de la fundamental para que la nota abierta suene
     // al mismo instrumento, sólo más discreta
     droneQuinta.set({ oscillator: p.osc, envelope: p.env, volume: p.vol - 6 });
+    droneTercera.set({ oscillator: p.osc, envelope: p.env, volume: p.vol - 8 });
     droneFiltro.frequency.rampTo(p.filtro, 0.2);
     droneVibrato.frequency.value = p.vibrato.frequency;
     droneVibrato.depth.rampTo(p.vibrato.depth, 0.2);
@@ -1255,11 +1273,13 @@ export function setInstrumento(id) {
 // `actualizarWow` (modo acid) también entra por acá, si no el aire se quedaría
 // clavado en la nota anterior.
 const QUINTA = Math.pow(2, 7 / 12);
+const _terceraHz = hz => hz * Math.pow(2, _terceraSemis / 12);
 
 function _droneFrecuencia(hz, tiempo = 0.08) {
   drone.frequency.rampTo(hz, tiempo);
   droneAire.frequency.rampTo(hz * 2, tiempo);
   droneQuinta.frequency.rampTo(hz * QUINTA, tiempo);
+  droneTercera.frequency.rampTo(_terceraHz(hz), tiempo);
 }
 
 // Tone exige que cada ataque de un oscilador caiga ESTRICTAMENTE después del
@@ -1277,6 +1297,7 @@ function _atacarVocesNota(hz) {
     drone.triggerAttack(hz, t);
     droneAire.triggerAttack(hz * 2, t);
     droneQuinta.triggerAttack(hz * QUINTA, t);
+    droneTercera.triggerAttack(_terceraHz(hz), t);
   } catch (err) {
     console.error('[Repique Code] ataque de nota:', err);
   }
@@ -1290,6 +1311,7 @@ function _droneSuelta() {
   drone.triggerRelease();
   droneAire.triggerRelease();
   droneQuinta.triggerRelease();
+  droneTercera.triggerRelease();
 }
 
 /** Volver a pulsar la nota que ya está sonando, sin cambiarla */
@@ -1297,9 +1319,15 @@ function _droneRepulsar() {
   _atacarVocesNota(drone.frequency.value);
 }
 
-/** El complemento de la nota suelta: la quinta entra o se va */
-export function setComplementoNota(activo) {
-  droneQuintaGain.gain.rampTo(activo ? 1 : 0, 0.18);
+/**
+ * El complemento de la nota suelta, según cuántos mayores estén arriba:
+ *   0 → la nota sola
+ *   1 → se abre: entra la quinta (hueco)
+ *   2 → se llena: entra también la tercera diatónica (el acorde entero)
+ */
+export function setComplementoNota(nivel) {
+  droneQuintaGain.gain.rampTo(nivel >= 1 ? 1 : 0, 0.18);
+  droneTerceraGain.gain.rampTo(nivel >= 2 ? 1 : 0, 0.18);
 }
 
 // ─── Voz de acordes (modo acordes) ───────────────────────────────────────────
@@ -1618,6 +1646,8 @@ function asegurarCadena() {
   droneAire.connect(droneVibrato);
   droneQuinta.connect(droneQuintaGain);
   droneQuintaGain.connect(droneVibrato);
+  droneTercera.connect(droneTerceraGain);
+  droneTerceraGain.connect(droneVibrato);
   droneVibrato.connect(droneFiltro);
   droneFiltro.connect(droneGain);
   droneGain.connect(masterComp);
@@ -1754,6 +1784,9 @@ export function actualizarNota(forma) {
   droneFormaActual = forma;
   const nota = NOTA_POR_FORMA[forma];
   if (!nota) return;
+  // La tercera del complemento depende de la nota: mayor sobre do, menor sobre
+  // re. Hay que fijarla ANTES de atacar, porque el ataque ya la usa.
+  _terceraSemis = TERCERA_POR_FORMA[forma] ?? 4;
   // Cada forma nueva vuelve a atacar la envolvente: eso es lo que la hace sonar
   // como una NOTA y no como una sirena que se desliza. El ataque de 0.35 s la
   // hace florecer en vez de golpear, el `portamento` del synth pone el hilo de

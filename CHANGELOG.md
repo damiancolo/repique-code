@@ -9,6 +9,15 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Los dos mayores: un dedo tensa, dos abren** (6 ago)
+- **Dos dedos arriba** dan un segundo complemento que hace juego con el primero.
+  Un dedo tensa el acorde (pide volver), dos lo abren (color): `C → Csus4 →
+  Cmaj7`, `G → G7 → G9`, `Bdim → Bm7♭5 → Bm11♭5`.
+- En notas la nota crece por capas: **sola → hueca → acorde entero**. Con dos
+  dedos entra la tercera diatónica, mayor sobre do y menor sobre re.
+- Son las dos únicas cosas que se le hacen a una tríada, tensarla o abrirla. Por
+  eso son dos niveles y no tres.
+
 **El complemento: subís un dedo mayor y el acorde se cuelga** (6 ago)
 - Cada acorde y cada nota siguen siendo lo que eran. **Subís un mayor** —con uno
   alcanza— y entra su complemento: la nota que le falta al acorde para pedir

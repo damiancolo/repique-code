@@ -77,6 +77,7 @@ const GRADOS = {
 //
 // Ninguno de los ocho complementos coincide con ninguno de los ocho acordes
 // base, y todos están dentro de la escala.
+// Un dedo = LA TENSIÓN: el acorde pide volver.
 const COMPLEMENTO = {
   I:   'sus4',
   II:  'sus4',
@@ -88,6 +89,20 @@ const COMPLEMENTO = {
   I8:  'sus4',
 };
 
+// Los DOS dedos = EL COLOR: el acorde se abre. Son las dos únicas cosas que se
+// le hacen a una tríada —tensarla o abrirla—, por eso hacen juego entre sí y
+// por eso son dos y no tres.
+const COMPLEMENTO2 = {
+  I:   'maj7',
+  II:  'min7',
+  III: 'min7',
+  IV:  'maj7',
+  V:   'nueve',      // en el V la séptima ya la usó un dedo: sube a la novena
+  VI:  'min7',
+  VII: 'semidim11',
+  I8:  'maj7',
+};
+
 const SUFIJO = {
   mayor: { cifrado: '',    nombre: 'mayor'       },
   menor: { cifrado: 'm',   nombre: 'menor'       },
@@ -95,11 +110,22 @@ const SUFIJO = {
 };
 
 const SUFIJO_COMPLEMENTO = {
-  sus4:    { cifrado: 'sus4',  nombre: 'con cuarta suspendida' },
-  sus2:    { cifrado: 'sus2',  nombre: 'con segunda'           },
-  dom7:    { cifrado: '7',     nombre: 'séptima'               },
-  semidim: { cifrado: 'm7♭5',  nombre: 'medio disminuido'      },
+  sus4:       { cifrado: 'sus4',   nombre: 'con cuarta suspendida'        },
+  sus2:       { cifrado: 'sus2',   nombre: 'con segunda'                  },
+  dom7:       { cifrado: '7',      nombre: 'séptima'                      },
+  semidim:    { cifrado: 'm7♭5',   nombre: 'medio disminuido'             },
+  maj7:       { cifrado: 'maj7',   nombre: 'con séptima mayor'            },
+  min7:       { cifrado: 'm7',     nombre: 'con séptima'                  },
+  nueve:      { cifrado: '9',      nombre: 'con novena'                   },
+  semidim11:  { cifrado: 'm11♭5',  nombre: 'medio disminuido con oncena'  },
 };
+
+/** El tipo de complemento según cuántos mayores estén arriba (0, 1 o 2) */
+function tipoComplemento(grado, nivel) {
+  if (nivel >= 2) return COMPLEMENTO2[grado];
+  if (nivel >= 1) return COMPLEMENTO[grado];
+  return null;
+}
 
 const CIFRA_S = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 const CIFRA_B = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
@@ -116,7 +142,7 @@ function tonalidadDe(id) {
  * Nombre del acorde en las dos nomenclaturas: `{ cifrado: 'Dm', nombre: 'Re menor' }`.
  * Se muestran las dos porque quien canta lee cifrado pero piensa en nombres.
  */
-export function nombreAcorde(tonalidadId, grado, complemento = false) {
+export function nombreAcorde(tonalidadId, grado, complemento = 0) {
   const t = tonalidadDe(tonalidadId);
   const g = GRADOS[grado];
   if (!g) return null;
@@ -124,7 +150,8 @@ export function nombreAcorde(tonalidadId, grado, complemento = false) {
   const idxTonica = (t.bemoles ? CIFRA_B : CIFRA_S).indexOf(t.cifrado);
   const idx  = ((idxTonica + g.semis) % 12 + 12) % 12;
   const raiz = (t.bemoles ? CIFRA_B : CIFRA_S)[idx];
-  const suf  = complemento ? SUFIJO_COMPLEMENTO[COMPLEMENTO[grado]] : SUFIJO[g.tipo];
+  const tipo = tipoComplemento(grado, complemento);
+  const suf  = tipo ? SUFIJO_COMPLEMENTO[tipo] : SUFIJO[g.tipo];
 
   // 'D♭' → letra 'D' + alteración '♭' → 'Re♭'
   const latino = LATINO[raiz[0]] + (raiz.length > 1 ? raiz[1] : '');
@@ -146,7 +173,7 @@ export function nombreAcorde(tonalidadId, grado, complemento = false) {
  * En el tercio grave se saca la tercera y quedan fundamental y quinta, que es
  * lo que hace cualquier pianista abajo. Sigue siendo el mismo acorde, hueco.
  */
-export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', complemento = false) {
+export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', complemento = 0) {
   const t = tonalidadDe(tonalidadId);
   const g = GRADOS[grado];
   if (!g) return null;
@@ -170,30 +197,49 @@ export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', comple
   // arriba es la que lleva el carácter. El complemento cambia esa voz: es la
   // tercera la que se va y entra la nota que pide resolución.
   let notas, color;
-  if (!complemento) {
-    notas = [r, quinta, r * 2, tercera * 2];
-    color = tercera * 2;
-  } else {
-    switch (COMPLEMENTO[grado]) {
-      case 'sus2':
-        color = desde(2) * 2;
-        notas = [r, quinta, r * 2, color];
-        break;
-      case 'dom7':
-        // La dominante ocupa los mismos 16 semitonos que el resto: con un
-        // voicing más abierto, en el tercio agudo la voz de arriba se iba a
-        // 1480 Hz y chillaba.
-        color = desde(10);
-        notas = [r, quinta, color, tercera * 2];
-        break;
-      case 'semidim':
-        color = desde(10);
-        notas = [r, quinta, color, tercera * 2];
-        break;
-      default: // sus4
-        color = desde(5) * 2;
-        notas = [r, quinta, r * 2, color];
-    }
+  switch (tipoComplemento(grado, complemento)) {
+    // ── Un dedo: la tensión ────────────────────────────────────────────────
+    case 'sus4':
+      color = desde(5) * 2;
+      notas = [r, quinta, r * 2, color];
+      break;
+    case 'sus2':
+      color = desde(2) * 2;
+      notas = [r, quinta, r * 2, color];
+      break;
+    case 'dom7':
+    case 'semidim':
+      // La dominante ocupa los mismos 16 semitonos que el resto: con un
+      // voicing más abierto, en el tercio agudo la voz de arriba se iba a
+      // 1480 Hz y chillaba.
+      color = desde(10);
+      notas = [r, quinta, color, tercera * 2];
+      break;
+
+    // ── Dos dedos: el color ────────────────────────────────────────────────
+    case 'maj7':
+      color = desde(11);
+      notas = [r, quinta, color, tercera * 2];
+      break;
+    case 'min7':
+      color = desde(10);
+      notas = [r, quinta, color, tercera * 2];
+      break;
+    case 'nueve':
+      // Acá sí entra la tercera abajo: una dominante sin tercera pierde el
+      // carácter, y es lo único que distingue a este acorde del de un dedo.
+      color = desde(2) * 2;
+      notas = [r, tercera, desde(10), color];
+      break;
+    case 'semidim11':
+      color = desde(5) * 2;
+      notas = [r, quinta, desde(10), color];
+      break;
+
+    // ── Sin dedos: la tríada ───────────────────────────────────────────────
+    default:
+      color = tercera * 2;
+      notas = [r, quinta, r * 2, color];
   }
 
   if (registro === 'agudo') return notas.map(f => f * 2);

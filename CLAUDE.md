@@ -159,30 +159,44 @@ tonalidad (`#fila-tono`); con notas, el instrumento (`#fila-instrumento`).
   subieran en fila, las de arriba chillarían. Nadie toca dos tonalidades a la
   vez, así que el salto es invisible.
 
-## El complemento (subir un dedo mayor)
+## El complemento (los dedos mayores)
 
-Con **uno solo** alcanza: en pleno toque no se mira la pantalla, y la línea ya
-muestra cuál está afuera. Una idea sola: **la nota que le falta al acorde para
-pedir resolución.**
+**Tres niveles según cuántos mayores estén arriba.** Son las dos únicas cosas
+que se le hacen a una tríada —tensarla o abrirla—, por eso son dos y hacen juego
+entre sí:
 
-| grado | complemento | por qué |
+- **0 dedos** → la tríada
+- **1 dedo** → **la tensión**: el acorde pide volver
+- **2 dedos** → **el color**: el acorde se abre
+
+Con un dedo alcanza para el primer nivel, cualquiera de los dos: en pleno toque
+no se mira la pantalla, y la línea entre los mayores ya muestra cuál está afuera.
+
+| grado | 1 dedo · tensión | 2 dedos · color |
 |---|---|---|
-| I, II, III, VI, I8 | `sus4` | la cuarta echa a la tercera y deja el acorde colgado |
-| IV | `sus2` | la cuarta de fa es si: trítono, áspero. Baja a la segunda |
-| V | `7` | acá la nota que pide volver es la séptima, no la cuarta |
-| VII | `m7♭5` | sobre un disminuido una suspensión no dice nada: ya es todo tensión |
+| I, II, III, VI, I8 | `sus4` — la cuarta echa a la tercera | `maj7` / `m7` según la tríada |
+| IV | `sus2` — la cuarta de fa es si, trítono áspero | `maj7` |
+| V | `7` — acá lo que pide volver es la séptima | `9` — la séptima ya la usó un dedo, sube a la novena |
+| VII | `m7♭5` — sobre un disminuido no hay tensión que agregar | `m11♭5` |
 
-Ninguno de los ocho complementos coincide con ninguno de los ocho acordes base,
-y todos están dentro de la escala — hay tests para las dos cosas, sobre las 12
-tonalidades. En el **tercio grave** el complemento conserva su nota de color
-(`[r/2, quinta/2, color]`): con la regla normal de «sin tercera» subir el dedo
-abajo no se habría oído.
+Verificado con tests sobre **864 acordes** (12 tonos × 8 grados × 3 niveles × 3
+tercios): los tres niveles suenan siempre distintos entre sí, ninguno repite un
+acorde base, y **todas las notas caen dentro de la escala**. También se comprueba
+que los tres se distingan en el tercio grave, donde el complemento conserva su
+nota de color (`[r/2, quinta/2, color]`) — con la regla normal de «sin tercera»
+subir el dedo abajo no se habría oído.
 
-**En notas** el complemento es la **quinta** (`droneQuinta`, capa apagada por
-defecto): la nota se abre en hueco. No puede desafinar nunca porque no agrega
-ninguna nota nueva — agrega las que ya viven dentro de la que tocás. Cualquier
-complemento diatónico de una nota sería otra nota de la escala, o sea otra forma
-que ya existe; por eso no puede ser una nota.
+**En notas** la nota crece por capas: sola → **quinta** (`droneQuinta`, hueca) →
+**tercera diatónica** (`droneTercera`, el acorde entero). La tercera es mayor
+sobre do y menor sobre re (`TERCERA_POR_FORMA`), que es lo que mantiene todo en
+tono. No puede desafinar porque no agrega notas nuevas: agrega las que ya viven
+dentro de la que tocás. Cualquier complemento diatónico de una nota sería otra
+nota de la escala, o sea otra forma que ya existe; por eso no puede ser una nota.
+
+⚠️ **Medir esta voz por nivel de dB no sirve**: los osciladores desafinados
+(`fattriangle`) baten entre sí y el vibrato encima, así que el RMS oscila ±4 dB
+dentro de un mismo estado. Para comprobar que una capa entra hay que mirar el
+**espectro** (`Tone.FFT`) en la frecuencia de esa nota, no el volumen.
 - **Voicing abierto** fundamental·quinta·octava·décima. La dominante cambia la
   octava por la séptima (`[r, quinta, 7ª, décima]`) para ocupar los mismos 16
   semitonos: con un voicing más abierto, en el tercio agudo se iba a 1480 Hz.

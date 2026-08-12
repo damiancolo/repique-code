@@ -42,7 +42,7 @@ const LABEL_FORMA = {
 const TERCIO_AGUDO = 0.36;
 const TERCIO_GRAVE = 0.64;
 
-export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acordes) {
+export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acordes, mayores) {
   const w = canvas.width;
   const h = canvas.height;
 
@@ -65,6 +65,9 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acord
     dibujarDosTriangulos(ctx, manos, w, h);
   } else if (puntosGesto) {
     dibujarCuadrilatero(ctx, puntosGesto, w, h);
+    // La línea de los mayores va con el cuadrilátero, no con el acid: ahí las
+    // manos están cruzadas y una línea más sólo confunde.
+    if (mayores) dibujarLineaMayores(ctx, mayores, w, h);
   }
 
   if (state.mostrarOverlay) {
@@ -97,6 +100,15 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acord
     } else if (forma && LABEL_FORMA[forma]) {
       ctx.fillStyle = 'rgba(230,57,70,0.75)';
       ctx.fillText(LABEL_FORMA[forma], w - 24, y);
+    }
+
+    // Lectura de calibración del mayor. Está para afinar los umbrales con manos
+    // de verdad; una vez calibrado, esta línea se puede borrar.
+    if (mayores) {
+      const leer = m => `${m.razon.toFixed(2)}${m.estirado ? ' ▲' : ' ▾'}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.font = '300 11px "Space Grotesk", system-ui, sans-serif';
+      ctx.fillText(`mayor  izq ${leer(mayores[0])}   der ${leer(mayores[1])}`, w - 24, y + 62);
     }
     ctx.textAlign = 'left';
   }
@@ -163,6 +175,50 @@ function dibujarDosTriangulos(ctx, manos, w, h) {
       ctx.fill();
     }
   }
+}
+
+/**
+ * Línea entre los dos dedos mayores.
+ *
+ * Recogidos, se ancla en los nudillos y queda por dentro de la figura, a la
+ * altura de la palma. Al estirar un mayor, ese extremo salta a la punta y sube
+ * por encima del lado que une los índices: la figura gana un techo.
+ *
+ * Ese salto ES el indicador. Se ve el momento exacto en que el dedo entra, sin
+ * leer nada — y cada extremo va por su cuenta, porque las manos son
+ * independientes.
+ */
+function dibujarLineaMayores(ctx, mayores, w, h) {
+  const pts = mayores.map(m => [(1 - m.punto.x) * w, m.punto.y * h]);
+
+  ctx.beginPath();
+  ctx.moveTo(...pts[0]);
+  ctx.lineTo(...pts[1]);
+  ctx.strokeStyle = COLOR_BORDE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  mayores.forEach((m, i) => {
+    const [x, y] = pts[i];
+    if (m.estirado) {
+      // Punta: círculo lleno con halo — el extremo está «puesto»
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = COLOR_FILL;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = COLOR_PUNTO;
+      ctx.fill();
+    } else {
+      // Nudillo: aro hueco y chico — el extremo está en reposo
+      ctx.beginPath();
+      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+      ctx.strokeStyle = COLOR_BORDE;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  });
 }
 
 function dibujarCuadrilatero(ctx, puntos, w, h) {

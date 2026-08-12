@@ -90,12 +90,43 @@ export function detectarDedosJuntos(manos) {
   return spread < 0.22;
 }
 
+// ─── Dedo mayor: recogido o estirado ─────────────────────────────────────────
+//
+// Se mide la distancia de la PUNTA (12) a la muñeca (0) dividida por la del
+// NUDILLO (9) a la muñeca. Estirado, la punta se va casi al doble; recogido,
+// vuelve hacia la palma y la razón cae a ~1.
+//
+// ⚠️ NO se mide por altura de la punta, que es como lo hace el resto del código
+// viejo: eso se rompe en cuanto se inclina la mano. Esto es una proporción entre
+// dos medidas de la MISMA mano, así que no le afecta ni la rotación ni la
+// distancia a la cámara — igual que la clasificación de formas.
+//
+// De paso, la misma cuenta da los dos anclajes de la línea: el nudillo cuando
+// está recogido, la punta cuando sale.
+const MAYOR_FUERA  = 1.65; // por encima → estirado
+const MAYOR_DENTRO = 1.35; // por debajo → recogido
+// Histéresis por ranura (0 = izquierda, 1 = derecha): entre los dos umbrales se
+// mantiene el estado anterior, si no la línea parpadea en la frontera.
+const _mayorEstirado = [false, false];
+
+function medirMayor(mano, ranura) {
+  const d = (a, b) => Math.hypot(mano[a].x - mano[b].x, mano[a].y - mano[b].y);
+  const palma = d(0, 9);
+  const razon = palma > 0.001 ? d(0, 12) / palma : 0;
+  if (razon > MAYOR_FUERA)       _mayorEstirado[ranura] = true;
+  else if (razon < MAYOR_DENTRO) _mayorEstirado[ranura] = false;
+  const estirado = _mayorEstirado[ranura];
+  return { estirado, razon, punto: estirado ? mano[12] : mano[9] };
+}
+
 /**
  * Calcula parámetros gestuales a partir de las dos manos.
- * @returns {{ ancho, centroY, area, puntos, forma }}
+ * @returns {{ ancho, centroY, area, puntos, forma, mayores }}
  */
 export function calcularGestos(manos) {
-  if (manos.length < 2) return { ancho: null, centroY: null, area: null, puntos: null, forma: null };
+  if (manos.length < 2) {
+    return { ancho: null, centroY: null, area: null, puntos: null, forma: null, mayores: null };
+  }
 
   const ordenadas = [...manos].sort((a, b) => {
     const centroA = (a[4].x + a[8].x) / 2;
@@ -104,6 +135,9 @@ export function calcularGestos(manos) {
   });
 
   const [manoIzq, manoDer] = ordenadas;
+
+  // Los dos mayores, en el mismo orden que el cuadrilátero (izquierda, derecha)
+  const mayores = [medirMayor(manoIzq, 0), medirMayor(manoDer, 1)];
 
   // Vértices del cuadrilátero: pulgIzq → indIzq → indDer → pulgDer
   const puntos = [
@@ -174,7 +208,7 @@ export function calcularGestos(manos) {
     forma = clasificarForma(puntos);
   }
 
-  return { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid };
+  return { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid, mayores };
 }
 
 // ─── Clasificación geométrica ────────────────────────────────────────────────

@@ -1466,7 +1466,7 @@ async function init() {
       renderBaile(dt);
     } else {
       // ── Modo normal ────────────────────────────────────────────────────────
-      const { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid } = calcularGestos(manos);
+      const { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid, mayores } = calcularGestos(manos);
 
       // Dos pinzas → bloquea. En modo acordes NO: el VI es la pinza derecha y
       // el VII la izquierda, así que al pasar de uno al otro se atraviesa el
@@ -1565,7 +1565,9 @@ async function init() {
         shakaActivo = false;
       }
 
-      renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada, vistaAcordes);
+      // `mayores` sólo se dibuja, todavía no dispara nada: primero hay que
+      // afinar el umbral con manos de verdad y ver si el salto cae donde toca.
+      renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada, vistaAcordes, mayores);
       // Limpiar paint canvas en modo normal
       ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
     }

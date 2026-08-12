@@ -142,13 +142,47 @@ tonalidad (`#fila-tono`); con notas, el instrumento (`#fila-instrumento`).
   `nombreAcorde` (devuelve cifrado **y** nombre latino: quien canta lee `Dm`
   pero piensa «Re menor»).
 - **Grados**: rectángulo=I, trapecio piso=II, techo=III, izq=IV, der=V, pinza
-  der=VI, pinza izq=VII, pulgares arriba=**V7**. `dos_triangulos` queda fuera:
-  el modo acid no tiene acorde.
+  der=VI, pinza izq=VII, pulgares arriba=**I8** (la tónica una octava arriba).
+  `dos_triangulos` queda fuera: el modo acid no tiene acorde.
 - **Calidad diatónica, no elegible.** En Do el II es Dm y no hay forma de que
   salga D. Por eso no hace falta control de mayor/menor.
-- **Plegado de la fundamental a Do3–Do4** (`PISO`/`TECHO`). Es lo que hace que
-  dos acordes seguidos queden cerca sea cual sea la tonalidad — sin esto el
-  acompañamiento pega saltos de registro al cambiar de grado.
+- ⚠️ **NO se pliega la fundamental.** Hubo un plegado que metía toda
+  fundamental dentro de una misma octava, para que el acompañamiento no saltara
+  de registro. Daba buena conducción de voces y **rompía la escala**: en Sol el
+  IV se caía una octava y al recorrer las formas en orden el sonido bajaba a
+  mitad de camino. **En Do no se notaba** —única tonalidad donde el plegado no
+  llegaba a actuar—, por eso sobrevivió hasta que el owner lo escuchó. Las
+  formas son una escala: tienen que subir. Hay un test que lo comprueba en las
+  doce.
+- **Las tres últimas tonalidades (La, Si♭, Si) envuelven una octava abajo.** Sin
+  plegado, cada tonalidad abarca una octava entera desde su tónica; si las doce
+  subieran en fila, las de arriba chillarían. Nadie toca dos tonalidades a la
+  vez, así que el salto es invisible.
+
+## El complemento (subir un dedo mayor)
+
+Con **uno solo** alcanza: en pleno toque no se mira la pantalla, y la línea ya
+muestra cuál está afuera. Una idea sola: **la nota que le falta al acorde para
+pedir resolución.**
+
+| grado | complemento | por qué |
+|---|---|---|
+| I, II, III, VI, I8 | `sus4` | la cuarta echa a la tercera y deja el acorde colgado |
+| IV | `sus2` | la cuarta de fa es si: trítono, áspero. Baja a la segunda |
+| V | `7` | acá la nota que pide volver es la séptima, no la cuarta |
+| VII | `m7♭5` | sobre un disminuido una suspensión no dice nada: ya es todo tensión |
+
+Ninguno de los ocho complementos coincide con ninguno de los ocho acordes base,
+y todos están dentro de la escala — hay tests para las dos cosas, sobre las 12
+tonalidades. En el **tercio grave** el complemento conserva su nota de color
+(`[r/2, quinta/2, color]`): con la regla normal de «sin tercera» subir el dedo
+abajo no se habría oído.
+
+**En notas** el complemento es la **quinta** (`droneQuinta`, capa apagada por
+defecto): la nota se abre en hueco. No puede desafinar nunca porque no agrega
+ninguna nota nueva — agrega las que ya viven dentro de la que tocás. Cualquier
+complemento diatónico de una nota sería otra nota de la escala, o sea otra forma
+que ya existe; por eso no puede ser una nota.
 - **Voicing abierto** fundamental·quinta·octava·décima. La dominante cambia la
   octava por la séptima (`[r, quinta, 7ª, décima]`) para ocupar los mismos 16
   semitonos: con un voicing más abierto, en el tercio agudo se iba a 1480 Hz.
@@ -290,6 +324,12 @@ dos triángulos, que mueve el filtro porque ahí es un efecto y no un control.
   `apagarPintura()` después de que se borrara la función de zoom, y hacía que
   **el primer clic en 🎵 no hiciera nada** — la excepción mataba el resto del
   handler. Si un botón «no hace nada», mirar la consola antes que el CSS.
+- **Tone exige que cada ataque caiga ESTRICTAMENTE después del anterior.** Dos
+  `triggerAttack` en el mismo cuadro comparten el instante del reloj y lanzan
+  «Start time must be strictly greater than previous start time». Pasaba al
+  salir de acordes a notas con una figura ya en pantalla. Por eso los ataques de
+  la voz de notas van por `_atacarVocesNota()`, que lleva la cuenta del último
+  instante y empuja 2 ms si hace falta.
 - **Un canvas de ancho 0 hace que `drawImage` lance.** Si la página carga sin
   tamaño (iframe todavía sin medidas), `innerWidth` es 0 y guardar moría en
   silencio. `redimensionar()` clampa a 1 y el loop reajusta si el tamaño cambió

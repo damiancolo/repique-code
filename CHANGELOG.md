@@ -9,6 +9,20 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**El complemento: subís un dedo mayor y el acorde se cuelga** (6 ago)
+- Cada acorde y cada nota siguen siendo lo que eran. **Subís un mayor** —con uno
+  alcanza— y entra su complemento: la nota que le falta al acorde para pedir
+  resolución. Subir tensa, bajar resuelve.
+- `C→Csus4`, `Dm→Dsus4`, `F→Fsus2`, `G→G7`, `Bdim→Bm7♭5`. Ninguno repite otro
+  acorde y todos están dentro de la escala.
+- En notas, la nota **se abre**: se le suman su quinta y su octava.
+- **Pulgares arriba pasa a ser la tónica de arriba.** Era la dominante con
+  séptima, y al recorrer las formas en orden la escala subía do-re-mi-fa-sol-la-si
+  y de golpe bajaba a sol. Ahora la octava cierra. El `G7` no se pierde: es el
+  complemento del V, que es donde se lo quiere.
+- Y de paso: **las fundamentales ya no se pliegan**. El plegado rompía la escala
+  en once de las doce tonalidades — en Do no se notaba, por eso había durado.
+
 **Tempo y graves salen de las manos** (6 ago)
 - Fuera el gesto de **dos dedos pegados** que arrastraba los sliders, y fuera el
   mapeo de altura de manos → graves. Tempo y graves **se mueven solo con el

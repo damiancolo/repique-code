@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
-import { setModoAcordes, sonarAcorde, startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
+import { setModoAcordes, sonarAcorde, setComplementoNota, startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
 import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde } from './acordes.js';
 import { INSTRUMENTOS, setInstrumento, getInstrumento } from './audio.js';
@@ -156,9 +156,9 @@ async function init() {
     vistaAcordes = modoAcordes ? { activo: true } : null;
   }
 
-  function pasoAcordes(forma, centroY, ahora) {
+  function pasoAcordes(forma, centroY, ahora, complemento) {
     const grado = forma ? GRADO_POR_FORMA[forma] : null;
-    const lectura = grado ? { grado, registro: registroDe(centroY) } : null;
+    const lectura = grado ? { grado, registro: registroDe(centroY), complemento } : null;
 
     if (lectura) _acVistoEn = ahora;
     // Dentro de la gracia no se toca nada: sostiene lo último que sonaba
@@ -167,20 +167,20 @@ async function init() {
       return;
     }
 
-    const mismo = _acCandidato
-      && _acCandidato.grado === lectura.grado
-      && _acCandidato.registro === lectura.registro;
-    if (!mismo) { _acCandidato = lectura; _acDesde = ahora; _acLecturas = 1; return; }
+    const igual = (a, b) => a && b && a.grado === b.grado
+      && a.registro === b.registro && a.complemento === b.complemento;
+
+    if (!igual(_acCandidato, lectura)) { _acCandidato = lectura; _acDesde = ahora; _acLecturas = 1; return; }
     _acLecturas++;
 
     if (ahora - _acDesde < ACORDE_MS || _acLecturas < ACORDE_LECTURAS) return;
 
     // Comparar el ACORDE que va a sonar, no el gesto: si la mano tiembla entre
     // dos posturas que dan lo mismo, no pasa absolutamente nada.
-    if (_acSonando && _acSonando.grado === lectura.grado && _acSonando.registro === lectura.registro) return;
+    if (igual(_acSonando, lectura)) return;
     _acSonando = { ...lectura };
-    sonarAcorde(frecuenciasAcorde(tonalidad, lectura.grado, lectura.registro));
-    const n = nombreAcorde(tonalidad, lectura.grado);
+    sonarAcorde(frecuenciasAcorde(tonalidad, lectura.grado, lectura.registro, lectura.complemento));
+    const n = nombreAcorde(tonalidad, lectura.grado, lectura.complemento);
     vistaAcordes = { activo: true, ...n, registro: lectura.registro };
     registroNombre.textContent = lectura.registro;
   }
@@ -1517,17 +1517,26 @@ async function init() {
           areaHold = AREA_HOLD_MAX;
           actualizarArea(area);
 
+          // Con UNO alcanza: en pleno toque no se mira la pantalla, y la línea
+          // ya muestra cuál de los dos mayores está afuera.
+          const complemento = !!(mayores && (mayores[0].estirado || mayores[1].estirado));
+
           if (modoAcordes) {
-            pasoAcordes(forma, centroY, timestamp);
-          } else if (forma === formaCandidato) {
-            framesCandidato++;
-            if (framesCandidato >= FRAMES_FORMA && forma !== formaConfirmada) {
-              formaConfirmada = forma;
-              actualizarNota(forma);
-            }
+            pasoAcordes(forma, centroY, timestamp, complemento);
           } else {
-            formaCandidato  = forma;
-            framesCandidato = 1;
+            // La quinta entra y sale sola: no necesita debounce porque el
+            // estirado del mayor ya trae su propia histéresis.
+            setComplementoNota(complemento);
+            if (forma === formaCandidato) {
+              framesCandidato++;
+              if (framesCandidato >= FRAMES_FORMA && forma !== formaConfirmada) {
+                formaConfirmada = forma;
+                actualizarNota(forma);
+              }
+            } else {
+              formaCandidato  = forma;
+              framesCandidato = 1;
+            }
           }
         }
       } else if (state.notasIniciadas) {
@@ -1535,7 +1544,8 @@ async function init() {
         else { actualizarArea(0); }
         formaCandidato  = null;
         framesCandidato = 0;
-        if (modoAcordes) pasoAcordes(null, null, timestamp);
+        if (modoAcordes) pasoAcordes(null, null, timestamp, false);
+        else setComplementoNota(false);
       }
 
       // Acá vivía el gesto de «dos dedos pegados» (índice y mayor juntos) para

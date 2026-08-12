@@ -1141,6 +1141,17 @@ const droneAire = new Tone.Synth({
   portamento: 0.04,
   volume: -18,
 });
+// Tercera capa, apagada por defecto: la QUINTA. Es el complemento de la nota
+// suelta — sube un mayor y la nota se abre en hueco (fundamental · quinta ·
+// octava). No puede desafinar nunca, porque no agrega ninguna nota nueva:
+// agrega las dos que ya viven dentro de la que estás tocando.
+const droneQuinta = new Tone.Synth({
+  oscillator: { type: 'fattriangle', count: 2, spread: 10 },
+  envelope: { attack: 0.4, decay: 0, sustain: 1, release: 1.6 },
+  portamento: 0.04,
+  volume: -8,
+});
+const droneQuintaGain = new Tone.Gain(0);
 const droneFiltro  = new Tone.Filter({ type: 'lowpass', frequency: 2400, rolloff: -12, Q: 0.4 });
 const droneVibrato = new Tone.Vibrato({ frequency: 4.2, depth: 0.045, wet: 1 });
 const droneVerb    = new Tone.Freeverb({ roomSize: 0.8, dampening: 2500, wet: 1 });
@@ -1225,6 +1236,9 @@ export function setInstrumento(id) {
   try {
     drone.set({ oscillator: p.osc, envelope: p.env, volume: p.vol });
     droneAire.set({ oscillator: p.oscAire, envelope: p.envAire, volume: p.volAire });
+    // La quinta usa el timbre de la fundamental para que la nota abierta suene
+    // al mismo instrumento, sólo más discreta
+    droneQuinta.set({ oscillator: p.osc, envelope: p.env, volume: p.vol - 6 });
     droneFiltro.frequency.rampTo(p.filtro, 0.2);
     droneVibrato.frequency.value = p.vibrato.frequency;
     droneVibrato.depth.rampTo(p.vibrato.depth, 0.2);
@@ -1240,26 +1254,52 @@ export function setInstrumento(id) {
 // Las tres notas de la voz se mueven juntas: la fundamental y su octava.
 // `actualizarWow` (modo acid) también entra por acá, si no el aire se quedaría
 // clavado en la nota anterior.
+const QUINTA = Math.pow(2, 7 / 12);
+
 function _droneFrecuencia(hz, tiempo = 0.08) {
   drone.frequency.rampTo(hz, tiempo);
   droneAire.frequency.rampTo(hz * 2, tiempo);
+  droneQuinta.frequency.rampTo(hz * QUINTA, tiempo);
+}
+
+// Tone exige que cada ataque de un oscilador caiga ESTRICTAMENTE después del
+// anterior. Dos ataques en el mismo cuadro comparten el instante del reloj y
+// lanzan «Start time must be strictly greater than previous start time» — pasa
+// al salir de acordes a notas con una figura ya en pantalla: setModoAcordes
+// ataca y actualizarNota vuelve a atacar sin que el reloj haya avanzado.
+let _ultimoAtaqueDrone = -1;
+
+function _atacarVocesNota(hz) {
+  let t = Tone.now();
+  if (t <= _ultimoAtaqueDrone) t = _ultimoAtaqueDrone + 0.002;
+  _ultimoAtaqueDrone = t;
+  try {
+    drone.triggerAttack(hz, t);
+    droneAire.triggerAttack(hz * 2, t);
+    droneQuinta.triggerAttack(hz * QUINTA, t);
+  } catch (err) {
+    console.error('[Repique Code] ataque de nota:', err);
+  }
 }
 
 function _droneAtaque(nota) {
-  const hz = Tone.Frequency(nota).toFrequency();
-  drone.triggerAttack(hz);
-  droneAire.triggerAttack(hz * 2);
+  _atacarVocesNota(Tone.Frequency(nota).toFrequency());
 }
 
 function _droneSuelta() {
   drone.triggerRelease();
   droneAire.triggerRelease();
+  droneQuinta.triggerRelease();
 }
 
 /** Volver a pulsar la nota que ya está sonando, sin cambiarla */
 function _droneRepulsar() {
-  drone.triggerAttack(drone.frequency.value);
-  droneAire.triggerAttack(droneAire.frequency.value);
+  _atacarVocesNota(drone.frequency.value);
+}
+
+/** El complemento de la nota suelta: la quinta entra o se va */
+export function setComplementoNota(activo) {
+  droneQuintaGain.gain.rampTo(activo ? 1 : 0, 0.18);
 }
 
 // ─── Voz de acordes (modo acordes) ───────────────────────────────────────────
@@ -1576,6 +1616,8 @@ function asegurarCadena() {
   // percusión, pero pasa por la dinámica de salida como todo lo demás.
   drone.connect(droneVibrato);
   droneAire.connect(droneVibrato);
+  droneQuinta.connect(droneQuintaGain);
+  droneQuintaGain.connect(droneVibrato);
   droneVibrato.connect(droneFiltro);
   droneFiltro.connect(droneGain);
   droneGain.connect(masterComp);

@@ -9,6 +9,18 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**En el móvil sonaba fino: era el altavoz** (6 ago)
+- En el iPhone el modo acordes sonaba nasal y sin cuerpo; con auriculares sonaba
+  bien. Las fundamentales de los acordes viven en 130–260 Hz y un altavoz de
+  teléfono no da nada por debajo de 500.
+- **No cambia ninguna nota.** Cambia el timbre en móvil para que la altura
+  sobreviva: oscilador con armónicos fuertes, filtro más abierto, la capa de
+  octava más presente y un paso-alto que le quita al altavoz lo que sólo lo hace
+  distorsionar.
+- Medido fuera de línea contra un altavoz de teléfono simulado: el perfil de
+  antes perdía **14,4 dB** por ese altavoz; el nuevo pierde 3, y entrega **8,4 dB
+  más** sin subir el volumen general.
+
 **Los dos mayores: un dedo tensa, dos abren** (6 ago)
 - **Dos dedos arriba** dan un segundo complemento que hace juego con el primero.
   Un dedo tensa el acorde (pide volver), dos lo abren (color): `C → Csus4 →

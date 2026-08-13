@@ -9,6 +9,33 @@
 import * as Tone from 'tone';
 import { state } from './state.js';
 
+// ─── Perfil de altavoz chico (móvil) ─────────────────────────────────────────
+//
+// El altavoz de un teléfono prácticamente no da nada por debajo de 500 Hz. Las
+// fundamentales de los acordes viven entre 130 y 260 Hz, así que en el móvil se
+// oía la mitad de arriba del acorde y nada del cuerpo: fino y nasal. Con
+// auriculares sonaba bien — verificado por el owner, y eso descartó la CPU.
+//
+// El arreglo NO cambia ninguna nota. Cambia el timbre para que la altura
+// sobreviva al altavoz, aprovechando que el oído reconstruye la fundamental a
+// partir de sus armónicos (la «fundamental ausente»):
+//
+//   1. Oscilador con más armónicos. Un triángulo los tiene muy débiles (caen
+//      como 1/n²); un diente de sierra los tiene fuertes (1/n). Esos armónicos
+//      caen donde el altavoz SÍ llega, y el oído deduce la nota de abajo.
+//   2. Filtro más abierto, para que esos armónicos pasen en vez de cortarse.
+//   3. Paso-alto: lo que el altavoz no puede reproducir no se calla solo, lo
+//      hace distorsionar y ensucia todo lo demás. Mejor quitarlo antes.
+export const ES_MOVIL = /Mobi|Android|iPhone|iPad|iPod/i.test(
+  typeof navigator !== 'undefined' ? navigator.userAgent : ''
+);
+
+const OSC_ACORDE_MOVIL = { type: 'fatsawtooth', count: 2, spread: 8 };
+const FILTRO_ACORDE_MOVIL = 3200;
+const FILTRO_NOTA_FACTOR  = 1.6;
+const PASO_ALTO_MOVIL     = 120;
+
+
 // ─── Bancos de patrones (todos editables en tiempo real desde el viz) ────────
 const BANCO_PATRONES = [
   // 0 · El cualca — kick 4/4, snare 2+4, hihat corcheas, perc offbeat
@@ -1169,7 +1196,11 @@ const TERCERA_POR_FORMA = {
   trapecio_der: 4, la: 3, si: 3, do_alto: 4,
 };
 let _terceraSemis = 4;
-const droneFiltro  = new Tone.Filter({ type: 'lowpass', frequency: 2400, rolloff: -12, Q: 0.4 });
+const droneFiltro  = new Tone.Filter({
+  type: 'lowpass',
+  frequency: 2400 * (ES_MOVIL ? FILTRO_NOTA_FACTOR : 1),
+  rolloff: -12, Q: 0.4,
+});
 const droneVibrato = new Tone.Vibrato({ frequency: 4.2, depth: 0.045, wet: 1 });
 const droneVerb    = new Tone.Freeverb({ roomSize: 0.8, dampening: 2500, wet: 1 });
 const droneVerbEnv = new Tone.Gain(0.32); // cuánta reverb; el resto va seco
@@ -1252,12 +1283,17 @@ export function setInstrumento(id) {
   // y sus parámetros extra (count/spread de los «fat», harmonicity de los «fm»).
   try {
     drone.set({ oscillator: p.osc, envelope: p.env, volume: p.vol });
-    droneAire.set({ oscillator: p.oscAire, envelope: p.envAire, volume: p.volAire });
+    // En móvil la capa de octava sube: es la que el altavoz chico SÍ reproduce,
+    // así que es la que sostiene la nota cuando la fundamental no llega.
+    droneAire.set({
+      oscillator: p.oscAire, envelope: p.envAire,
+      volume: p.volAire + (ES_MOVIL ? 6 : 0),
+    });
     // La quinta usa el timbre de la fundamental para que la nota abierta suene
     // al mismo instrumento, sólo más discreta
     droneQuinta.set({ oscillator: p.osc, envelope: p.env, volume: p.vol - 6 });
     droneTercera.set({ oscillator: p.osc, envelope: p.env, volume: p.vol - 8 });
-    droneFiltro.frequency.rampTo(p.filtro, 0.2);
+    droneFiltro.frequency.rampTo(p.filtro * (ES_MOVIL ? FILTRO_NOTA_FACTOR : 1), 0.2);
     droneVibrato.frequency.value = p.vibrato.frequency;
     droneVibrato.depth.rampTo(p.vibrato.depth, 0.2);
     droneVerbEnv.gain.rampTo(p.reverb, 0.2);
@@ -1342,17 +1378,27 @@ export function setComplementoNota(nivel) {
 // dejarle ese aire libre.
 const VOCES_ACORDE   = 4;
 const acordeGain     = new Tone.Gain(0);
-const acordeFiltro   = new Tone.Filter({ type: 'lowpass', frequency: 1500, rolloff: -12, Q: 0.5 });
+const acordeFiltro   = new Tone.Filter({
+  type: 'lowpass',
+  frequency: ES_MOVIL ? FILTRO_ACORDE_MOVIL : 1500,
+  rolloff: -12, Q: 0.5,
+});
 const acordeVerb     = new Tone.Freeverb({ roomSize: 0.82, dampening: 2200, wet: 1 });
 const acordeVerbEnv  = new Tone.Gain(0.3);
 
 const vocesAcorde = Array.from({ length: VOCES_ACORDE }, (_, i) => {
   const gain  = new Tone.Gain(0);
   const synth = new Tone.Synth({
-    oscillator: { type: 'fattriangle', count: 2, spread: 8 + i * 4 },
+    oscillator: ES_MOVIL
+      ? { ...OSC_ACORDE_MOVIL, spread: OSC_ACORDE_MOVIL.spread + i * 4 }
+      : { type: 'fattriangle', count: 2, spread: 8 + i * 4 },
     envelope: { attack: 0.5, decay: 0, sustain: 1, release: 1.4 },
     portamento: 0.09,   // el deslizamiento entre acordes
-    volume: -7 - i * 2, // las voces de arriba, más suaves
+    // En móvil el diente de sierra trae más energía y se compensa, pero SOLO
+    // 2 dB. Medido: con −13 el altavoz ganaba 4,4 dB pero el total caía 7, y
+    // con auriculares en el teléfono habría quedado bajo. Con −9 el altavoz
+    // gana 8,4 dB y el total sólo baja 3.
+    volume: (ES_MOVIL ? -9 : -7) - i * 2, // las voces de arriba, más suaves
   });
   synth.connect(gain);
   return { synth, gain };
@@ -1430,6 +1476,11 @@ const chebyshev  = new Tone.Chebyshev({ order: 50, wet: 0 });
 //  2) Limiter como techo final de seguridad, casi no actúa gracias al headroom.
 const masterComp = new Tone.Compressor({ threshold: -16, ratio: 3, attack: 0.012, release: 0.22, knee: 8 });
 const masterLimiter = new Tone.Limiter(-1.5);
+// Sólo en móvil, y entre el compresor y el limitador: le quita al altavoz lo
+// que no puede reproducir. Esos graves no se callan solos — lo hacen distorsionar.
+const masterPasoAlto = ES_MOVIL
+  ? new Tone.Filter({ type: 'highpass', frequency: PASO_ALTO_MOVIL, rolloff: -12 })
+  : null;
 
 // ─── Estado interno ───────────────────────────────────────────────────────────
 let masterGain       = null;
@@ -1632,7 +1683,12 @@ function asegurarCadena() {
   distorsion.connect(chebyshev);
   chebyshev.connect(masterGain);
   masterGain.connect(masterComp);
-  masterComp.connect(masterLimiter);
+  if (masterPasoAlto) {
+    masterComp.connect(masterPasoAlto);
+    masterPasoAlto.connect(masterLimiter);
+  } else {
+    masterComp.connect(masterLimiter);
+  }
   masterLimiter.toDestination();
   synthBombo.connect(masterGain); // bypass filtro — siempre profundo
   synthClave.connect(masterGain); // bypass filtro — la clave siempre corta
@@ -1718,7 +1774,7 @@ export async function startAudio() {
   asegurarCadena();
 
   // En móvil se saltea la carga de samples — síntesis directa, sin riesgo de cuelgue
-  const esMobil = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const esMobil = ES_MOVIL;
   if (!esMobil) {
     await cargarSamples(filtro);
     await Promise.race([Tone.loaded(), new Promise(r => setTimeout(r, 4000))]);

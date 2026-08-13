@@ -331,6 +331,43 @@ Queda en pie el arrastre con el ratón sobre el **track** de cada slider (ojo:
 el listener está en `#tempo-slider-track`, no en el wrap) y el modo acid de los
 dos triángulos, que mueve el filtro porque ahí es un efecto y no un control.
 
+## Perfil de altavoz chico (móvil) — audio.js
+
+`ES_MOVIL` (declarado **arriba del todo**, antes de cualquier nodo que lo use)
+enciende un perfil de mezcla distinto. **No cambia ni una nota**: cambia el
+timbre para que la altura sobreviva a un altavoz de teléfono.
+
+**El síntoma**: en el iPhone el modo acordes sonaba fino y nasal; con auriculares
+sonaba bien. Eso descartó la CPU y señaló el transductor.
+
+**La causa**: las fundamentales de los acordes viven en 130–260 Hz y un altavoz
+de móvil no da casi nada por debajo de 500 Hz. Encima el acorde usaba
+`fattriangle`, cuyos armónicos caen como 1/n² — o sea que arriba tampoco había
+nada que oír, y el filtro en 1500 Hz se comía lo poco que quedaba.
+
+**El arreglo**, apoyado en la fundamental ausente (el oído reconstruye la nota
+grave a partir de sus armónicos):
+
+| | escritorio | móvil |
+|---|---|---|
+| oscilador del acorde | `fattriangle` | `fatsawtooth` (armónicos 1/n) |
+| filtro del acorde | 1500 Hz | 3200 Hz |
+| filtro de la voz de notas | según instrumento | × 1.6 |
+| capa de octava en notas | — | +6 dB (es la que el altavoz sí da) |
+| paso-alto de salida | — | 120 Hz |
+
+⚠️ **Los volúmenes están medidos, no estimados.** Renderizando fuera de línea el
+acorde de Do por dos paso-alto en cascada a 500 Hz (un altavoz de teléfono
+simulado): el perfil de escritorio **pierde 14,4 dB** por ese altavoz, el móvil
+sólo 3. La base del oscilador quedó en **−9 dB** tras barrer valores: con −13 el
+altavoz ganaba 4,4 dB pero el total caía 7 y con auriculares habría quedado
+bajo; con −9 el altavoz gana 8,4 y el total sólo baja 3.
+
+**Cómo se mide esto sin dispositivo**: `OfflineAudioContext`, la cadena real, y
+comparar el RMS con y sin el altavoz simulado. No hace falta gesto de usuario ni
+que el contexto esté corriendo — que es justo lo que no se puede tener en un
+entorno sin cámara ni altavoz.
+
 ## Trampas que ya nos costaron una sesión
 
 - **Asignar a una variable no declarada NO crea un global.** Los módulos ES son

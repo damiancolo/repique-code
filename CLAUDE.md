@@ -390,35 +390,50 @@ grave a partir de sus armónicos):
 
 | | escritorio | móvil |
 |---|---|---|
-| oscilador del acorde | `fattriangle` | `triangle` + **octava en seno** |
+| registro del acorde | el escrito | **una octava arriba**, con apoyo debajo |
+| oscilador del acorde | `fattriangle` | `triangle` (los dos, voz y apoyo) |
 | filtro del acorde | 1500 Hz | 2800 Hz |
 | reverb del acorde | Freeverb | **ninguna** |
 | filtro de la voz de notas | según instrumento | × 1.6 |
 | capa de octava en notas | — | +6 dB (es la que el altavoz sí da) |
 | paso-alto de salida | — | 120 Hz |
 
-⚠️ **Aquí hubo un `fatsawtooth` y sonaba mal.** La primera versión de este perfil
-(6 ago) subió la audibilidad con diente de sierra y filtro en 3200, y se validó
-midiendo **dB**, o sea CUÁNTO se oye. Funcionaba para eso y era horrible: metía
-el triple de energía entre 500 Hz y 2 kHz, justo la banda donde el altavoz de un
-teléfono es más eficiente y más chillón. Audible y áspero a la vez.
+⚠️ **Este perfil se equivocó dos veces antes de acertar. Vale la pena leerlo
+entero antes de tocarlo.**
 
-**La lección: medir el nivel no mide el timbre.** Si tocás este perfil, mirá
-también el REPARTO por bandas, no sólo el RMS.
+**Intento 1 (6 ago) — `fatsawtooth`, filtro 3200.** Subió la audibilidad y se
+validó midiendo **dB**, o sea CUÁNTO se oye. Funcionaba para eso y sonaba
+horrible: metía el triple de energía entre 500 Hz y 2 kHz, la banda donde el
+altavoz de un teléfono es más eficiente y más chillón.
+→ **Medir el nivel no mide el timbre.** Mirá el REPARTO por bandas, no el RMS.
 
-La versión de ahora rescata la altura con puntería en vez de a lo bruto:
-triángulo (armónicos que caen rápido) **más una octava en seno por voz**, al
-mismo nivel que la fundamental. El oído reconstruye la grave a partir de esa
-octava sin llenar de armónicos la banda incómoda. Medido: **13% de energía en
-medios en vez de 23%, y un 19% más audible** en un altavoz de teléfono simulado.
-Verificado además en la cadena real con el navegador emulando un móvil: a 130 Hz
-−33,4 dB y a 261 Hz −32,8, o sea la octava tan presente como la fundamental (en
-escritorio los 261 Hz quedan 1,8 dB por debajo, que es el armónico natural).
+**Intento 2 (14 ago) — triángulo + una octava en seno encima.** Menos áspero,
+pero seguía estridente. Medirlo explicó por qué: al quitar esas octavas, lo que
+pasaba de los 500 Hz caía **de 103 a 14**. O sea que en el altavoz **las octavas
+eran lo único audible**: cuatro senos pelados sin nada de cuerpo debajo, que es
+la definición de órgano electrónico barato.
+→ **El problema nunca fue el timbre, era el REGISTRO.** Un triángulo tiene
+armónicos que caen como 1/n², así que un acorde entre 130 y 330 Hz no aporta casi
+nada por encima de 500 y no hay timbre que lo arregle.
 
-La **octava vive dentro de cada voz** (`vocesAcorde[i].octava`, sólo en móvil) y
-va por el mismo `gain`, así el acorde entra, se desliza y sale de una pieza. Si
-tocás `_acordeAtaque`, `_acordeSuelta` o `sonarAcorde`, la octava tiene que
-seguir a su voz en los tres sitios o queda colgada.
+**Lo que hay ahora: las capas invertidas.** En el altavoz ya se oía la octava de
+arriba, así que esa octava **es** el acorde —triángulo, con sus armónicos
+naturales— y el registro escrito queda DEBAJO como apoyo (`VOL_APOYO_MOVIL`), que
+es lo que devuelve el peso con auriculares y en el altavoz ni se oye. Mismas
+notas, mismo acorde; cambia cuál de las dos octavas lleva la voz cantante. Medido
+en la cadena real emulando un móvil: las cuatro voces de arriba (261/392/523/659
+para un Do) entre −29 y −33,5 dB, reparto **73% bajo 500 Hz / 27% encima**,
+contra el 96/4 de escritorio. Y el pico baja de 0,84 a 0,78, o sea que el
+limitador deja de ir ahogado.
+
+⚠️ Esto **NO es el plegado de fundamental que está prohibido** más arriba. Aquel
+plegaba unas tonalidades sí y otras no, y rompía la escala. Éste sube TODO por
+igual en un solo dispositivo: las distancias entre grados no se tocan.
+
+El **apoyo vive dentro de cada voz** (`vocesAcorde[i].apoyo`, sólo en móvil) y va
+por el mismo `gain`, así el acorde entra, se desliza y sale de una pieza. Si
+tocás `_acordeAtaque`, `_acordeSuelta` o `sonarAcorde`, el apoyo tiene que seguir
+a su voz en los tres sitios o queda colgado.
 
 Y la **reverb del acorde no se conecta en móvil**: Freeverb son ocho peines y
 cuatro pasa-todo —el nodo más caro de la cadena— y su cola vive en los
@@ -454,6 +469,14 @@ entorno sin cámara ni altavoz.
   tamaño (iframe todavía sin medidas), `innerWidth` es 0 y guardar moría en
   silencio. `redimensionar()` clampa a 1 y el loop reajusta si el tamaño cambió
   sin que llegara un `resize`.
+- **Medir la voz de acordes sin llamar antes a `setModoAcordes(true)` mide OTRA
+  COSA.** `_modoAcordes` arranca en `false` en audio.js y lo enciende `init()` de
+  main.js — pero si `init()` aborta (sin cámara, que es justo el caso cuando
+  medís desde la consola), nunca se enciende. Entonces `startNotas()` ataca el
+  **drone de la voz de notas** y `sonarAcorde` no suena por ningún lado. La
+  medición sale limpia, plausible y equivocada. Se reconoce porque aparecen sólo
+  la fundamental y su octava, y las otras voces del acorde están a −98 dB. Antes
+  de medir acordes: `setModoAcordes(true)`.
 - **Para depurar la interfaz sin cámara**: copiar `index.html` a un archivo
   temporal e inyectar antes del `<script type="module">` un
   `navigator.mediaDevices.getUserMedia` falso que devuelva

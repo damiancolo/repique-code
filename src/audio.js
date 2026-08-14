@@ -35,16 +35,26 @@ export const ES_MOVIL = /Mobi|Android|iPhone|iPad|iPod/i.test(
 // banda de 500 Hz a 2 kHz, que es justo donde el altavoz de un teléfono es más
 // eficiente y más chillón. Audible, sí; áspero, también.
 //
-// La altura se rescata igual pero con puntería: triángulo (armónicos que caen
-// rápido, sin aspereza) MÁS una octava en seno por encima. El oído reconstruye
-// la fundamental que el altavoz no da, a partir de esa octava, sin que haya que
-// llenar de armónicos toda la banda incómoda. Medido contra el perfil viejo:
-// 13% de energía en medios en vez de 23%, y un 19% MÁS audible en un altavoz de
-// teléfono simulado.
+// La segunda versión puso una octava en seno encima del acorde grave. Se oía,
+// pero seguía siendo estridente, y medirlo explicó por qué: en un altavoz de
+// teléfono ESAS OCTAVAS ERAN LO ÚNICO AUDIBLE. Quitándolas, lo que pasa de los
+// 500 Hz caía de 103 a 14. O sea que el teléfono no reproducía un acorde con
+// brillo: reproducía cuatro senos pelados, sin nada de cuerpo debajo. Eso es un
+// órgano electrónico barato, y de ahí lo estridente.
+//
+// El problema de fondo nunca fue el timbre, fue el REGISTRO. Un triángulo tiene
+// armónicos que caen como 1/n², así que un acorde entre 130 y 330 Hz no aporta
+// casi nada por encima de 500 y no hay timbre que lo salve.
+//
+// Así que se invierten las capas. En el altavoz ya se oía la octava de arriba:
+// ahora esa octava ES el acorde —triángulo, con sus armónicos naturales— y el
+// registro grave de siempre queda DEBAJO como apoyo, que es lo que devuelve el
+// peso con auriculares. Mismo acorde, mismas notas; cambia cuál de las dos
+// octavas lleva la voz cantante.
 const OSC_ACORDE_MOVIL    = { type: 'triangle' };
 const FILTRO_ACORDE_MOVIL = 2800;
-const VOL_ACORDE_MOVIL    = -14; // el cuerpo
-const VOL_OCTAVA_MOVIL    = -13; // la octava que rescata la altura
+const VOL_ACORDE_MOVIL    = -12; // la octava de arriba: la que se oye en el altavoz
+const VOL_APOYO_MOVIL     = -18; // el registro de siempre, debajo: peso para auriculares
 const FILTRO_NOTA_FACTOR  = 1.6;
 const PASO_ALTO_MOVIL     = 120;
 
@@ -1413,19 +1423,21 @@ const vocesAcorde = Array.from({ length: VOCES_ACORDE }, (_, i) => {
   });
   synth.connect(gain);
 
-  // Sólo en móvil: la octava que rescata la altura. Va por el MISMO gain de la
-  // voz, así el acorde entra, se desliza y sale de una pieza.
-  let octava = null;
+  // Sólo en móvil: el apoyo grave, una octava POR DEBAJO de la voz principal —
+  // o sea el registro que suena en escritorio. En el altavoz del teléfono no se
+  // oye y no molesta; con auriculares devuelve el peso. Va por el MISMO gain,
+  // así el acorde entra, se desliza y sale de una pieza.
+  let apoyo = null;
   if (ES_MOVIL) {
-    octava = new Tone.Synth({
-      oscillator: { type: 'sine' },
+    apoyo = new Tone.Synth({
+      oscillator: { type: 'triangle' },
       envelope: ENV_ACORDE,
       portamento: 0.09,
-      volume: VOL_OCTAVA_MOVIL - i * 2,
+      volume: VOL_APOYO_MOVIL - i * 2,
     });
-    octava.connect(gain);
+    apoyo.connect(gain);
   }
-  return { synth, octava, gain };
+  return { synth, apoyo, gain };
 });
 
 let _modoAcordes    = false;
@@ -1436,14 +1448,14 @@ function _acordeAtaque() {
   vocesAcorde.forEach(v => {
     const f = v.synth.frequency.value || 220;
     v.synth.triggerAttack(f);
-    v.octava?.triggerAttack(f * 2);
+    v.apoyo?.triggerAttack(f / 2);   // el apoyo va SIEMPRE una octava debajo
   });
   _acordeAtacado = true;
 }
 
 function _acordeSuelta() {
   if (!_acordeAtacado) return;
-  vocesAcorde.forEach(v => { v.synth.triggerRelease(); v.octava?.triggerRelease(); });
+  vocesAcorde.forEach(v => { v.synth.triggerRelease(); v.apoyo?.triggerRelease(); });
   _acordeAtacado = false;
 }
 
@@ -1474,8 +1486,10 @@ export function sonarAcorde(frecuencias) {
   vocesAcorde.forEach((v, i) => {
     const f = frecuencias[i];
     if (f === undefined) { v.gain.gain.rampTo(0, 0.25); return; }
-    v.synth.frequency.rampTo(f, 0.09);
-    v.octava?.frequency.rampTo(f * 2, 0.09);
+    // En móvil la voz principal es la octava de ARRIBA (la que el altavoz
+    // reproduce) y el apoyo se queda en la frecuencia original.
+    v.synth.frequency.rampTo(ES_MOVIL ? f * 2 : f, 0.09);
+    v.apoyo?.frequency.rampTo(f, 0.09);
     v.gain.gain.rampTo(1, 0.22);
   });
 }

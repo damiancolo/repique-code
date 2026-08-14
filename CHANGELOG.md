@@ -9,19 +9,25 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
-**En el móvil ya no raspa: el diente de sierra era el problema** (14 ago)
-- El arreglo de altavoz chico del 6 de agosto hacía que la altura se oyera, pero
-  con **diente de sierra**, y sonaba áspero, saturado y caro de calcular. Se
-  había validado midiendo **dB** —cuánto se oye— y eso no dice nada del timbre.
-- Ahora la altura se rescata con puntería: **triángulo más una octava en seno**
-  por voz, al mismo nivel que la fundamental. El oído reconstruye la nota grave
-  a partir de esa octava sin llenar de armónicos la banda donde el altavoz de un
-  teléfono chilla. **13% de energía en medios en vez de 23%, y un 19% más
-  audible** en un altavoz simulado.
+**En el móvil el acorde ya no chilla: no era el timbre, era el registro** (14 ago)
+- El perfil de altavoz chico del 6 de agosto usaba **diente de sierra** para que
+  la altura se oyera. Se oía, sí, y sonaba áspero: se había validado midiendo
+  **dB** —cuánto se oye—, que no dice nada del timbre.
+- Cambiarlo por triángulo con una octava en seno encima lo mejoró, pero seguía
+  estridente. Al medirlo apareció el motivo de fondo: quitando esas octavas, lo
+  audible por encima de 500 Hz **caía de 103 a 14**. En el altavoz de un teléfono
+  esas octavas eran **lo único que sonaba**: cuatro senos pelados sin cuerpo
+  debajo. El problema no era el timbre, era el **registro** — un triángulo entre
+  130 y 330 Hz no aporta nada arriba y no hay timbre que lo arregle.
+- Ahora las capas van al revés: en el móvil **el acorde suena una octava arriba**,
+  donde el altavoz sí llega, con sus armónicos naturales; y el registro escrito
+  queda debajo como **apoyo**, que devuelve el peso con auriculares y en el
+  altavoz ni se nota. Mismas notas, mismo acorde: cambia cuál de las dos octavas
+  lleva la voz cantante.
 - **La reverb del acorde se apaga en móvil.** Es el nodo más caro de la cadena y
   su cola vive justo en lo que ese altavoz no reproduce: no llegaba espacio,
   llegaba barro. La voz de notas conserva la suya.
-- En escritorio **no cambia nada**: mismo oscilador, mismo filtro, misma reverb.
+- En escritorio **no cambia nada**: mismo registro, oscilador, filtro y reverb.
 
 **La figura respira, y destella cuando entra un cambio** (14 ago)
 - Los lados del cuadrilátero se **arquean** hacia afuera y vuelven a ser rectos.

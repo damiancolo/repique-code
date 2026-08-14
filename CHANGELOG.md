@@ -24,10 +24,20 @@ Las fechas salen del historial de git.
   queda debajo como **apoyo**, que devuelve el peso con auriculares y en el
   altavoz ni se nota. Mismas notas, mismo acorde: cambia cuál de las dos octavas
   lleva la voz cantante.
+- Y esa subida **no puede ser incondicional**: el tercio agudo ya venía
+  multiplicado por 2, así que subirlo otra vez lo dejaba en **1318 Hz** — 20,4%
+  de la energía por encima de 1 kHz contra el 1% del mismo acorde en escritorio.
+  Eso era el chillido que quedaba, y ningún filtro lo arregla, porque a esa
+  altura no son armónicos: son las notas. Ahora sólo sube si el acorde está por
+  debajo de 500 Hz, y el agudo vuelve a su 1,0%.
+- En móvil, entonces, el tercio agudo suena a la misma **altura** que el medio,
+  y se distingue por **carácter**: se le quita el peso de abajo y queda más fino
+  y presente. Tres registros separados por octavas no caben en un altavoz de
+  teléfono sin que el de arriba chille.
 - **La reverb del acorde se apaga en móvil.** Es el nodo más caro de la cadena y
   su cola vive justo en lo que ese altavoz no reproduce: no llegaba espacio,
   llegaba barro. La voz de notas conserva la suya.
-- En escritorio **no cambia nada**: mismo registro, oscilador, filtro y reverb.
+- En escritorio **no cambia nada**: mismos registros, oscilador, filtro y reverb.
 
 **La figura respira, y destella cuando entra un cambio** (14 ago)
 - Los lados del cuadrilátero se **arquean** hacia afuera y vuelven a ser rectos.

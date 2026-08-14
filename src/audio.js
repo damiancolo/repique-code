@@ -55,6 +55,13 @@ const OSC_ACORDE_MOVIL    = { type: 'triangle' };
 const FILTRO_ACORDE_MOVIL = 2800;
 const VOL_ACORDE_MOVIL    = -12; // la octava de arriba: la que se oye en el altavoz
 const VOL_APOYO_MOVIL     = -18; // el registro de siempre, debajo: peso para auriculares
+// ⚠️ La subida NO es incondicional. El tercio agudo ya viene multiplicado por 2
+// desde acordes.js, y subirlo otra vez dejaba la voz de arriba en 1318 Hz: 20%
+// de la energía por encima de 1 kHz, contra el 1% del mismo acorde en
+// escritorio. Eso era el chillido, y no hay filtro que lo arregle — a esa altura
+// no son armónicos recortables, son las notas del acorde.
+// Por encima de este tope el acorde ya cae donde el altavoz llega y se deja en paz.
+const TOPE_SUBIR_MOVIL = 500; // Hz, medido sobre la voz más aguda
 const FILTRO_NOTA_FACTOR  = 1.6;
 const PASO_ALTO_MOVIL     = 120;
 
@@ -1483,13 +1490,24 @@ export function estaEnModoAcordes() { return _modoAcordes; }
 export function sonarAcorde(frecuencias) {
   if (!frecuencias || !state.notasIniciadas) return;
   _acordeAtaque();
+
+  // Se decide UNA vez por acorde, no por voz: subir unas voces sí y otras no
+  // rompería el voicing y podría cruzar dos voces en la misma nota.
+  const tope = Math.max(...frecuencias.filter(f => f !== undefined));
+  const mult = (ES_MOVIL && tope < TOPE_SUBIR_MOVIL) ? 2 : 1;
+
   vocesAcorde.forEach((v, i) => {
     const f = frecuencias[i];
     if (f === undefined) { v.gain.gain.rampTo(0, 0.25); return; }
-    // En móvil la voz principal es la octava de ARRIBA (la que el altavoz
-    // reproduce) y el apoyo se queda en la frecuencia original.
-    v.synth.frequency.rampTo(ES_MOVIL ? f * 2 : f, 0.09);
-    v.apoyo?.frequency.rampTo(f, 0.09);
+    // El apoyo va siempre una octava por debajo de la voz principal.
+    v.synth.frequency.rampTo(f * mult, 0.09);
+    v.apoyo?.frequency.rampTo(f * mult / 2, 0.09);
+    // Sin la subida —o sea en el tercio agudo— el acorde suena a la misma
+    // altura que el del tercio medio, y levantar las manos no se notaría. Se
+    // le quita el apoyo: mismas notas, sin peso debajo, más fino y presente.
+    // La diferencia de registro pasa a ser de CARÁCTER en vez de altura, que
+    // es lo único que cabe en un altavoz de teléfono sin ponerse a chillar.
+    v.apoyo?.volume.rampTo(mult === 2 ? VOL_APOYO_MOVIL - i * 2 : -60, 0.25);
     v.gain.gain.rampTo(1, 0.22);
   });
 }

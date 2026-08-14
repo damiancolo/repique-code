@@ -430,6 +430,26 @@ limitador deja de ir ahogado.
 plegaba unas tonalidades sí y otras no, y rompía la escala. Éste sube TODO por
 igual en un solo dispositivo: las distancias entre grados no se tocan.
 
+**Intento 3 (14 ago) — y la subida NO puede ser incondicional.** El tercio agudo
+ya viene multiplicado por 2 desde `acordes.js:245`. Al subirlo otra vez quedaba
+en 523/784/1046/**1318 Hz**: medido, **20,4% de la energía por encima de 1 kHz
+contra el 1% del mismo acorde en escritorio**. Eso era el chillido, y **ningún
+filtro lo arregla** — comprobado, bajar el paso-bajo a 1600 no movió el número,
+porque a esa altura no son armónicos recortables, son las notas del acorde.
+
+Por eso `sonarAcorde` mira la voz más aguda y sólo sube si está por debajo de
+`TOPE_SUBIR_MOVIL` (500 Hz). Se decide **una vez por acorde, no por voz**: subir
+unas sí y otras no rompería el voicing y podría cruzar dos voces en la misma
+nota. Resultado medido en la cadena real: el agudo cae de 20,4% a **1,0%**, o sea
+exactamente la referencia de escritorio.
+
+Efecto secundario que hubo que resolver: sin subir, el tercio agudo sonaba a la
+MISMA altura que el medio y levantar las manos no se notaba. Se le quita el
+**apoyo** (`volume` a −60): mismas notas, sin peso debajo, más fino y presente.
+En móvil la diferencia entre medio y agudo es de **carácter, no de altura** —
+77% contra 72% de contenido bajo 500 Hz— porque tres registros separados por
+octavas no caben en un altavoz de teléfono sin que el de arriba chille.
+
 El **apoyo vive dentro de cada voz** (`vocesAcorde[i].apoyo`, sólo en móvil) y va
 por el mismo `gain`, así el acorde entra, se desliza y sale de una pieza. Si
 tocás `_acordeAtaque`, `_acordeSuelta` o `sonarAcorde`, el apoyo tiene que seguir

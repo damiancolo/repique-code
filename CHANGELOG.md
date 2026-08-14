@@ -9,6 +9,20 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**En el móvil ya no raspa: el diente de sierra era el problema** (14 ago)
+- El arreglo de altavoz chico del 6 de agosto hacía que la altura se oyera, pero
+  con **diente de sierra**, y sonaba áspero, saturado y caro de calcular. Se
+  había validado midiendo **dB** —cuánto se oye— y eso no dice nada del timbre.
+- Ahora la altura se rescata con puntería: **triángulo más una octava en seno**
+  por voz, al mismo nivel que la fundamental. El oído reconstruye la nota grave
+  a partir de esa octava sin llenar de armónicos la banda donde el altavoz de un
+  teléfono chilla. **13% de energía en medios en vez de 23%, y un 19% más
+  audible** en un altavoz simulado.
+- **La reverb del acorde se apaga en móvil.** Es el nodo más caro de la cadena y
+  su cola vive justo en lo que ese altavoz no reproduce: no llegaba espacio,
+  llegaba barro. La voz de notas conserva la suya.
+- En escritorio **no cambia nada**: mismo oscilador, mismo filtro, misma reverb.
+
 **La figura respira, y destella cuando entra un cambio** (14 ago)
 - Los lados del cuadrilátero se **arquean** hacia afuera y vuelven a ser rectos.
   **Los cuatro vértices no se mueven**: son las yemas de los dedos, y la

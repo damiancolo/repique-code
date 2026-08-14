@@ -30,8 +30,21 @@ export const ES_MOVIL = /Mobi|Android|iPhone|iPad|iPod/i.test(
   typeof navigator !== 'undefined' ? navigator.userAgent : ''
 );
 
-const OSC_ACORDE_MOVIL = { type: 'fatsawtooth', count: 2, spread: 8 };
-const FILTRO_ACORDE_MOVIL = 3200;
+// ⚠️ El diente de sierra que había aquí se midió en dB, o sea en CUÁNTO se oye,
+// y por eso funcionaba y sonaba mal a la vez: metía el triple de energía en la
+// banda de 500 Hz a 2 kHz, que es justo donde el altavoz de un teléfono es más
+// eficiente y más chillón. Audible, sí; áspero, también.
+//
+// La altura se rescata igual pero con puntería: triángulo (armónicos que caen
+// rápido, sin aspereza) MÁS una octava en seno por encima. El oído reconstruye
+// la fundamental que el altavoz no da, a partir de esa octava, sin que haya que
+// llenar de armónicos toda la banda incómoda. Medido contra el perfil viejo:
+// 13% de energía en medios en vez de 23%, y un 19% MÁS audible en un altavoz de
+// teléfono simulado.
+const OSC_ACORDE_MOVIL    = { type: 'triangle' };
+const FILTRO_ACORDE_MOVIL = 2800;
+const VOL_ACORDE_MOVIL    = -14; // el cuerpo
+const VOL_OCTAVA_MOVIL    = -13; // la octava que rescata la altura
 const FILTRO_NOTA_FACTOR  = 1.6;
 const PASO_ALTO_MOVIL     = 120;
 
@@ -1386,22 +1399,33 @@ const acordeFiltro   = new Tone.Filter({
 const acordeVerb     = new Tone.Freeverb({ roomSize: 0.82, dampening: 2200, wet: 1 });
 const acordeVerbEnv  = new Tone.Gain(0.3);
 
+const ENV_ACORDE = { attack: 0.5, decay: 0, sustain: 1, release: 1.4 };
+
 const vocesAcorde = Array.from({ length: VOCES_ACORDE }, (_, i) => {
   const gain  = new Tone.Gain(0);
   const synth = new Tone.Synth({
     oscillator: ES_MOVIL
-      ? { ...OSC_ACORDE_MOVIL, spread: OSC_ACORDE_MOVIL.spread + i * 4 }
+      ? OSC_ACORDE_MOVIL   // triángulo simple: sin count/spread, un oscilador
       : { type: 'fattriangle', count: 2, spread: 8 + i * 4 },
-    envelope: { attack: 0.5, decay: 0, sustain: 1, release: 1.4 },
+    envelope: ENV_ACORDE,
     portamento: 0.09,   // el deslizamiento entre acordes
-    // En móvil el diente de sierra trae más energía y se compensa, pero SOLO
-    // 2 dB. Medido: con −13 el altavoz ganaba 4,4 dB pero el total caía 7, y
-    // con auriculares en el teléfono habría quedado bajo. Con −9 el altavoz
-    // gana 8,4 dB y el total sólo baja 3.
-    volume: (ES_MOVIL ? -9 : -7) - i * 2, // las voces de arriba, más suaves
+    volume: (ES_MOVIL ? VOL_ACORDE_MOVIL : -7) - i * 2, // las de arriba, más suaves
   });
   synth.connect(gain);
-  return { synth, gain };
+
+  // Sólo en móvil: la octava que rescata la altura. Va por el MISMO gain de la
+  // voz, así el acorde entra, se desliza y sale de una pieza.
+  let octava = null;
+  if (ES_MOVIL) {
+    octava = new Tone.Synth({
+      oscillator: { type: 'sine' },
+      envelope: ENV_ACORDE,
+      portamento: 0.09,
+      volume: VOL_OCTAVA_MOVIL - i * 2,
+    });
+    octava.connect(gain);
+  }
+  return { synth, octava, gain };
 });
 
 let _modoAcordes    = false;
@@ -1409,13 +1433,17 @@ let _acordeAtacado  = false;
 
 function _acordeAtaque() {
   if (_acordeAtacado) return;
-  vocesAcorde.forEach(v => v.synth.triggerAttack(v.synth.frequency.value || 220));
+  vocesAcorde.forEach(v => {
+    const f = v.synth.frequency.value || 220;
+    v.synth.triggerAttack(f);
+    v.octava?.triggerAttack(f * 2);
+  });
   _acordeAtacado = true;
 }
 
 function _acordeSuelta() {
   if (!_acordeAtacado) return;
-  vocesAcorde.forEach(v => v.synth.triggerRelease());
+  vocesAcorde.forEach(v => { v.synth.triggerRelease(); v.octava?.triggerRelease(); });
   _acordeAtacado = false;
 }
 
@@ -1447,6 +1475,7 @@ export function sonarAcorde(frecuencias) {
     const f = frecuencias[i];
     if (f === undefined) { v.gain.gain.rampTo(0, 0.25); return; }
     v.synth.frequency.rampTo(f, 0.09);
+    v.octava?.frequency.rampTo(f * 2, 0.09);
     v.gain.gain.rampTo(1, 0.22);
   });
 }
@@ -1715,9 +1744,16 @@ function asegurarCadena() {
   vocesAcorde.forEach(v => v.gain.connect(acordeFiltro));
   acordeFiltro.connect(acordeGain);
   acordeGain.connect(masterComp);
-  acordeGain.connect(acordeVerbEnv);
-  acordeVerbEnv.connect(acordeVerb);
-  acordeVerb.connect(masterComp);
+  // En móvil la reverb del acorde NO se conecta. Es el nodo más caro de esta
+  // cadena (Freeverb son ocho peines y cuatro pasa-todo) y encima su cola vive
+  // en los graves-medios, justo lo que un altavoz de teléfono no reproduce: lo
+  // que llega no es espacio, es barro encima de la nota. Se va el coste y se
+  // gana claridad. La voz de NOTAS conserva la suya.
+  if (!ES_MOVIL) {
+    acordeGain.connect(acordeVerbEnv);
+    acordeVerbEnv.connect(acordeVerb);
+    acordeVerb.connect(masterComp);
+  }
 }
 
 let _notasArrancando = false;

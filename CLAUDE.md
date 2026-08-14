@@ -390,11 +390,40 @@ grave a partir de sus armónicos):
 
 | | escritorio | móvil |
 |---|---|---|
-| oscilador del acorde | `fattriangle` | `fatsawtooth` (armónicos 1/n) |
-| filtro del acorde | 1500 Hz | 3200 Hz |
+| oscilador del acorde | `fattriangle` | `triangle` + **octava en seno** |
+| filtro del acorde | 1500 Hz | 2800 Hz |
+| reverb del acorde | Freeverb | **ninguna** |
 | filtro de la voz de notas | según instrumento | × 1.6 |
 | capa de octava en notas | — | +6 dB (es la que el altavoz sí da) |
 | paso-alto de salida | — | 120 Hz |
+
+⚠️ **Aquí hubo un `fatsawtooth` y sonaba mal.** La primera versión de este perfil
+(6 ago) subió la audibilidad con diente de sierra y filtro en 3200, y se validó
+midiendo **dB**, o sea CUÁNTO se oye. Funcionaba para eso y era horrible: metía
+el triple de energía entre 500 Hz y 2 kHz, justo la banda donde el altavoz de un
+teléfono es más eficiente y más chillón. Audible y áspero a la vez.
+
+**La lección: medir el nivel no mide el timbre.** Si tocás este perfil, mirá
+también el REPARTO por bandas, no sólo el RMS.
+
+La versión de ahora rescata la altura con puntería en vez de a lo bruto:
+triángulo (armónicos que caen rápido) **más una octava en seno por voz**, al
+mismo nivel que la fundamental. El oído reconstruye la grave a partir de esa
+octava sin llenar de armónicos la banda incómoda. Medido: **13% de energía en
+medios en vez de 23%, y un 19% más audible** en un altavoz de teléfono simulado.
+Verificado además en la cadena real con el navegador emulando un móvil: a 130 Hz
+−33,4 dB y a 261 Hz −32,8, o sea la octava tan presente como la fundamental (en
+escritorio los 261 Hz quedan 1,8 dB por debajo, que es el armónico natural).
+
+La **octava vive dentro de cada voz** (`vocesAcorde[i].octava`, sólo en móvil) y
+va por el mismo `gain`, así el acorde entra, se desliza y sale de una pieza. Si
+tocás `_acordeAtaque`, `_acordeSuelta` o `sonarAcorde`, la octava tiene que
+seguir a su voz en los tres sitios o queda colgada.
+
+Y la **reverb del acorde no se conecta en móvil**: Freeverb son ocho peines y
+cuatro pasa-todo —el nodo más caro de la cadena— y su cola vive en los
+graves-medios, justo lo que ese altavoz no reproduce. Lo que llegaba no era
+espacio, era barro encima de la nota. La voz de NOTAS conserva la suya.
 
 ⚠️ **Los volúmenes están medidos, no estimados.** Renderizando fuera de línea el
 acorde de Do por dos paso-alto en cascada a 500 Hz (un altavoz de teléfono

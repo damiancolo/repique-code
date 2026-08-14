@@ -9,6 +9,24 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**La figura respira, y destella cuando entra un cambio** (14 ago)
+- Los lados del cuadrilátero se **arquean** hacia afuera y vuelven a ser rectos.
+  **Los cuatro vértices no se mueven**: son las yemas de los dedos, y la
+  inclinación de cada lado es lo que decide si el reconocedor lee trapecio o
+  rectángulo. Así la marca late sin poder mentir nunca sobre la forma.
+- Late a **paso humano**: 4,8 s de ciclo son unas doce respiraciones por minuto
+  —el borde tranquilo de una persona en reposo— y a la vez dos compases a 100
+  bpm. Arquea en 1,9 s y suelta en 2,9, que es el 1:1,5 de inhalar y exhalar.
+  Va libre: **no se engancha al ritmo**, que puede estar parado, porque así es
+  como se acompaña a alguien cantando.
+- **El brillo es otra cosa y no se mezcla**: la línea se enciende sólo cuando
+  entra un cambio de verdad, acorde o nota. Un destello por cambio, ninguno si
+  no cambiaste. Respirar *baja* el peso de la línea a propósito, para dejarle
+  sitio arriba al destello.
+- El techo del reconocedor (100 ms + 3 lecturas + el viaje del brazo) sigue
+  debajo de red: si una máquina fuera tan lenta que no llegara a ese paso, manda
+  el reconocedor y el latido no promete algo que el aparato no cumple.
+
 **En el móvil sonaba fino: era el altavoz** (6 ago)
 - En el iPhone el modo acordes sonaba nasal y sin cuerpo; con auriculares sonaba
   bien. Las fundamentales de los acordes viven en 130–260 Hz y un altavoz de

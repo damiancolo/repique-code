@@ -150,6 +150,49 @@ async function init() {
   let _acCandidato = null, _acDesde = 0, _acLecturas = 0;
   let _acVistoEn   = 0;
   let _acSonando   = null;
+  const mismoAcorde = (a, b) => a && b && a.grado === b.grado
+    && a.registro === b.registro && a.complemento === b.complemento;
+
+  // Cuándo entró el último cambio DE VERDAD. Lo marcan los dos modos en el
+  // punto exacto en que el sonido cambia, así que el brillo de la figura no
+  // puede desincronizarse de lo que se oye. Sólo lo usa el dibujo.
+  let _registradoEn = -1e9;
+  let _complNota    = 0;
+
+  // ── Cadencia del reconocedor ─────────────────────────────────────────────
+  // Cada cuánto se puede cambiar de forma y que el instrumento llegue a
+  // tomarla. NO es un tempo musical: es el techo físico del aparato, y hay que
+  // MEDIRLO porque depende de la máquina — 3 lecturas son 100 ms en un portátil
+  // a 30 fps y 250 en un teléfono a 12. Fijar un número aquí sería mentir en la
+  // mitad de los dispositivos, que es justo lo que ACORDE_MS+ACORDE_LECTURAS
+  // evita en el reconocimiento.
+  const HOLGURA_MS = 260;  // lo que se tarda en LLEVAR las manos a la forma
+                           // nueva; el reconocedor sólo cuenta desde que
+                           // llegaste, así que sin esto el ciclo iría más rápido
+                           // de lo que un brazo puede seguir
+  // Ese mínimo es el techo físico: ir más rápido es perder cambios. Pero el
+  // latido NO va al techo — al techo se lee como un aparato cargando. Va a un
+  // paso humano: 4,8 s son ~12 respiraciones por minuto, el borde tranquilo de
+  // una persona en reposo, y a la vez dos compases a 100 bpm, que es la unidad
+  // más natural para cambiar de acorde. No queda enganchado al transporte (el
+  // ritmo puede estar parado); simplemente dura lo mismo.
+  const RESPIRO_MS = 4800;
+  let _msCuadro = 33;      // media móvil del cuadro real
+  let _faseRespiro = 0;
+
+  /** El latido, en continuo. `dt` en segundos, como lo entrega el loop. */
+  function pasoRespiro(dt) {
+    const ms = dt * 1000;
+    _msCuadro += (ms - _msCuadro) * 0.05;
+    // El techo sigue de red: si la máquina fuera tan lenta que el reconocedor
+    // no llegara ni a este paso, manda el reconocedor y el latido no puede
+    // prometer algo que el aparato no cumple. Hoy no llega a activarse nunca
+    // —haría falta una cámara por debajo de 2 fps— pero es gratis dejarlo.
+    const techo = (Math.max(ACORDE_MS, ACORDE_LECTURAS * _msCuadro) + HOLGURA_MS) * 2;
+    const ciclo = Math.max(RESPIRO_MS, techo);
+    _faseRespiro = (_faseRespiro + ms / ciclo) % 1;
+    return { fase: _faseRespiro, ms: ciclo };
+  }
 
   function resetAcordes() {
     _acCandidato = null; _acLecturas = 0; _acSonando = null;
@@ -167,18 +210,16 @@ async function init() {
       return;
     }
 
-    const igual = (a, b) => a && b && a.grado === b.grado
-      && a.registro === b.registro && a.complemento === b.complemento;
-
-    if (!igual(_acCandidato, lectura)) { _acCandidato = lectura; _acDesde = ahora; _acLecturas = 1; return; }
+    if (!mismoAcorde(_acCandidato, lectura)) { _acCandidato = lectura; _acDesde = ahora; _acLecturas = 1; return; }
     _acLecturas++;
 
     if (ahora - _acDesde < ACORDE_MS || _acLecturas < ACORDE_LECTURAS) return;
 
     // Comparar el ACORDE que va a sonar, no el gesto: si la mano tiembla entre
     // dos posturas que dan lo mismo, no pasa absolutamente nada.
-    if (igual(_acSonando, lectura)) return;
+    if (mismoAcorde(_acSonando, lectura)) return;
     _acSonando = { ...lectura };
+    _registradoEn = ahora;
     sonarAcorde(frecuenciasAcorde(tonalidad, lectura.grado, lectura.registro, lectura.complemento));
     const n = nombreAcorde(tonalidad, lectura.grado, lectura.complemento);
     vistaAcordes = { activo: true, ...n, registro: lectura.registro };
@@ -1434,6 +1475,12 @@ async function init() {
       redimensionar();
     }
     try {
+    // El latido corre siempre, aunque no se dibuje: así no pega un salto de
+    // fase al volver a música desde pintura o baile.
+    const respiro = pasoRespiro(dt);
+    state.respiro = null;
+    state.registro = null;
+
     const manosTodas = detectarManos(video);
     // La mano que maneja el puntero se saca del resto: si no, la misma pinza que
     // hace clic tocaría un La en modo música o soltaría un trazo en pintura.
@@ -1527,13 +1574,21 @@ async function init() {
             pasoAcordes(forma, centroY, timestamp, complemento);
           } else {
             // La quinta entra y sale sola: no necesita debounce porque el
-            // estirado del mayor ya trae su propia histéresis.
+            // estirado del mayor ya trae su propia histéresis. Pero cambia lo
+            // que se oye igual que un cambio de nota, así que también se acusa:
+            // en acordes el complemento ya va dentro de la lectura comprometida
+            // y aquí, sin debounce, hay que mirarlo aparte.
             setComplementoNota(complemento);
+            if (complemento !== _complNota) {
+              _complNota = complemento;
+              _registradoEn = timestamp;
+            }
             if (forma === formaCandidato) {
               framesCandidato++;
               if (framesCandidato >= FRAMES_FORMA && forma !== formaConfirmada) {
                 formaConfirmada = forma;
                 actualizarNota(forma);
+                _registradoEn = timestamp;
               }
             } else {
               formaCandidato  = forma;
@@ -1575,6 +1630,13 @@ async function init() {
       } else {
         shakaCount = 0;
         shakaActivo = false;
+      }
+
+      // Se calcula DESPUÉS del bloque de nota/acorde: si no, el brillo llegaría
+      // un cuadro tarde respecto al sonido que lo dispara.
+      if (state.notasIniciadas) {
+        state.respiro  = respiro;
+        state.registro = timestamp - _registradoEn;
       }
 
       // `mayores` sólo se dibuja, todavía no dispara nada: primero hay que

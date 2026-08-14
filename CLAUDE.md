@@ -225,6 +225,46 @@ dentro de un mismo estado. Para comprobar que una capa entra hay que mirar el
   banda hace rubato. Si algún día se enciende el candombe debajo, ahí sí tendría
   sentido que los cambios esperen al pulso.
 
+## La figura respira (render.js + main.js:pasoRespiro)
+
+El cuadrilátero del modo música tiene **dos canales que no se mezclan**, y
+mezclarlos es el error que hay que evitar si se toca esto:
+
+| canal | qué es | de qué depende |
+|---|---|---|
+| **movimiento** — los lados se arquean | la respiración | de nada: va libre |
+| **brillo** — la línea se recoge y enciende | la confirmación | sólo de un cambio que entró |
+
+- ⚠️ **Los vértices NO se mueven.** Son las yemas de los dedos, y la inclinación
+  de cada lado es lo que decide si `clasificarForma` lee trapecio o rectángulo.
+  Escalar la figura movería los cuatro, y el dibujo podría decir una forma
+  distinta de la que el reconocedor está leyendo. Lo que respira son los LADOS,
+  con `quadraticCurveTo` (`ladoArqueado`). ⚠️ Una curva cuadrática se comba **la
+  mitad** del desplazamiento de su punto de control: por eso el control va al
+  doble de la panza pedida. Con panza 0 la curva **es** la recta.
+- **Paso humano, no técnico.** `RESPIRO_MS = 4800`: unas 12 respiraciones por
+  minuto (reposo tranquilo) y a la vez dos compases a 100 bpm. `ABRIR = 0.40`
+  arquea en 1,9 s y suelta en 2,9 — el 1:1,5 de inhalar y exhalar. En 0.5 exacto
+  no respiraría: un vaivén simétrico se queda quieto en los dos extremos.
+- **No se engancha al transporte.** El ritmo puede estar parado, que es como se
+  acompaña a alguien cantando. El techo del reconocedor (`ACORDE_MS` + 3
+  lecturas medidas en vivo + `HOLGURA_MS`, el viaje del brazo) queda debajo de
+  red: si una máquina fuera tan lenta que no llegara a ese paso, manda el
+  reconocedor. Hoy no se activa nunca — haría falta una cámara bajo 2 fps.
+- **El brillo es de un hecho, no de un reloj.** `_registradoEn` se marca en los
+  dos modos en el punto exacto donde cambia el sonido: al disparar `sonarAcorde`,
+  al confirmar la forma con `actualizarNota`, y también al cambiar el complemento
+  en notas (en acordes ya va dentro de la lectura comprometida; en notas se
+  aplica sin debounce y se quedaría sin acusar). Así el destello no puede
+  desincronizarse de lo que se oye.
+- **Respirar BAJA el peso de la línea**, no lo sube. Es a propósito: deja libre
+  el rango de arriba para el destello. Si la respiración ya brillara, el acuse
+  de un cambio no tendría contra qué destacar.
+- **La línea de los mayores no respira ni se arquea.** Su información es el salto
+  del extremo del nudillo a la punta; con el latido encima habría dos
+  movimientos en el mismo trazo. Quieta hace además de referencia contra la que
+  se mide cuánto se arquearon los lados.
+
 ## Instrumentos de la voz de notas (audio.js — INSTRUMENTOS)
 
 Cinco timbres para el modo de nota suelta: **Aire** (el original, pad tibio, por

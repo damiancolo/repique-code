@@ -2680,6 +2680,45 @@ async function init() {
   const vinculosOverlay   = document.getElementById('vinculos-overlay');
   const vinculosIframe    = document.getElementById('vinculos-iframe');
   const btnCerrarVinculos = document.getElementById('btn-cerrar-vinculos');
+  const btnFsVinculos     = document.getElementById('btn-fs-vinculos');
+
+  // Pantalla completa del overlay de Vínculos. La obra (/vinculos/, en el
+  // iframe) no dibuja su propio botón ahí adentro — nos manda el pedido por
+  // postMessage con el mismo contrato que usa /vinculos-indice.
+  const fsHabilitado = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  const fsElementoActual = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const fsEntrar  = () => (document.documentElement.requestFullscreen
+    ? document.documentElement.requestFullscreen() : document.documentElement.webkitRequestFullscreen?.());
+  const fsSalir   = () => (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.());
+  const fsAlternar = () => {
+    try {
+      const p = fsElementoActual() ? fsSalir() : fsEntrar();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) { /* ignorar */ }
+  };
+  if (btnFsVinculos) {
+    if (fsHabilitado) {
+      const pintarFs = () => {
+        const activo = !!fsElementoActual();
+        btnFsVinculos.textContent = activo ? '⤢' : '⛶';
+        btnFsVinculos.title = activo ? 'Salir de pantalla completa' : 'Pantalla completa';
+      };
+      document.addEventListener('fullscreenchange', pintarFs);
+      document.addEventListener('webkitfullscreenchange', pintarFs);
+      btnFsVinculos.addEventListener('click', fsAlternar);
+      pintarFs();
+    } else {
+      btnFsVinculos.style.display = 'none'; // Safari de iPhone
+    }
+  }
+  window.addEventListener('message', (e) => {
+    if (!vinculosVisible || e.origin !== location.origin || !e.data || e.data.tipo !== 'ep-fs') return;
+    if (e.data.accion === 'alternar') fsAlternar();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (!vinculosVisible) return;
+    if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && !e.altKey) fsAlternar();
+  });
 
   btnVinculos.addEventListener('click', () => {
     vinculosIframe.src = '/vinculos/';
@@ -2696,6 +2735,7 @@ async function init() {
     vinculosIframe.src = '';
     _prevPointers = [];
     vinculosCtx.clearRect(0, 0, vinculosCanvas.width, vinculosCanvas.height);
+    if (fsElementoActual()) fsAlternar(); // no dejar la app en pantalla completa al cerrar la obra
   });
 }
 

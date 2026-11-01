@@ -9,6 +9,13 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**El «?» despliega un mapa de manos dibujado** (1 nov)
+- Una lámina con las manos en «L» —índice arriba, pulgar abajo— para cada forma
+  y su acorde, el lado que manda (IZQ/DER), las tres franjas de altura y los
+  dedos mayores. Pensada para músicos que miran antes de leer.
+- Vive en `public/mapa-de-manos.html` y se carga recién al abrirla. La guía
+  completa de texto sigue a un clic, desde la barra del mapa.
+
 **En el móvil el acorde ya no chilla: no era el timbre, era el registro** (14 ago)
 - El perfil de altavoz chico del 6 de agosto usaba **diente de sierra** para que
   la altura se oyera. Se oía, sí, y sonaba áspero: se había validado midiendo

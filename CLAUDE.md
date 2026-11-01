@@ -40,6 +40,18 @@ La app se maneja **sin tocar el ordenador**: **mano derecha abierta** sobre la z
 - Sólo actúa dentro de `ZONAS_PUNTERO` (+45 px de margen). Las cajas con `width===0` se saltean, así los paneles ocultos no cuentan.
 - ⚠️ `MANO_DERECHA = 'Right'`. La doc de MediaPipe dice que la etiqueta supone imagen espejada, lo que hace esperar lo contrario. **Verificado con cámara: es 'Right'.** No cambiarlo por lo que digan los docs.
 
+## Mapa de manos (botón «?»)
+
+El `#btn-guia` («?») ya no abre la tabla rápida `#guia`: despliega
+`#mapa-overlay`, que carga en un iframe `public/mapa-de-manos.html` (sólo la
+primera vez que se abre). Es una lámina estática con las manos dibujadas en SVG:
+cada forma con su acorde, el lado que manda, los tres tercios de altura y los
+dedos mayores. La barra `#mapa-barra` (en `ZONAS_PUNTERO`, para cerrarla con la
+pinza) tiene «Guía completa →», que abre `#guia-detalle`.
+
+⚠️ La lámina repite el mapa de `hands.js`/`acordes.js` en dibujos. Si cambia qué
+forma da qué grado, o los nombres de los acordes, hay que regenerarla.
+
 ## Gestos implementados
 
 El cuadrilátero se forma con pulgares e índices de ambas manos.

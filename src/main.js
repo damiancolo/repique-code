@@ -407,6 +407,8 @@ async function init() {
   const ZONAS_PUNTERO = [
     'panel', 'tempo-slider-wrap', 'filtro-slider-wrap', 'menu-ritmo',
     'ritmo-viz', 'config-sonidos', 'guia-detalle-panel', 'btn-vinculos',
+    // La barra del mapa de manos: para poder cerrarlo con la pinza.
+    'mapa-barra',
     // El cartel de guardado va acá o la persona no puede aceptarlo con la mano:
     // en la instalación nadie toca el ordenador, y decidir si se publica su
     // propia imagen es justo lo último que debería obligar a agacharse al teclado.
@@ -2649,7 +2651,29 @@ async function init() {
   const btnGuiaDetalle   = document.getElementById('btn-guia-detalle');
   const btnCerrarDetalle = document.getElementById('btn-cerrar-detalle');
 
-  btnGuia.addEventListener('click', () => guia.classList.toggle('visible'));
+  // El «?» despliega el mapa de manos (dibujos de cada forma con su acorde).
+  // La tabla rápida #guia queda en el HTML pero ya no se abre desde acá; la
+  // guía completa de texto sigue a un clic, desde la barra del mapa.
+  const mapaOverlay   = document.getElementById('mapa-overlay');
+  const mapaIframe    = document.getElementById('mapa-iframe');
+  const abrirMapa  = () => {
+    if (!mapaIframe.getAttribute('src')) mapaIframe.setAttribute('src', 'mapa-de-manos.html');
+    guia.classList.remove('visible');
+    mapaOverlay.classList.add('visible');
+  };
+  const cerrarMapa = () => mapaOverlay.classList.remove('visible');
+
+  btnGuia.addEventListener('click', (e) => {
+    e.stopPropagation();
+    mapaOverlay.classList.contains('visible') ? cerrarMapa() : abrirMapa();
+  });
+  document.getElementById('btn-cerrar-mapa').addEventListener('click', cerrarMapa);
+  document.getElementById('btn-mapa-guia').addEventListener('click', (e) => {
+    e.stopPropagation();
+    cerrarMapa();
+    guiaDetalle.classList.add('visible');
+  });
+  mapaOverlay.addEventListener('click', (e) => { if (e.target === mapaOverlay) cerrarMapa(); });
 
   btnGuiaDetalle.addEventListener('click', (e) => {
     e.stopPropagation();

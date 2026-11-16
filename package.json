@@ -7,7 +7,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "fetch-samples": "node scripts/fetch-samples.js",
-    "regen-credits": "node scripts/regen-credits.js"
+    "regen-credits": "node scripts/regen-credits.js",
+    "test": "node scripts/test-acordes.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.35",

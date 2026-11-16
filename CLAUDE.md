@@ -373,6 +373,25 @@ dos triángulos, que mueve el filtro porque ahí es un efecto y no un control.
 
 ## Perfil de altavoz chico (móvil) — audio.js
 
+> ⚠️ **ACTUALIZACIÓN 16 nov 2026 — el móvil toca LAS MISMAS NOTAS que el
+> ordenador.** Se retiró la subida de octava (intentos 2 y 3 de abajo) y el
+> «apoyo». Como se decidía **acorde por acorde** (`TOPE_SUBIR_MOVIL`), reproducía
+> en el móvil el plegado prohibido: en 11 de 12 tonalidades la escala del tercio
+> medio bajaba a mitad de camino (en Do: …Sol4 → La3), medio y agudo sonaban
+> idénticos en 125 de 288 acordes, y el móvil no coincidía con el ordenador. Lo
+> detectó el owner de oído.
+>
+> **Regla:** en móvil sólo cambia el timbre (triángulo simple, filtro 2800 Hz,
+> sin reverb de acorde, paso-alto 120). Si alguna vez se vuelve a cambiar el
+> registro en móvil, tiene que ser un desplazamiento **fijo por registro, nunca
+> dependiente del acorde**, y pasar `npm test` (`scripts/test-acordes.mjs`:
+> escala ascendente y tres registros distintos en 12 tonos × 3 niveles).
+> Costo aceptado: en el altavoz del teléfono el grave y parte del medio suenan
+> débiles; con auriculares o altavoz externo, igual que en escritorio.
+>
+> Lo que sigue es la historia, para no repetirla. La tabla y los intentos 2–3
+> describen código que ya no existe.
+
 `ES_MOVIL` (declarado **arriba del todo**, antes de cualquier nodo que lo use)
 enciende un perfil de mezcla distinto. **No cambia ni una nota**: cambia el
 timbre para que la altura sobreviva a un altavoz de teléfono.

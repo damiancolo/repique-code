@@ -9,6 +9,19 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**En el móvil los acordes vuelven a ser los del ordenador** (16 nov)
+- En el teléfono, el registro agudo sonaba igual que el medio: levantar las
+  manos no cambiaba nada. Y los acordes no coincidían con los del ordenador.
+- La causa era la subida de octava de agosto: se decidía acorde por acorde
+  (sólo si la voz más aguda quedaba bajo 500 Hz). Eso subía unos acordes y otros
+  no, así que en 11 de las 12 tonalidades la escala **bajaba a mitad de camino**
+  — el mismo error que ya se había prohibido en el ordenador — y el medio caía
+  justo encima del agudo.
+- Ahora el móvil toca **exactamente las mismas notas** que el ordenador. Sólo
+  cambia el timbre para el altavoz chico. En el ordenador no cambia nada.
+- Nuevo `npm test`: comprueba en las 12 tonalidades que la escala sube siempre y
+  que grave, medio y agudo suenan distintos.
+
 **En el móvil el acorde ya no chilla: no era el timbre, era el registro** (14 ago)
 - El perfil de altavoz chico del 6 de agosto usaba **diente de sierra** para que
   la altura se oyera. Se oía, sí, y sonaba áspero: se había validado midiendo

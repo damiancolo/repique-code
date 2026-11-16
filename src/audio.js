@@ -30,38 +30,27 @@ export const ES_MOVIL = /Mobi|Android|iPhone|iPad|iPod/i.test(
   typeof navigator !== 'undefined' ? navigator.userAgent : ''
 );
 
-// ⚠️ El diente de sierra que había aquí se midió en dB, o sea en CUÁNTO se oye,
-// y por eso funcionaba y sonaba mal a la vez: metía el triple de energía en la
-// banda de 500 Hz a 2 kHz, que es justo donde el altavoz de un teléfono es más
-// eficiente y más chillón. Audible, sí; áspero, también.
+// ⚠️ HISTORIA DEL PERFIL MÓVIL DEL ACORDE — leer antes de tocarlo.
 //
-// La segunda versión puso una octava en seno encima del acorde grave. Se oía,
-// pero seguía siendo estridente, y medirlo explicó por qué: en un altavoz de
-// teléfono ESAS OCTAVAS ERAN LO ÚNICO AUDIBLE. Quitándolas, lo que pasa de los
-// 500 Hz caía de 103 a 14. O sea que el teléfono no reproducía un acorde con
-// brillo: reproducía cuatro senos pelados, sin nada de cuerpo debajo. Eso es un
-// órgano electrónico barato, y de ahí lo estridente.
+// 1. (6 ago) Diente de sierra para que se oyera: se validó en dB y sonaba áspero.
+// 2. (14 ago) Triángulo con una octava en seno encima: seguía estridente.
+// 3. (14 ago) Capas invertidas: el acorde sonaba UNA OCTAVA ARRIBA con un
+//    «apoyo» en el registro escrito, y la subida sólo se hacía si la voz más
+//    aguda quedaba bajo 500 Hz (para que el tercio agudo no chillara).
+// 4. (16 nov) Se retiró la subida entera. Al decidirse ACORDE POR ACORDE, el
+//    móvil sufría exactamente el plegado que está prohibido para la fundamental:
+//    en 11 de 12 tonalidades la escala del tercio medio BAJABA a mitad de camino
+//    (en Do: …Sol4 → La3), el medio y el agudo sonaban idénticos en 125 de 288
+//    acordes, y el móvil no coincidía con el ordenador.
 //
-// El problema de fondo nunca fue el timbre, fue el REGISTRO. Un triángulo tiene
-// armónicos que caen como 1/n², así que un acorde entre 130 y 330 Hz no aporta
-// casi nada por encima de 500 y no hay timbre que lo salve.
-//
-// Así que se invierten las capas. En el altavoz ya se oía la octava de arriba:
-// ahora esa octava ES el acorde —triángulo, con sus armónicos naturales— y el
-// registro grave de siempre queda DEBAJO como apoyo, que es lo que devuelve el
-// peso con auriculares. Mismo acorde, mismas notas; cambia cuál de las dos
-// octavas lleva la voz cantante.
+// Regla que queda: EL MÓVIL TOCA LAS MISMAS NOTAS QUE EL ORDENADOR. Si algún día
+// se vuelve a cambiar el registro en móvil, tiene que ser un desplazamiento FIJO
+// POR REGISTRO, nunca dependiente del acorde — y pasar `npm test`.
+// Lo que sí cambia en móvil es sólo el timbre: triángulo simple, filtro más
+// abierto y sin reverb (ver más abajo).
 const OSC_ACORDE_MOVIL    = { type: 'triangle' };
 const FILTRO_ACORDE_MOVIL = 2800;
-const VOL_ACORDE_MOVIL    = -12; // la octava de arriba: la que se oye en el altavoz
-const VOL_APOYO_MOVIL     = -18; // el registro de siempre, debajo: peso para auriculares
-// ⚠️ La subida NO es incondicional. El tercio agudo ya viene multiplicado por 2
-// desde acordes.js, y subirlo otra vez dejaba la voz de arriba en 1318 Hz: 20%
-// de la energía por encima de 1 kHz, contra el 1% del mismo acorde en
-// escritorio. Eso era el chillido, y no hay filtro que lo arregle — a esa altura
-// no son armónicos recortables, son las notas del acorde.
-// Por encima de este tope el acorde ya cae donde el altavoz llega y se deja en paz.
-const TOPE_SUBIR_MOVIL = 500; // Hz, medido sobre la voz más aguda
+const VOL_ACORDE_MOVIL    = -12;
 const FILTRO_NOTA_FACTOR  = 1.6;
 const PASO_ALTO_MOVIL     = 120;
 
@@ -1430,21 +1419,7 @@ const vocesAcorde = Array.from({ length: VOCES_ACORDE }, (_, i) => {
   });
   synth.connect(gain);
 
-  // Sólo en móvil: el apoyo grave, una octava POR DEBAJO de la voz principal —
-  // o sea el registro que suena en escritorio. En el altavoz del teléfono no se
-  // oye y no molesta; con auriculares devuelve el peso. Va por el MISMO gain,
-  // así el acorde entra, se desliza y sale de una pieza.
-  let apoyo = null;
-  if (ES_MOVIL) {
-    apoyo = new Tone.Synth({
-      oscillator: { type: 'triangle' },
-      envelope: ENV_ACORDE,
-      portamento: 0.09,
-      volume: VOL_APOYO_MOVIL - i * 2,
-    });
-    apoyo.connect(gain);
-  }
-  return { synth, apoyo, gain };
+  return { synth, gain };
 });
 
 let _modoAcordes    = false;
@@ -1455,14 +1430,13 @@ function _acordeAtaque() {
   vocesAcorde.forEach(v => {
     const f = v.synth.frequency.value || 220;
     v.synth.triggerAttack(f);
-    v.apoyo?.triggerAttack(f / 2);   // el apoyo va SIEMPRE una octava debajo
   });
   _acordeAtacado = true;
 }
 
 function _acordeSuelta() {
   if (!_acordeAtacado) return;
-  vocesAcorde.forEach(v => { v.synth.triggerRelease(); v.apoyo?.triggerRelease(); });
+  vocesAcorde.forEach(v => v.synth.triggerRelease());
   _acordeAtacado = false;
 }
 
@@ -1491,23 +1465,12 @@ export function sonarAcorde(frecuencias) {
   if (!frecuencias || !state.notasIniciadas) return;
   _acordeAtaque();
 
-  // Se decide UNA vez por acorde, no por voz: subir unas voces sí y otras no
-  // rompería el voicing y podría cruzar dos voces en la misma nota.
-  const tope = Math.max(...frecuencias.filter(f => f !== undefined));
-  const mult = (ES_MOVIL && tope < TOPE_SUBIR_MOVIL) ? 2 : 1;
-
+  // ⚠️ Mismas frecuencias en móvil y en ordenador: nada de subir de octava
+  // según el acorde (ver la historia del perfil móvil arriba del archivo).
   vocesAcorde.forEach((v, i) => {
     const f = frecuencias[i];
     if (f === undefined) { v.gain.gain.rampTo(0, 0.25); return; }
-    // El apoyo va siempre una octava por debajo de la voz principal.
-    v.synth.frequency.rampTo(f * mult, 0.09);
-    v.apoyo?.frequency.rampTo(f * mult / 2, 0.09);
-    // Sin la subida —o sea en el tercio agudo— el acorde suena a la misma
-    // altura que el del tercio medio, y levantar las manos no se notaría. Se
-    // le quita el apoyo: mismas notas, sin peso debajo, más fino y presente.
-    // La diferencia de registro pasa a ser de CARÁCTER en vez de altura, que
-    // es lo único que cabe en un altavoz de teléfono sin ponerse a chillar.
-    v.apoyo?.volume.rampTo(mult === 2 ? VOL_APOYO_MOVIL - i * 2 : -60, 0.25);
+    v.synth.frequency.rampTo(f, 0.09);
     v.gain.gain.rampTo(1, 0.22);
   });
 }

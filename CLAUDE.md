@@ -144,8 +144,8 @@ tonalidad (`#fila-tono`); con notas, el instrumento (`#fila-instrumento`).
 - **Grados**: rectángulo=I, trapecio piso=II, techo=III, izq=IV, der=V, pinza
   der=VI, pinza izq=VII, pulgares arriba=**I8** (la tónica una octava arriba).
   `dos_triangulos` queda fuera: el modo acid no tiene acorde.
-- **Calidad diatónica, no elegible.** En Do el II es Dm y no hay forma de que
-  salga D. Por eso no hace falta control de mayor/menor.
+- **Calidad diatónica por defecto.** En Do el II es Dm. Lo único que la cambia
+  es el **meñique derecho**, y sólo mientras está arriba (ver «El meñique»).
 - ⚠️ **NO se pliega la fundamental.** Hubo un plegado que metía toda
   fundamental dentro de una misma octava, para que el acompañamiento no saltara
   de registro. Daba buena conducción de voces y **rompía la escala**: en Sol el
@@ -224,6 +224,39 @@ dentro de un mismo estado. Para comprobar que una capa entra hay que mirar el
 - Sin cuantización al pulso: el modo arranca **sin ritmo**, y quien canta sin
   banda hace rubato. Si algún día se enciende el candombe debajo, ahí sí tendría
   sentido que los cambios esperen al pulso.
+
+## El meñique: mayor ↔ menor (acordes.js + hands.js + main.js)
+
+Pedido de una música (nov 2026): poder pasar un acorde de mayor a menor. **El
+meñique derecho arriba invierte la calidad** mientras se sostiene; al bajarlo
+vuelve solo. Es la puerta a los acordes prestados (en Do: II → D, VI → A,
+IV → Fm) y el único gesto que saca notas fuera de la escala.
+
+- **Se sostiene, no se fija.** Un interruptor que queda puesto no se lee sin
+  mirar la pantalla y un parpadeo de la cámara lo daría vuelta.
+- **Detección** (`hands.js:medirMenique`): punta (20) / nudillo (17), medidas
+  desde la muñeca, con histéresis (`MENIQUE_FUERA` 1.65, `MENIQUE_DENTRO`
+  1.40). ⚠️ **Umbrales provisorios**: la lectura «meñique der …» en pantalla
+  está para calibrarlos con manos de verdad.
+- ⚠️ **No se exige el anular abajo**: comparte tendón con el meñique y casi
+  nadie levanta el meñique solo.
+- ⚠️ **El puntero no se enciende mientras se toca** (`_formaVistaEn`,
+  `PUNTERO_TRAS_FORMA_MS` = 400). Con mayor y meñique arriba el anular sube
+  solo y la mano derecha queda «abierta», que es la llave del puntero. Efecto:
+  para usar el puntero en modo música hay que deshacer la figura (o sacar la
+  mano izquierda) 0,4 s antes.
+- **Reglas**: mayor ↔ menor; el VII disminuido pasa a menor (Bm). Suspendidos
+  (un mayor, salvo V y VII) no tienen tercera: el meñique no cambia nada
+  (`inversionAplica` lo descarta para que no destelle). Con séptima: maj7 → m7,
+  m7 → 7 (Dm7 → D7), el 7 del V → m7, 9 → m9, m7♭5 → m7, m11♭5 → m11.
+- **Tercio grave**: la tríada grave no tiene tercera, así que con el meñique
+  entra la tercera invertida como color; con complemento + meñique entra como
+  cuarta voz (Dm7 y D7 comparten la séptima: sin la tercera no se oiría).
+- **En notas**: invierte la tercera de `droneTercera` (`setInvertirTercera`), que
+  sólo suena con los dos mayores arriba.
+- `npm test` comprueba en las 12 tonalidades: calidad invertida correcta,
+  que el meñique cambie el sonido exactamente cuando `inversionAplica` dice,
+  que la escala siga subiendo, y que sin meñique todo quede en la escala.
 
 ## La figura respira (render.js + main.js:pasoRespiro)
 

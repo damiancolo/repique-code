@@ -9,6 +9,14 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**El meñique derecho pasa el acorde de mayor a menor** (16 nov)
+- Mientras el meñique derecho está arriba, el acorde cambia de calidad: Dm pasa
+  a D, F a Fm. Al bajarlo vuelve solo. Abre los acordes prestados, los que se
+  usan para salir un momento de la tonalidad.
+- No hace falta dejar el anular abajo. Con séptimas, Dm7 pasa a D7. En los
+  suspendidos no cambia nada, porque no tienen tercera.
+- Mientras se toca, el puntero de mano ya no se enciende por accidente.
+
 **En el móvil los acordes vuelven a ser los del ordenador** (16 nov)
 - En el teléfono, el registro agudo sonaba igual que el medio: levantar las
   manos no cambiaba nada. Y los acordes no coincidían con los del ordenador.

@@ -46,9 +46,9 @@ export const GRADO_POR_FORMA = {
   do_alto:        'I8',
 };
 
-// La calidad de cada grado NO se elige: viene puesta por la tonalidad. Por eso
-// no hace falta un control de mayor/menor — en Do el segundo acorde es Dm y no
-// hay forma de que salga D.
+// La calidad de cada grado viene puesta por la tonalidad: en Do el segundo
+// acorde es Dm. Lo único que la cambia es el MEÑIQUE DERECHO (ver «La
+// inversión» más abajo), y sólo mientras está arriba.
 const GRADOS = {
   I:   { semis:  0, tipo: 'mayor' },
   II:  { semis:  2, tipo: 'menor' },
@@ -115,16 +115,62 @@ const SUFIJO_COMPLEMENTO = {
   dom7:       { cifrado: '7',      nombre: 'séptima'                      },
   semidim:    { cifrado: 'm7♭5',   nombre: 'medio disminuido'             },
   maj7:       { cifrado: 'maj7',   nombre: 'con séptima mayor'            },
-  min7:       { cifrado: 'm7',     nombre: 'con séptima'                  },
+  min7:       { cifrado: 'm7',     nombre: 'menor con séptima'            },
   nueve:      { cifrado: '9',      nombre: 'con novena'                   },
   semidim11:  { cifrado: 'm11♭5',  nombre: 'medio disminuido con oncena'  },
+  min9:       { cifrado: 'm9',     nombre: 'menor con novena'             },
+  min11:      { cifrado: 'm11',    nombre: 'menor con oncena'             },
 };
 
+// ─── La inversión (el meñique derecho) ───────────────────────────────────────
+//
+// Mientras el meñique derecho está arriba, el acorde cambia de calidad: mayor
+// pasa a menor y menor a mayor. Es la puerta a los acordes PRESTADOS, que son
+// los que se usan para salir un momento de la tonalidad: en Do, el II pasa a
+// D (la dominante de Sol), el VI a A (la de Re menor), el IV a Fm (el iv menor).
+// Es el único gesto que saca notas fuera de la escala, y sólo mientras se pide.
+//
+// Se SOSTIENE, no se fija: al bajar el meñique vuelve solo. Un interruptor que
+// queda puesto no se puede leer sin mirar la pantalla, y un parpadeo de la
+// cámara lo daría vuelta sin querer.
+//
+// Casos especiales:
+// - El disminuido (VII) no tiene «mayor» natural: invertido pasa a MENOR (Bm).
+// - Los suspendidos (un mayor arriba, salvo en V y VII) no tienen tercera, así
+//   que el meñique no les cambia nada. Es lo correcto: no hay qué invertir.
+// - Con séptima, se invierte el acorde entero hacia lo que se toca de verdad:
+//   maj7 → m7, m7 → 7 (Dm7 → D7, la dominante prestada más usada),
+//   el 7 del V → m7, el 9 → m9, el m7♭5 → m7 y el m11♭5 → m11.
+const TIPO_INVERTIDO = { mayor: 'menor', menor: 'mayor', dim: 'menor' };
+const COMPLEMENTO_INVERTIDO = {
+  maj7: 'min7', min7: 'dom7', dom7: 'min7', nueve: 'min9',
+  semidim: 'min7', semidim11: 'min11',
+  // sus4 y sus2 no tienen tercera: quedan igual
+};
+
+/** La calidad del grado, con el meñique arriba o no */
+function tipoDe(g, invertido) {
+  return invertido ? TIPO_INVERTIDO[g.tipo] : g.tipo;
+}
+
 /** El tipo de complemento según cuántos mayores estén arriba (0, 1 o 2) */
-function tipoComplemento(grado, nivel) {
-  if (nivel >= 2) return COMPLEMENTO2[grado];
-  if (nivel >= 1) return COMPLEMENTO[grado];
-  return null;
+function tipoComplemento(grado, nivel, invertido = false) {
+  let t = null;
+  if (nivel >= 2) t = COMPLEMENTO2[grado];
+  else if (nivel >= 1) t = COMPLEMENTO[grado];
+  if (t && invertido) t = COMPLEMENTO_INVERTIDO[t] ?? t;
+  return t;
+}
+
+/**
+ * ¿Cambia algo el meñique en este acorde? No, si está suspendido (no hay
+ * tercera que invertir). main.js lo usa para no tratar como «cambio» —ni
+ * destellar— lo que suena exactamente igual.
+ */
+export function inversionAplica(grado, complemento) {
+  if (!GRADOS[grado]) return false;
+  const t = tipoComplemento(grado, complemento);
+  return t !== 'sus4' && t !== 'sus2';
 }
 
 const CIFRA_S = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
@@ -142,7 +188,7 @@ function tonalidadDe(id) {
  * Nombre del acorde en las dos nomenclaturas: `{ cifrado: 'Dm', nombre: 'Re menor' }`.
  * Se muestran las dos porque quien canta lee cifrado pero piensa en nombres.
  */
-export function nombreAcorde(tonalidadId, grado, complemento = 0) {
+export function nombreAcorde(tonalidadId, grado, complemento = 0, invertido = false) {
   const t = tonalidadDe(tonalidadId);
   const g = GRADOS[grado];
   if (!g) return null;
@@ -150,8 +196,8 @@ export function nombreAcorde(tonalidadId, grado, complemento = 0) {
   const idxTonica = (t.bemoles ? CIFRA_B : CIFRA_S).indexOf(t.cifrado);
   const idx  = ((idxTonica + g.semis) % 12 + 12) % 12;
   const raiz = (t.bemoles ? CIFRA_B : CIFRA_S)[idx];
-  const tipo = tipoComplemento(grado, complemento);
-  const suf  = tipo ? SUFIJO_COMPLEMENTO[tipo] : SUFIJO[g.tipo];
+  const tipo = tipoComplemento(grado, complemento, invertido);
+  const suf  = tipo ? SUFIJO_COMPLEMENTO[tipo] : SUFIJO[tipoDe(g, invertido)];
 
   // 'D♭' → letra 'D' + alteración '♭' → 'Re♭'
   const latino = LATINO[raiz[0]] + (raiz.length > 1 ? raiz[1] : '');
@@ -161,6 +207,7 @@ export function nombreAcorde(tonalidadId, grado, complemento = 0) {
     nombre:  `${latino} ${suf.nombre}`,
     grado,
     complemento,
+    invertido,
   };
 }
 
@@ -173,7 +220,7 @@ export function nombreAcorde(tonalidadId, grado, complemento = 0) {
  * En el tercio grave se saca la tercera y quedan fundamental y quinta, que es
  * lo que hace cualquier pianista abajo. Sigue siendo el mismo acorde, hueco.
  */
-export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', complemento = 0) {
+export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', complemento = 0, invertido = false) {
   const t = tonalidadDe(tonalidadId);
   const g = GRADOS[grado];
   if (!g) return null;
@@ -189,15 +236,16 @@ export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', comple
   // escuchó. Las formas son una escala: tienen que subir.
   const r = t.hz * Math.pow(2, (g.semis + (g.octavaArriba ? 12 : 0)) / 12);
 
+  const tipo    = tipoDe(g, invertido);
   const desde   = n => r * Math.pow(2, n / 12);
-  const tercera = desde(g.tipo === 'mayor' ? 4 : 3);
-  const quinta  = desde(g.tipo === 'dim' ? 6 : 7);
+  const tercera = desde(tipo === 'mayor' ? 4 : 3);
+  const quinta  = desde(tipo === 'dim' ? 6 : 7);
 
   // El voicing es abierto —fundamental, quinta, octava y décima— y la voz de
   // arriba es la que lleva el carácter. El complemento cambia esa voz: es la
   // tercera la que se va y entra la nota que pide resolución.
   let notas, color;
-  switch (tipoComplemento(grado, complemento)) {
+  switch (tipoComplemento(grado, complemento, invertido)) {
     // ── Un dedo: la tensión ────────────────────────────────────────────────
     case 'sus4':
       color = desde(5) * 2;
@@ -232,8 +280,13 @@ export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', comple
       notas = [r, tercera, desde(10), color];
       break;
     case 'semidim11':
+    case 'min11':        // invertido: el mismo voicing, con la quinta justa
       color = desde(5) * 2;
       notas = [r, quinta, desde(10), color];
+      break;
+    case 'min9':         // invertido del 9: la tercera abajo es la menor
+      color = desde(2) * 2;
+      notas = [r, tercera, desde(10), color];
       break;
 
     // ── Sin dedos: la tríada ───────────────────────────────────────────────
@@ -249,10 +302,21 @@ export function frecuenciasAcorde(tonalidadId, grado, registro = 'medio', comple
     // cualquier pianista: apretado en el grave se empasta. Pero si hay
     // complemento, su nota de color TIENE que sobrevivir — si no, subir el dedo
     // en el tercio grave no se oiría.
-    if (complemento) return [r / 2, quinta / 2, color];
+    //
+    // Lo mismo con el meñique: la tríada grave no tiene tercera, así que
+    // invertirla no cambiaría nada. Con el meñique arriba la tercera (la
+    // invertida) entra arriba como color, para que el gesto se oiga también acá.
+    // Con complemento Y meñique, la nota de color (séptima, novena) es la misma
+    // invertido o no —Dm7 y D7 comparten la séptima—: lo único que cambia es la
+    // tercera, así que esa entra también como cuarta voz.
+    if (complemento && invertido && tipoComplemento(grado, complemento) !== 'sus4'
+        && tipoComplemento(grado, complemento) !== 'sus2') {
+      return [r / 2, quinta / 2, tercera, color];
+    }
+    if (complemento || invertido) return [r / 2, quinta / 2, color];
     // El disminuido es la excepción: su «quinta» es un trítono, y un trítono a
     // 90 Hz es puro barro. Se le baja sólo la fundamental.
-    if (g.tipo === 'dim') return [r / 2, r, quinta];
+    if (tipo === 'dim') return [r / 2, r, quinta];
     return [r / 2, quinta / 2, r];
   }
 

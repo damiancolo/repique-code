@@ -1215,6 +1215,9 @@ const TERCERA_POR_FORMA = {
   trapecio_der: 4, la: 3, si: 3, do_alto: 4,
 };
 let _terceraSemis = 4;
+// Meñique derecho arriba: la tercera se invierte (mayor ↔ menor), igual que en
+// el modo acordes. Sólo se oye con los dos mayores arriba, que es cuando suena.
+let _terceraInvertida = false;
 const droneFiltro  = new Tone.Filter({
   type: 'lowpass',
   frequency: 2400 * (ES_MOVIL ? FILTRO_NOTA_FACTOR : 1),
@@ -1328,7 +1331,8 @@ export function setInstrumento(id) {
 // `actualizarWow` (modo acid) también entra por acá, si no el aire se quedaría
 // clavado en la nota anterior.
 const QUINTA = Math.pow(2, 7 / 12);
-const _terceraHz = hz => hz * Math.pow(2, _terceraSemis / 12);
+const _terceraHz = hz =>
+  hz * Math.pow(2, (_terceraInvertida ? 7 - _terceraSemis : _terceraSemis) / 12);
 
 function _droneFrecuencia(hz, tiempo = 0.08) {
   drone.frequency.rampTo(hz, tiempo);
@@ -1383,6 +1387,13 @@ function _droneRepulsar() {
 export function setComplementoNota(nivel) {
   droneQuintaGain.gain.rampTo(nivel >= 1 ? 1 : 0, 0.18);
   droneTerceraGain.gain.rampTo(nivel >= 2 ? 1 : 0, 0.18);
+}
+
+/** Meñique derecho: invierte la tercera de la nota (4 ↔ 3 semitonos) */
+export function setInvertirTercera(invertida) {
+  if (invertida === _terceraInvertida) return;
+  _terceraInvertida = invertida;
+  droneTercera.frequency.rampTo(_terceraHz(drone.frequency.value), 0.08);
 }
 
 // ─── Voz de acordes (modo acordes) ───────────────────────────────────────────

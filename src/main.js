@@ -4,9 +4,9 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
-import { setModoAcordes, sonarAcorde, setComplementoNota, startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
+import { setModoAcordes, sonarAcorde, setComplementoNota, setInvertirTercera, startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
-import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde } from './acordes.js';
+import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde, inversionAplica } from './acordes.js';
 import { INSTRUMENTOS, setInstrumento, getInstrumento } from './audio.js';
 
 const video         = document.getElementById('video');
@@ -151,13 +151,21 @@ async function init() {
   let _acVistoEn   = 0;
   let _acSonando   = null;
   const mismoAcorde = (a, b) => a && b && a.grado === b.grado
-    && a.registro === b.registro && a.complemento === b.complemento;
+    && a.registro === b.registro && a.complemento === b.complemento
+    && a.invertido === b.invertido;
 
   // Cuándo entró el último cambio DE VERDAD. Lo marcan los dos modos en el
   // punto exacto en que el sonido cambia, así que el brillo de la figura no
   // puede desincronizarse de lo que se oye. Sólo lo usa el dibujo.
   let _registradoEn = -1e9;
   let _complNota    = 0;
+  let _invNota      = false;
+  // Último instante en que las dos manos formaron una figura de música. Mientras
+  // se toca, el puntero no se enciende: con el mayor y el meñique arriba, el
+  // anular sube solo y la mano derecha queda «abierta», que es la llave del
+  // puntero — sin esto, tocar cerca de los botones haría aparecer la flecha.
+  let _formaVistaEn = -1e9;
+  const PUNTERO_TRAS_FORMA_MS = 400;
 
   // ── Cadencia del reconocedor ─────────────────────────────────────────────
   // Cada cuánto se puede cambiar de forma y que el instrumento llegue a
@@ -199,9 +207,12 @@ async function init() {
     vistaAcordes = modoAcordes ? { activo: true } : null;
   }
 
-  function pasoAcordes(forma, centroY, ahora, complemento) {
+  function pasoAcordes(forma, centroY, ahora, complemento, invertido = false) {
     const grado = forma ? GRADO_POR_FORMA[forma] : null;
-    const lectura = grado ? { grado, registro: registroDe(centroY), complemento } : null;
+    // En un suspendido el meñique no cambia nada (no hay tercera): se descarta
+    // para que no cuente como cambio ni destelle sobre un sonido idéntico.
+    const inv = !!(grado && invertido && inversionAplica(grado, complemento));
+    const lectura = grado ? { grado, registro: registroDe(centroY), complemento, invertido: inv } : null;
 
     if (lectura) _acVistoEn = ahora;
     // Dentro de la gracia no se toca nada: sostiene lo último que sonaba
@@ -220,8 +231,8 @@ async function init() {
     if (mismoAcorde(_acSonando, lectura)) return;
     _acSonando = { ...lectura };
     _registradoEn = ahora;
-    sonarAcorde(frecuenciasAcorde(tonalidad, lectura.grado, lectura.registro, lectura.complemento));
-    const n = nombreAcorde(tonalidad, lectura.grado, lectura.complemento);
+    sonarAcorde(frecuenciasAcorde(tonalidad, lectura.grado, lectura.registro, lectura.complemento, lectura.invertido));
+    const n = nombreAcorde(tonalidad, lectura.grado, lectura.complemento, lectura.invertido);
     vistaAcordes = { activo: true, ...n, registro: lectura.registro };
     registroNombre.textContent = lectura.registro;
   }
@@ -497,6 +508,10 @@ async function init() {
 
     if (!_punteroActivo) {
       if (!c) { _punteroOn = 0; return null; }
+      // Tocando música no se enciende (ver PUNTERO_TRAS_FORMA_MS)
+      if (!modoPintar && !modoBaile && performance.now() - _formaVistaEn < PUNTERO_TRAS_FORMA_MS) {
+        _punteroOn = 0; return null;
+      }
       if (++_punteroOn < PUNTERO_ON_FRAMES) return null;
       _punteroActivo = true;
       _punteroOff = 0;
@@ -1513,7 +1528,10 @@ async function init() {
       renderBaile(dt);
     } else {
       // ── Modo normal ────────────────────────────────────────────────────────
-      const { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid, mayores } = calcularGestos(manos);
+      const { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid, mayores, menique } = calcularGestos(manos);
+      if (forma && forma !== 'dos_triangulos') _formaVistaEn = performance.now();
+      // Meñique derecho arriba = el acorde (o la tercera, en notas) se invierte
+      const invertido = !!(menique && menique.arriba);
 
       // Dos pinzas → bloquea. En modo acordes NO: el VI es la pinza derecha y
       // el VII la izquierda, así que al pasar de uno al otro se atraviesa el
@@ -1571,7 +1589,7 @@ async function init() {
             : 0;
 
           if (modoAcordes) {
-            pasoAcordes(forma, centroY, timestamp, complemento);
+            pasoAcordes(forma, centroY, timestamp, complemento, invertido);
           } else {
             // La quinta entra y sale sola: no necesita debounce porque el
             // estirado del mayor ya trae su propia histéresis. Pero cambia lo
@@ -1579,9 +1597,15 @@ async function init() {
             // en acordes el complemento ya va dentro de la lectura comprometida
             // y aquí, sin debounce, hay que mirarlo aparte.
             setComplementoNota(complemento);
+            setInvertirTercera(invertido);
             if (complemento !== _complNota) {
               _complNota = complemento;
               _registradoEn = timestamp;
+            }
+            // El meñique sólo se oye con la tercera sonando (los dos mayores)
+            if (invertido !== _invNota) {
+              _invNota = invertido;
+              if (complemento >= 2) _registradoEn = timestamp;
             }
             if (forma === formaCandidato) {
               framesCandidato++;
@@ -1641,7 +1665,7 @@ async function init() {
 
       // `mayores` sólo se dibuja, todavía no dispara nada: primero hay que
       // afinar el umbral con manos de verdad y ver si el salto cae donde toca.
-      renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada, vistaAcordes, mayores);
+      renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada, vistaAcordes, mayores, menique);
       // Limpiar paint canvas en modo normal
       ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);
     }

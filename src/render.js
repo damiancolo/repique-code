@@ -133,7 +133,7 @@ function ladoArqueado(ctx, a, b, panza, centro) {
   ctx.quadraticCurveTo(mx + nx * d, my + ny * d, b[0], b[1]);
 }
 
-export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acordes, mayores) {
+export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acordes, mayores, menique) {
   const w = canvas.width;
   const h = canvas.height;
 
@@ -164,6 +164,7 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acord
     // La línea de los mayores va con el cuadrilátero, no con el acid: ahí las
     // manos están cruzadas y una línea más sólo confunde.
     if (mayores) dibujarLineaMayores(ctx, mayores, w, h);
+    if (menique && menique.arriba) dibujarMenique(ctx, menique, w, h);
   }
 
   if (state.mostrarOverlay) {
@@ -205,6 +206,11 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acord
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
       ctx.font = '300 11px "Space Grotesk", system-ui, sans-serif';
       ctx.fillText(`mayor  izq ${leer(mayores[0])}   der ${leer(mayores[1])}`, w - 24, y + 62);
+    }
+    if (menique) {
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.font = '300 11px "Space Grotesk", system-ui, sans-serif';
+      ctx.fillText(`meñique der ${menique.razon.toFixed(2)}${menique.arriba ? ' ▲' : ' ▾'}`, w - 24, y + 78);
     }
     ctx.textAlign = 'left';
   }
@@ -320,6 +326,31 @@ function dibujarLineaMayores(ctx, mayores, w, h) {
       ctx.stroke();
     }
   });
+}
+
+/**
+ * El meñique derecho arriba: un trazo del nudillo a la punta, con la punta
+ * puesta. Mismo lenguaje que la línea de los mayores (punto lleno = «puesto»),
+ * pero suelto, porque el meñique no se une con nada: dice «este acorde está
+ * invertido» y nada más. Con el meñique abajo no se dibuja.
+ */
+function dibujarMenique(ctx, menique, w, h) {
+  const [bx, by] = [(1 - menique.base.x) * w, menique.base.y * h];
+  const [x, y]   = [(1 - menique.punto.x) * w, menique.punto.y * h];
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(x, y);
+  ctx.strokeStyle = COLOR_BORDE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, 8, 0, Math.PI * 2);
+  ctx.fillStyle = COLOR_FILL;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, Math.PI * 2);
+  ctx.fillStyle = COLOR_PUNTO;
+  ctx.fill();
 }
 
 function dibujarCuadrilatero(ctx, puntos, w, h, resp, centro) {

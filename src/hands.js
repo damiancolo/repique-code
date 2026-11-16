@@ -119,13 +119,38 @@ function medirMayor(mano, ranura) {
   return { estirado, razon, punto: estirado ? mano[12] : mano[9] };
 }
 
+// ─── Meñique derecho: invierte el acorde (mayor ↔ menor) ──────────────────────
+//
+// La misma cuenta que el mayor —punta sobre nudillo, medidas desde la muñeca—
+// pero con el nudillo del PROPIO meñique (17), que está más cerca de la muñeca
+// que el del mayor: así la razón no depende del largo de cada dedo.
+//
+// ⚠️ NO se exige que el anular quede abajo. El anular y el meñique comparten
+// tendón y casi nadie levanta el meñique solo: si se pidiera el anular abajo,
+// el gesto sólo le saldría a quien toca la guitarra.
+//
+// ⚠️ Umbrales PROVISORIOS, sin calibrar con manos de verdad. La lectura en
+// pantalla («meñique der …») está para afinarlos.
+const MENIQUE_FUERA  = 1.65; // por encima → arriba
+const MENIQUE_DENTRO = 1.40; // por debajo → recogido
+let _meniqueArriba = false;
+
+function medirMenique(mano) {
+  const d = (a, b) => Math.hypot(mano[a].x - mano[b].x, mano[a].y - mano[b].y);
+  const base  = d(0, 17);
+  const razon = base > 0.001 ? d(0, 20) / base : 0;
+  if (razon > MENIQUE_FUERA)       _meniqueArriba = true;
+  else if (razon < MENIQUE_DENTRO) _meniqueArriba = false;
+  return { arriba: _meniqueArriba, razon, punto: mano[20], base: mano[17] };
+}
+
 /**
  * Calcula parámetros gestuales a partir de las dos manos.
- * @returns {{ ancho, centroY, area, puntos, forma, mayores }}
+ * @returns {{ ancho, centroY, area, puntos, forma, mayores, menique }}
  */
 export function calcularGestos(manos) {
   if (manos.length < 2) {
-    return { ancho: null, centroY: null, area: null, puntos: null, forma: null, mayores: null };
+    return { ancho: null, centroY: null, area: null, puntos: null, forma: null, mayores: null, menique: null };
   }
 
   const ordenadas = [...manos].sort((a, b) => {
@@ -138,6 +163,8 @@ export function calcularGestos(manos) {
 
   // Los dos mayores, en el mismo orden que el cuadrilátero (izquierda, derecha)
   const mayores = [medirMayor(manoIzq, 0), medirMayor(manoDer, 1)];
+  // El meñique de la mano derecha (la de la derecha en la pantalla espejada)
+  const menique = medirMenique(manoDer);
 
   // Vértices del cuadrilátero: pulgIzq → indIzq → indDer → pulgDer
   const puntos = [
@@ -208,7 +235,7 @@ export function calcularGestos(manos) {
     forma = clasificarForma(puntos);
   }
 
-  return { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid, mayores };
+  return { ancho, centroY, area, puntos, forma, dosPinzas, subtipoAcid, mayores, menique };
 }
 
 // ─── Clasificación geométrica ────────────────────────────────────────────────

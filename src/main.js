@@ -1886,6 +1886,7 @@ async function init() {
   /** Música es el modo base: se está en él cuando no hay pintura ni baile */
   function pintarModos() {
     const enMusica = !modoPintar && !modoBaile;
+    avisarModoMapa();
     btnPaint.classList.toggle('activo', modoPintar);
     btnBaile.classList.toggle('activo', modoBaile);
     btnMusica.classList.toggle('activo', enMusica);
@@ -2736,8 +2737,27 @@ async function init() {
   // guía completa de texto sigue a un clic, desde la barra del mapa.
   const mapaOverlay   = document.getElementById('mapa-overlay');
   const mapaIframe    = document.getElementById('mapa-iframe');
+  // La lámina muestra sólo lo del modo activo (#pintar, #musica, #baile), y
+  // siempre arriba cómo se usan los botones con las manos.
+  const modoDelMapa = () => modoPintar ? 'pintar' : modoBaile ? 'baile' : 'musica';
+  // Ojo: pintarModos() la llama desde arriba del archivo, antes de que existan
+  // las const de acá (zona muerta temporal). Por eso busca el iframe ella misma.
+  function avisarModoMapa() {
+    const fr = document.getElementById('mapa-iframe');
+    if (!fr || !fr.getAttribute('src')) return;
+    const m = modoPintar ? 'pintar' : modoBaile ? 'baile' : 'musica';
+    try { fr.contentWindow.location.hash = m; } catch (_) {}
+  }
+  // La lámina avisa cuánto mide en cada modo: el panel toma esa forma
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (e.source === mapaIframe.contentWindow && d && d.tipo === 'mapa-medida' && d.ancho && d.alto) {
+      mapaIframe.style.aspectRatio = `${d.ancho} / ${d.alto}`;
+    }
+  });
   const abrirMapa  = () => {
-    if (!mapaIframe.getAttribute('src')) mapaIframe.setAttribute('src', 'mapa-de-manos.html?compacto');
+    if (!mapaIframe.getAttribute('src')) mapaIframe.setAttribute('src', 'mapa-de-manos.html?compacto#' + modoDelMapa());
+    else avisarModoMapa();
     guia.classList.remove('visible');
     mapaOverlay.classList.add('visible');
   };

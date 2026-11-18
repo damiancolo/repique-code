@@ -17,8 +17,12 @@ Las fechas salen del historial de git.
 **El mapa de manos, chico y en la esquina** (18 nov)
 - El «?» abre la lámina como una columna chica y translúcida abajo a la
   derecha, completa y sin scroll, y se sigue tocando con ella abierta.
-- Suma una quinta sección: los botones se usan sin tocar (🖐 derecha = flecha;
-  🤏 o 🖐→✊ izquierda = clic). Y junto al «?» queda ese mismo recordatorio fijo. La versión larga, con textos, sigue en
+- Arriba de todo, siempre, «Los botones, sin tocar nada»: la mano derecha
+  abierta con la flecha en el índice, y el clic con la izquierda que se cierra
+  en puño, dibujadas como las demás manos de la lámina.
+- Cada modo muestra lo suyo: en pintar sólo los botones; en música, los
+  acordes; en baile, qué movimiento suena. Junto al «?» quedan las dos manos
+  dibujadas, chicas, con la palabra «clic». La versión larga, con textos, sigue en
   `mapa-de-manos.html` sin `?compacto`.
 
 **El mapa de manos suma el meñique** (18 nov)

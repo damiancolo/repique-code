@@ -17,20 +17,29 @@ a{color:#C44A1A}a:hover{color:#1A1A18}
    altura, dedos mayores y meñique lado a lado. Se escala entera para entrar
    en la ventana (ver el script del final). Sin textos largos: en el panel se
    mira, no se lee; la versión completa sigue en esta misma página sin ?compacto. */
+/* Por modo (#pintar, #musica, #baile): sólo lo de ese modo, y siempre los botones */
+body[data-modo] .wrap>div[data-modos]{display:none!important}
+body[data-modo="pintar"] .wrap>div[data-modos~="pintar"],
+body[data-modo="musica"] .wrap>div[data-modos~="musica"],
+body[data-modo="baile"]  .wrap>div[data-modos~="baile"]{display:flex!important}
+body[data-modo] .num{display:none}
 body.compacto{overflow:hidden;background:transparent}
 body.compacto .wrap{max-width:none;width:700px;padding:0 18px 18px;box-sizing:border-box;background:transparent!important;transform-origin:0 0}
 body.compacto .wrap>div{padding:16px 0 0!important;gap:10px!important}
-body.compacto .wrap>div:nth-child(1){display:none!important}
-body.compacto .wrap>div:nth-child(7){display:none}
+body.compacto .wrap>div:first-child{display:none!important}
+body.compacto div[data-sec="pie"]{display:none!important}
 body.compacto p{display:none!important}
+body.compacto .num{display:none}
 body.compacto h2{font-size:30px!important;white-space:nowrap;color:#fff!important;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 body.compacto div[style*="border-top: 2px solid"]{border-top-color:rgba(255,255,255,.5)!important;padding-top:8px!important}
 body.compacto div[style*="grid-template-columns"]{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+body.compacto div[data-sec="botones"] div[style*="grid-template-columns"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 body.compacto svg{height:auto!important}
+body.compacto .glifo{font-size:46px!important;line-height:110px!important;height:110px!important}
 body.compacto div[style*="background: #FFFFFF"]{padding:6px 8px 10px!important;background:rgba(255,255,255,.82)!important;border:none!important}
-body.compacto span[style*="font-size: 76px"]{font-size:44px!important}
-body.compacto .wrap>div:nth-child(3) span[style*="font-size: 76px"]{font-size:28px!important}
-body.compacto div[style*="font-size: 92px"]{font-size:56px!important}
+body.compacto span[style*="font-size: 76px"]{font-size:40px!important}
+body.compacto div[data-sec="altura"] span[style*="font-size: 76px"]{font-size:28px!important}
+body.compacto div[data-sec="baile"] span[style*="font-size: 76px"]{font-size:30px!important}
 body.compacto div[style*="justify-content: space-between"]{flex-wrap:wrap;row-gap:4px}
 body.compacto div[style*="font-size: 34px"]{font-size:26px!important}
 </style>
@@ -39,15 +48,39 @@ body.compacto div[style*="font-size: 34px"]{font-size:26px!important}
 <div class="wrap" style="box-sizing: border-box; background: #F6F3EE; display: flex; flex-direction: column">
 <div style="padding: 36px 40px 0 40px; display: flex; flex-direction: column; gap: 14px">
 <h1 style="margin: 0; font-family: Outfit, sans-serif; font-size: 68px; line-height: 1; color: #1A1A18"><span style="font-weight: 300">Mapa </span><span style="font-weight: 900">de manos</span></h1>
-<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 24px; line-height: 1.35; color: #3A3934; max-width: 980px">Cada mano hace una «L»: el índice arriba, el pulgar abajo apuntando al centro. Entre las cuatro puntas se forma una figura, y cada figura es un acorde. Cuatro cosas deciden lo que suena: la forma, la altura, los dedos mayores y el meñique derecho.</p>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 24px; line-height: 1.35; color: #3A3934; max-width: 980px">Cada mano hace una «L»: el índice arriba, el pulgar abajo apuntando al centro. Entre las cuatro puntas se forma una figura, y cada figura es un acorde. Cuatro cosas deciden lo que suena: la forma, la altura, los dedos mayores y el meñique derecho. Y los botones se usan sin tocar nada.</p>
 <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; letter-spacing: 0.12em; color: #1A1A18">
 <span>◀ TU MANO IZQUIERDA</span>
 <span style="display: flex; flex-direction: column; align-items: center"><svg viewBox="0 0 270 236" width="270" height="236" aria-hidden="true"><path d="M40.5 136.9L5.9 175.8A19 19 0 1 0 35.3 199.9L66.8 158.5A17 17 0 1 0 40.5 136.9Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M75.5 151.1L79.9 133.4A25 25 0 1 0 33.0 116.2L24.8 132.5A27 27 0 1 0 75.5 151.1Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M60.0 140.0L74.3 122.6Q74.3 138.2 84.2 150.5L74.3 149.4Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M63.9 128.4L72.6 116.4A8.4 8.4 0 1 0 59.4 106.0L49.8 117.2A9 9 0 1 0 63.9 128.4Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M51.7 124.7L59.8 114.0A8.4 8.4 0 1 0 46.8 103.3L37.9 113.2A9 9 0 1 0 51.7 124.7Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M39.5 121.1L46.9 111.8A8.4 8.4 0 1 0 34.2 100.7L25.9 109.3A9 9 0 1 0 39.5 121.1Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M82.6 126.1L116.0 42.6A6.5 6.5 0 1 0 104.0 37.4L66.0 119.0A9 9 0 1 0 82.6 126.1Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M74.2 162.4L112.1 160.7A11 11 0 1 0 112.2 138.7L74.4 136.4A13 13 0 1 0 74.2 162.4Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M112.1 160.7L149.9 159.2A9.2 9.2 0 1 0 150.1 140.8L112.2 138.7A11 11 0 1 0 112.1 160.7Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M11.5 167.4L-11.7 192.4A22 22 0 1 0 22.3 220.4L42.4 192.9A20 20 0 1 0 11.5 167.4Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M40.5 136.9L5.9 175.8A19 19 0 1 0 35.3 199.9L66.8 158.5A17 17 0 1 0 40.5 136.9Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M75.5 151.1L79.9 133.4A25 25 0 1 0 33.0 116.2L24.8 132.5A27 27 0 1 0 75.5 151.1Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M60.0 140.0L74.3 122.6Q74.3 138.2 84.2 150.5L74.3 149.4Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M63.9 128.4L72.6 116.4A8.4 8.4 0 1 0 59.4 106.0L49.8 117.2A9 9 0 1 0 63.9 128.4Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M51.7 124.7L59.8 114.0A8.4 8.4 0 1 0 46.8 103.3L37.9 113.2A9 9 0 1 0 51.7 124.7Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M39.5 121.1L46.9 111.8A8.4 8.4 0 1 0 34.2 100.7L25.9 109.3A9 9 0 1 0 39.5 121.1Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M82.6 126.1L116.0 42.6A6.5 6.5 0 1 0 104.0 37.4L66.0 119.0A9 9 0 1 0 82.6 126.1Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M74.2 162.4L112.1 160.7A11 11 0 1 0 112.2 138.7L74.4 136.4A13 13 0 1 0 74.2 162.4Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M112.1 160.7L149.9 159.2A9.2 9.2 0 1 0 150.1 140.8L112.2 138.7A11 11 0 1 0 112.1 160.7Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M11.5 167.4L-11.7 192.4A22 22 0 1 0 22.3 220.4L42.4 192.9A20 20 0 1 0 11.5 167.4Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M40.5 136.9L5.9 175.8A19 19 0 1 0 35.3 199.9L66.8 158.5A17 17 0 1 0 40.5 136.9Z" fill="#F1D7B8"/><path d="M75.5 151.1L79.9 133.4A25 25 0 1 0 33.0 116.2L24.8 132.5A27 27 0 1 0 75.5 151.1Z" fill="#F1D7B8"/><path d="M60.0 140.0L74.3 122.6Q74.3 138.2 84.2 150.5L74.3 149.4Z" fill="#F1D7B8"/><path d="M63.9 128.4L72.6 116.4A8.4 8.4 0 1 0 59.4 106.0L49.8 117.2A9 9 0 1 0 63.9 128.4Z" fill="#F1D7B8"/><path d="M51.7 124.7L59.8 114.0A8.4 8.4 0 1 0 46.8 103.3L37.9 113.2A9 9 0 1 0 51.7 124.7Z" fill="#F1D7B8"/><path d="M39.5 121.1L46.9 111.8A8.4 8.4 0 1 0 34.2 100.7L25.9 109.3A9 9 0 1 0 39.5 121.1Z" fill="#F1D7B8"/><path d="M82.6 126.1L116.0 42.6A6.5 6.5 0 1 0 104.0 37.4L66.0 119.0A9 9 0 1 0 82.6 126.1Z" fill="#F1D7B8"/><path d="M74.2 162.4L112.1 160.7A11 11 0 1 0 112.2 138.7L74.4 136.4A13 13 0 1 0 74.2 162.4Z" fill="#F1D7B8"/><path d="M112.1 160.7L149.9 159.2A9.2 9.2 0 1 0 150.1 140.8L112.2 138.7A11 11 0 1 0 112.1 160.7Z" fill="#F1D7B8"/><path d="M11.5 167.4L-11.7 192.4A22 22 0 1 0 22.3 220.4L42.4 192.9A20 20 0 1 0 11.5 167.4Z" fill="#2E2D2A"/><line x1="92.4" y1="93.2" x2="83.3" y2="89.2" stroke="#1A1A18" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/><line x1="102.6" y1="68.2" x2="94.5" y2="64.7" stroke="#1A1A18" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="106.4" cy="45.3" rx="4.4" ry="3.3" transform="rotate(-66.6 106.4 45.3)" fill="#FBEBDD" stroke="#1A1A18" stroke-width="1.4"/><line x1="113.6" y1="155.8" x2="113.7" y2="143.7" stroke="#1A1A18" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="143.5" cy="150.5" rx="5.6" ry="4" transform="rotate(0.5 143.5 150.5)" fill="#FBEBDD" stroke="#1A1A18" stroke-width="1.4"/><line x1="65.3" y1="120.0" x2="57.6" y2="113.9" stroke="#1A1A18" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/><line x1="52.9" y1="117.0" x2="45.2" y2="110.7" stroke="#1A1A18" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/><line x1="40.4" y1="114.0" x2="32.9" y2="107.4" stroke="#1A1A18" stroke-opacity="0.35" stroke-width="1.6" stroke-linecap="round"/><path d="M60.9 129.3l-26.8 -13.4" stroke="#E2BC94" stroke-width="3" stroke-linecap="round" fill="none"/><circle cx="110" cy="40" r="6" fill="#FFFFFF" stroke="#C44A1A" stroke-width="3"/><circle cx="150" cy="150" r="7" fill="#C44A1A" stroke="#FFFFFF" stroke-width="2"/><text x="128" y="46" font-size="17" fill="#1A1A18" style="font-family: JetBrains Mono, monospace; font-weight: 700; letter-spacing: 2px">ÍNDICE</text><text x="166" y="140" font-size="17" fill="#C44A1A" style="font-family: JetBrains Mono, monospace; font-weight: 700; letter-spacing: 2px">PULGAR</text></svg><span style="font-weight: 500; color: #5A5850; font-size: 14px">LA PANTALLA ES UN ESPEJO · TONO: DO</span></span>
 <span>TU MANO DERECHA ▶</span></div>
 </div>
-<div style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
+<div data-sec="botones" data-modos="pintar musica baile" style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; align-items: baseline; gap: 18px; border-top: 2px solid #1A1A18; padding-top: 18px">
-<span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">1</span>
+<span class="num" style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">1</span>
+<h2 style="margin: 0; font-family: Outfit, sans-serif; font-size: 44px; line-height: 1.05; color: #1A1A18"><span style="font-weight: 300">Los botones, </span><span style="font-weight: 900">sin tocar nada</span></h2>
+</div>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 22px; line-height: 1.35; color: #3A3934; max-width: 900px">Todos los botones de la pantalla se usan con las manos, sin acercarse al ordenador.</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px">
+<div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
+<svg viewBox="0 0 200 240" width="100%" height="236" aria-hidden="true"><g transform="translate(0,0)"><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M80.9 111.0L71.0 41.2A7 7 0 1 0 57.0 42.8L63.1 113.0A9 9 0 1 0 80.9 111.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M101.5 108.0L99.2 30.0A7.2 7.2 0 1 0 84.8 30.0L82.5 108.0A9.5 9.5 0 1 0 101.5 108.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M121.0 110.7L125.0 38.6A7 7 0 1 0 111.0 37.4L103.0 109.3A9 9 0 1 0 121.0 110.7Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M137.8 119.6L148.1 61.3A6.2 6.2 0 1 0 135.9 58.7L122.2 116.4A8 8 0 1 0 137.8 119.6Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M73.8 148.2L36.0 114.0A8.5 8.5 0 1 0 24.0 126.0L58.2 163.8A11 11 0 1 0 73.8 148.2Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M88 104H112A28 28 0 0 1 140 132V162A28 28 0 0 1 112 190H88A28 28 0 0 1 60 162V132A28 28 0 0 1 88 104Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M80.9 111.0L71.0 41.2A7 7 0 1 0 57.0 42.8L63.1 113.0A9 9 0 1 0 80.9 111.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M101.5 108.0L99.2 30.0A7.2 7.2 0 1 0 84.8 30.0L82.5 108.0A9.5 9.5 0 1 0 101.5 108.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M121.0 110.7L125.0 38.6A7 7 0 1 0 111.0 37.4L103.0 109.3A9 9 0 1 0 121.0 110.7Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M137.8 119.6L148.1 61.3A6.2 6.2 0 1 0 135.9 58.7L122.2 116.4A8 8 0 1 0 137.8 119.6Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M73.8 148.2L36.0 114.0A8.5 8.5 0 1 0 24.0 126.0L58.2 163.8A11 11 0 1 0 73.8 148.2Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M88 104H112A28 28 0 0 1 140 132V162A28 28 0 0 1 112 190H88A28 28 0 0 1 60 162V132A28 28 0 0 1 88 104Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#2E2D2A"/><path d="M80.9 111.0L71.0 41.2A7 7 0 1 0 57.0 42.8L63.1 113.0A9 9 0 1 0 80.9 111.0Z" fill="#F1D7B8"/><path d="M101.5 108.0L99.2 30.0A7.2 7.2 0 1 0 84.8 30.0L82.5 108.0A9.5 9.5 0 1 0 101.5 108.0Z" fill="#F1D7B8"/><path d="M121.0 110.7L125.0 38.6A7 7 0 1 0 111.0 37.4L103.0 109.3A9 9 0 1 0 121.0 110.7Z" fill="#F1D7B8"/><path d="M137.8 119.6L148.1 61.3A6.2 6.2 0 1 0 135.9 58.7L122.2 116.4A8 8 0 1 0 137.8 119.6Z" fill="#F1D7B8"/><path d="M73.8 148.2L36.0 114.0A8.5 8.5 0 1 0 24.0 126.0L58.2 163.8A11 11 0 1 0 73.8 148.2Z" fill="#F1D7B8"/><path d="M88 104H112A28 28 0 0 1 140 132V162A28 28 0 0 1 112 190H88A28 28 0 0 1 60 162V132A28 28 0 0 1 88 104Z" fill="#F1D7B8"/><polygon points="60.0,22.0 60.0,62.5 70.8,53.0 78.9,70.6 87.0,66.6 78.9,50.4 92.4,49.0" fill="#C44A1A" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"/></g></svg>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Flecha</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">DER</span></span>
+</div>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">La mano derecha abierta sobre los botones: la flecha va en la punta del índice.</p>
+</div><div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
+<svg viewBox="0 0 390 240" width="100%" height="236" aria-hidden="true"><g transform="translate(0,0)"><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M84 112H116A28 28 0 0 1 144 140V164A28 28 0 0 1 116 192H84A28 28 0 0 1 56 164V140A28 28 0 0 1 84 112Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M84 112H116A28 28 0 0 1 144 140V164A28 28 0 0 1 116 192H84A28 28 0 0 1 56 164V140A28 28 0 0 1 84 112Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#2E2D2A"/><path d="M84 112H116A28 28 0 0 1 144 140V164A28 28 0 0 1 116 192H84A28 28 0 0 1 56 164V140A28 28 0 0 1 84 112Z" fill="#F1D7B8"/><path d="M61.0 118.0L61.0 146.0A11 11 0 1 0 83.0 146.0L83.0 118.0A11 11 0 1 0 61.0 118.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M80.0 118.0L80.0 146.0A11 11 0 1 0 102.0 146.0L102.0 118.0A11 11 0 1 0 80.0 118.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M99.0 118.0L99.0 146.0A11 11 0 1 0 121.0 146.0L121.0 118.0A11 11 0 1 0 99.0 118.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M118.0 118.0L118.0 146.0A11 11 0 1 0 140.0 146.0L140.0 118.0A11 11 0 1 0 118.0 118.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M61.0 118.0L61.0 146.0A11 11 0 1 0 83.0 146.0L83.0 118.0A11 11 0 1 0 61.0 118.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="4" stroke-linejoin="round"/><path d="M80.0 118.0L80.0 146.0A11 11 0 1 0 102.0 146.0L102.0 118.0A11 11 0 1 0 80.0 118.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="4" stroke-linejoin="round"/><path d="M99.0 118.0L99.0 146.0A11 11 0 1 0 121.0 146.0L121.0 118.0A11 11 0 1 0 99.0 118.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="4" stroke-linejoin="round"/><path d="M118.0 118.0L118.0 146.0A11 11 0 1 0 140.0 146.0L140.0 118.0A11 11 0 1 0 118.0 118.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="4" stroke-linejoin="round"/><path d="M61.0 118.0L61.0 146.0A11 11 0 1 0 83.0 146.0L83.0 118.0A11 11 0 1 0 61.0 118.0Z" fill="#F1D7B8"/><path d="M80.0 118.0L80.0 146.0A11 11 0 1 0 102.0 146.0L102.0 118.0A11 11 0 1 0 80.0 118.0Z" fill="#F1D7B8"/><path d="M99.0 118.0L99.0 146.0A11 11 0 1 0 121.0 146.0L121.0 118.0A11 11 0 1 0 99.0 118.0Z" fill="#F1D7B8"/><path d="M118.0 118.0L118.0 146.0A11 11 0 1 0 140.0 146.0L140.0 118.0A11 11 0 1 0 118.0 118.0Z" fill="#F1D7B8"/><path d="M143.1 155.1L85.0 150.6A9.5 9.5 0 1 0 83.0 169.4L140.9 176.9A11 11 0 1 0 143.1 155.1Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M143.1 155.1L85.0 150.6A9.5 9.5 0 1 0 83.0 169.4L140.9 176.9A11 11 0 1 0 143.1 155.1Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="4" stroke-linejoin="round"/><path d="M143.1 155.1L85.0 150.6A9.5 9.5 0 1 0 83.0 169.4L140.9 176.9A11 11 0 1 0 143.1 155.1Z" fill="#F1D7B8"/></g><g transform="translate(190,0)"><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M80.9 111.0L71.0 41.2A7 7 0 1 0 57.0 42.8L63.1 113.0A9 9 0 1 0 80.9 111.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M101.5 108.0L99.2 30.0A7.2 7.2 0 1 0 84.8 30.0L82.5 108.0A9.5 9.5 0 1 0 101.5 108.0Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M121.0 110.7L125.0 38.6A7 7 0 1 0 111.0 37.4L103.0 109.3A9 9 0 1 0 121.0 110.7Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M137.8 119.6L148.1 61.3A6.2 6.2 0 1 0 135.9 58.7L122.2 116.4A8 8 0 1 0 137.8 119.6Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M73.8 148.2L36.0 114.0A8.5 8.5 0 1 0 24.0 126.0L58.2 163.8A11 11 0 1 0 73.8 148.2Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M88 104H112A28 28 0 0 1 140 132V162A28 28 0 0 1 112 190H88A28 28 0 0 1 60 162V132A28 28 0 0 1 88 104Z" fill="#1A1A18" fill-opacity="0.10" transform="translate(5,7)"/><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M80.9 111.0L71.0 41.2A7 7 0 1 0 57.0 42.8L63.1 113.0A9 9 0 1 0 80.9 111.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M101.5 108.0L99.2 30.0A7.2 7.2 0 1 0 84.8 30.0L82.5 108.0A9.5 9.5 0 1 0 101.5 108.0Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M121.0 110.7L125.0 38.6A7 7 0 1 0 111.0 37.4L103.0 109.3A9 9 0 1 0 121.0 110.7Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M137.8 119.6L148.1 61.3A6.2 6.2 0 1 0 135.9 58.7L122.2 116.4A8 8 0 1 0 137.8 119.6Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M73.8 148.2L36.0 114.0A8.5 8.5 0 1 0 24.0 126.0L58.2 163.8A11 11 0 1 0 73.8 148.2Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M88 104H112A28 28 0 0 1 140 132V162A28 28 0 0 1 112 190H88A28 28 0 0 1 60 162V132A28 28 0 0 1 88 104Z" fill="#1A1A18" stroke="#1A1A18" stroke-width="5" stroke-linejoin="round"/><path d="M76.0 190.0L74.0 226.0A26 26 0 1 0 126.0 226.0L124.0 190.0A24 24 0 1 0 76.0 190.0Z" fill="#2E2D2A"/><path d="M80.9 111.0L71.0 41.2A7 7 0 1 0 57.0 42.8L63.1 113.0A9 9 0 1 0 80.9 111.0Z" fill="#F1D7B8"/><path d="M101.5 108.0L99.2 30.0A7.2 7.2 0 1 0 84.8 30.0L82.5 108.0A9.5 9.5 0 1 0 101.5 108.0Z" fill="#F1D7B8"/><path d="M121.0 110.7L125.0 38.6A7 7 0 1 0 111.0 37.4L103.0 109.3A9 9 0 1 0 121.0 110.7Z" fill="#F1D7B8"/><path d="M137.8 119.6L148.1 61.3A6.2 6.2 0 1 0 135.9 58.7L122.2 116.4A8 8 0 1 0 137.8 119.6Z" fill="#F1D7B8"/><path d="M73.8 148.2L36.0 114.0A8.5 8.5 0 1 0 24.0 126.0L58.2 163.8A11 11 0 1 0 73.8 148.2Z" fill="#F1D7B8"/><path d="M88 104H112A28 28 0 0 1 140 132V162A28 28 0 0 1 112 190H88A28 28 0 0 1 60 162V132A28 28 0 0 1 88 104Z" fill="#F1D7B8"/><polygon points="60.0,22.0 60.0,62.5 70.8,53.0 78.9,70.6 87.0,66.6 78.9,50.4 92.4,49.0" fill="#C44A1A" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"/></g></svg>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Clic</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">IZQ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">DER</span></span>
+</div>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Con la flecha sobre un botón, la mano izquierda abierta se cierra en puño. Para otro clic, se vuelve a abrir.</p>
+</div>
+</div>
+</div>
+<div data-sec="forma" data-modos="musica" style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: baseline; gap: 18px; border-top: 2px solid #1A1A18; padding-top: 18px">
+<span class="num" style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">2</span>
 <h2 style="margin: 0; font-family: Outfit, sans-serif; font-size: 44px; line-height: 1.05; color: #1A1A18"><span style="font-weight: 300">La forma </span><span style="font-weight: 900">elige el acorde</span></h2>
 </div>
 <p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 22px; line-height: 1.35; color: #3A3934; max-width: 900px">Las formas suben por la escala, del I al I de arriba. El lado que se abre más, o el que hace la pinza, es el que manda: la izquierda da IV y VII; la derecha, V y VI.</p>
@@ -118,9 +151,9 @@ body.compacto div[style*="font-size: 34px"]{font-size:26px!important}
 </div>
 </div>
 </div>
-<div style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
+<div data-sec="altura" data-modos="musica" style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; align-items: baseline; gap: 18px; border-top: 2px solid #1A1A18; padding-top: 18px">
-<span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">2</span>
+<span class="num" style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">3</span>
 <h2 style="margin: 0; font-family: Outfit, sans-serif; font-size: 44px; line-height: 1.05; color: #1A1A18"><span style="font-weight: 300">La altura </span><span style="font-weight: 900">elige el registro</span></h2>
 </div>
 <p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 22px; line-height: 1.35; color: #3A3934; max-width: 900px">La pantalla tiene tres franjas. Cuenta dónde está el centro de la figura, no una mano sola.</p>
@@ -167,9 +200,9 @@ body.compacto div[style*="font-size: 34px"]{font-size:26px!important}
 </div>
 </div>
 </div>
-<div style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
+<div data-sec="mayores" data-modos="musica" style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; align-items: baseline; gap: 18px; border-top: 2px solid #1A1A18; padding-top: 18px">
-<span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">3</span>
+<span class="num" style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">4</span>
 <h2 style="margin: 0; font-family: Outfit, sans-serif; font-size: 44px; line-height: 1.05; color: #1A1A18"><span style="font-weight: 300">Los dedos mayores </span><span style="font-weight: 900">le dan color</span></h2>
 </div>
 <p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 22px; line-height: 1.35; color: #3A3934; max-width: 900px">Sin soltar la forma, estirá los dedos mayores. Sirve con cualquier acorde; acá, sobre C.</p>
@@ -198,9 +231,9 @@ body.compacto div[style*="font-size: 34px"]{font-size:26px!important}
 </div>
 </div>
 </div>
-<div style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
+<div data-sec="menique" data-modos="musica" style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; align-items: baseline; gap: 18px; border-top: 2px solid #1A1A18; padding-top: 18px">
-<span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">4</span>
+<span class="num" style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">5</span>
 <h2 style="margin: 0; font-family: Outfit, sans-serif; font-size: 44px; line-height: 1.05; color: #1A1A18"><span style="font-weight: 300">El meñique derecho </span><span style="font-weight: 900">da vuelta el acorde</span></h2>
 </div>
 <p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 22px; line-height: 1.35; color: #3A3934; max-width: 900px">Mientras el meñique de la mano derecha está arriba, el mayor pasa a menor y el menor a mayor. Al bajarlo, vuelve solo. Sirve para salir un momento de la tonalidad.</p>
@@ -225,52 +258,81 @@ body.compacto div[style*="font-size: 34px"]{font-size:26px!important}
 </div>
 </div>
 </div>
-<div style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
+<div data-sec="baile" data-modos="baile" style="padding: 44px 40px 0 40px; display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; align-items: baseline; gap: 18px; border-top: 2px solid #1A1A18; padding-top: 18px">
-<span style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">5</span>
-<h2 style="margin: 0; font-family: Outfit, sans-serif; font-size: 44px; line-height: 1.05; color: #1A1A18"><span style="font-weight: 300">Los botones, </span><span style="font-weight: 900">sin tocar nada</span></h2>
+<span class="num" style="font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: #C44A1A">6</span>
+<h2 style="margin: 0; font-family: Outfit, sans-serif; font-size: 44px; line-height: 1.05; color: #1A1A18"><span style="font-weight: 300">Cada movimiento </span><span style="font-weight: 900">suena</span></h2>
 </div>
-<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 22px; line-height: 1.35; color: #3A3934; max-width: 900px">Todos los botones de la pantalla se usan con las manos, sin acercarse al ordenador.</p>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 22px; line-height: 1.35; color: #3A3934; max-width: 900px">En baile, cada movimiento de las manos dispara un sonido. El ritmo entra sólo con «Arrancar».</p>
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px">
 <div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
-<div style="font-size: 92px; line-height: 1.15; text-align: center">🖐</div>
+<div class="glifo" style="font-family: Outfit, sans-serif; font-weight: 800; font-size: 96px; line-height: 236px; height: 236px; text-align: center; color: #C44A1A">↑ ↓ ← →</div>
 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
-<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Flecha</span>
-<span style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">DER</span></span>
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Derecha</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">DER</span></span>
 </div>
-<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Mano derecha abierta sobre los botones: la flecha sigue al índice.</p>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Subir, bajar o barrer hacia un lado: cuatro sonidos.</p>
 </div><div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
-<div style="font-size: 92px; line-height: 1.15; text-align: center">🤏</div>
+<div class="glifo" style="font-family: Outfit, sans-serif; font-weight: 800; font-size: 96px; line-height: 236px; height: 236px; text-align: center; color: #C44A1A">↑ ↓ ← →</div>
 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
-<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Clic</span>
-<span style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">DER</span></span>
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Izquierda</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">IZQ</span></span>
 </div>
-<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Pinza con la derecha, pulgar contra índice.</p>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Lo mismo con la otra mano: otros cuatro.</p>
 </div><div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
-<div style="font-size: 92px; line-height: 1.15; text-align: center">🖐→✊</div>
+<div class="glifo" style="font-family: Outfit, sans-serif; font-weight: 800; font-size: 96px; line-height: 236px; height: 236px; text-align: center; color: #C44A1A">↔</div>
 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
-<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Clic</span>
-<span style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.14em; color: #F6F3EE; background: #C44A1A; padding: 6px 10px; border-radius: 4px">IZQ</span></span>
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Separar</span>
+<span style="display: flex; align-items: center; gap: 6px"></span>
 </div>
-<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">O con la izquierda: abierta y luego puño. Para otro clic, se vuelve a abrir.</p>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Las dos manos se abren hacia los costados.</p>
+</div><div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
+<div class="glifo" style="font-family: Outfit, sans-serif; font-weight: 800; font-size: 96px; line-height: 236px; height: 236px; text-align: center; color: #C44A1A">→←</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Juntar</span>
+<span style="display: flex; align-items: center; gap: 6px"></span>
+</div>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Las dos manos se encuentran, como un aplauso.</p>
+</div><div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
+<div class="glifo" style="font-family: Outfit, sans-serif; font-weight: 800; font-size: 96px; line-height: 236px; height: 236px; text-align: center; color: #C44A1A">↑↑ ↓↓</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Las dos</span>
+<span style="display: flex; align-items: center; gap: 6px"></span>
+</div>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Suben juntas o bajan juntas.</p>
+</div><div style="background: #FFFFFF; border: 1px solid #D6D3CC; border-radius: 10px; padding: 18px 20px 22px 20px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
+<div class="glifo" style="font-family: Outfit, sans-serif; font-weight: 800; font-size: 96px; line-height: 236px; height: 236px; text-align: center; color: #C44A1A">☁</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-family: Outfit, sans-serif; font-weight: 900; font-size: 76px; line-height: 0.95; color: #1A1A18">Al cielo</span>
+<span style="display: flex; align-items: center; gap: 6px"></span>
+</div>
+<p style="margin: 0; font-family: Outfit, sans-serif; font-weight: 300; font-size: 20px; line-height: 1.3; color: #3A3934">Las dos manos bien arriba.</p>
 </div>
 </div>
 </div>
-<div style="padding: 36px 40px 40px 40px; font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 0.12em; color: #8A887E">EN OTRO TONO, LAS FORMAS SON LAS MISMAS: CAMBIA SÓLO EL NOMBRE DEL ACORDE.</div>
+<div data-sec="pie" data-modos="musica" style="padding: 36px 40px 40px 40px; font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 0.12em; color: #8A887E">EN OTRO TONO, LAS FORMAS SON LAS MISMAS: CAMBIA SÓLO EL NOMBRE DEL ACORDE.</div>
 </div>
 <script>
-if (/[?&]compacto/.test(location.search)) {
-  document.body.classList.add('compacto');
+(function () {
   const w = document.querySelector('.wrap');
+  const compacto = /[?&]compacto/.test(location.search);
+  if (compacto) document.body.classList.add('compacto');
   const ajustar = () => {
+    const m = location.hash.replace('#', '');
+    if (['pintar', 'musica', 'baile'].includes(m)) document.body.dataset.modo = m;
+    else delete document.body.dataset.modo;
+    if (!compacto) return;
     w.style.transform = '';
+    // Avisa al instrumento cuánto mide, para que el panel tenga esa forma
+    parent.postMessage({ tipo: 'mapa-medida', ancho: w.offsetWidth, alto: w.offsetHeight }, '*');
     const k = Math.min(innerWidth / w.offsetWidth, innerHeight / w.offsetHeight);
     w.style.transform = 'scale(' + k + ')';
   };
   addEventListener('resize', ajustar);
+  addEventListener('hashchange', ajustar);
   ajustar();
   document.fonts && document.fonts.ready.then(ajustar);
-}
+})();
 </script>
 </body>
 </html>

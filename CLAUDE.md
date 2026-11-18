@@ -37,6 +37,7 @@ La app se maneja **sin tocar el ordenador**: **mano derecha abierta** sobre la z
 - Sin lista de botones: `document.elementFromPoint()` + `.closest('button, a[href]')` + `.click()`. Emite además `mouseover`/`mouseenter` para los menús que se abren al pasar por encima.
 - Encender exige `manoAbierta` (4 dedos extendidos + pulgar a >0.12 del índice); sostener basta con `manoSostienePuntero` (medio/anular/meñique arriba), que son los que quedan extendidos al pinzar. **La pinza sola no sirve de llave**: ya toca La/Si en modo música.
 - La mano del puntero **se excluye del resto del procesamiento** (`manos.filter(m => m !== manoPuntero)` en el loop). Si no, el mismo gesto que hace clic tocaría una nota.
+- **Segunda vía de clic (18 nov 2026, en prueba)**: con la flecha encendida, la **mano izquierda abierta que se cierra en puño** hace clic (`_clicConPuno`). Se arma con 3 frames de `manoAbierta` y dispara con 2 de `manoPuno`; después hay que volver a abrir. `manoPuno` mide puntas contra la muñeca (no por altura) para valer con la mano girada. Mientras el puntero está encendido, la izquierda **también se excluye** del resto (`_manoClicador`): abierta tiene el índice estirado y dibujaría. La pinza sigue funcionando igual.
 - Sólo actúa dentro de `ZONAS_PUNTERO` (+45 px de margen). Las cajas con `width===0` se saltean, así los paneles ocultos no cuentan.
 - ⚠️ `MANO_DERECHA = 'Right'`. La doc de MediaPipe dice que la etiqueta supone imagen espejada, lo que hace esperar lo contrario. **Verificado con cámara: es 'Right'.** No cambiarlo por lo que digan los docs.
 

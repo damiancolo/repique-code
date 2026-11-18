@@ -480,6 +480,7 @@ async function init() {
     _punteroPinza = false;
     punteroEl.classList.remove('visible', 'pinza');
     _marcarTarget(null);
+    _reiniciarPuno();
   }
 
   /** Primera mano derecha que cumpla `test` y esté sobre la zona de controles */
@@ -539,7 +540,63 @@ async function init() {
       _punteroPinza = false;
       punteroEl.classList.remove('pinza');
     }
+
+    // Segunda vía de clic: la mano izquierda abierta que se cierra en puño.
+    // La derecha sólo apunta y no tiene que deformarse para clicar, así la
+    // flecha no se mueve justo en el momento del clic (con la pinza el índice
+    // baja y la flecha se corre).
+    _clicConPuno(manos);
     return c.m;
+  }
+
+  // ── Clic con la otra mano: 🖐 izquierda abierta → ✊ puño = clic ─────────────
+  // Dos estados: «armado» (se vio la mano abierta) y «disparado» (ya hizo clic;
+  // hay que volver a abrir la mano para el siguiente). Sin esto, un puño
+  // sostenido clicaría en cada fotograma.
+  const PUNO_ABIERTA_FRAMES = 3;   // frames de mano abierta para armar
+  const PUNO_CERRADA_FRAMES = 2;   // frames de puño para disparar
+  let _punoArmado   = false;
+  let _punoAbierta  = 0;
+  let _punoCerrada  = 0;
+  let _manoClicador = null;        // la izquierda, para sacarla del resto
+
+  /** Puño: las cuatro puntas más cerca de la muñeca que su nudillo medio.
+   *  Se mide contra la muñeca y no por altura, así vale con la mano girada. */
+  function manoPuno(m) {
+    const dw = i => Math.hypot(m[i].x - m[0].x, m[i].y - m[0].y);
+    return dw(8) < dw(6) && dw(12) < dw(10) && dw(16) < dw(14) && dw(20) < dw(18);
+  }
+
+  function _reiniciarPuno() {
+    _punoArmado = false; _punoAbierta = 0; _punoCerrada = 0; _manoClicador = null;
+  }
+
+  function _clicConPuno(manos) {
+    let izq = null;
+    for (let i = 0; i < manos.length; i++) {
+      if (lateralidad(i) !== MANO_DERECHA) { izq = manos[i]; break; }
+    }
+    _manoClicador = izq;
+    if (!izq) { _punoArmado = false; _punoAbierta = 0; _punoCerrada = 0; return; }
+
+    if (manoAbierta(izq)) {
+      _punoCerrada = 0;
+      if (++_punoAbierta >= PUNO_ABIERTA_FRAMES) _punoArmado = true;
+    } else if (manoPuno(izq)) {
+      _punoAbierta = 0;
+      if (_punoArmado && ++_punoCerrada >= PUNO_CERRADA_FRAMES) {
+        _punoArmado = false;
+        _punoCerrada = 0;
+        if (_punteroTarget) _punteroTarget.click();
+        // Mismo destello rojo que la pinza, para que se vea que clicó
+        punteroEl.classList.add('pinza');
+        setTimeout(() => { if (!_punteroPinza) punteroEl.classList.remove('pinza'); }, 180);
+      }
+    } else {
+      // A medio camino entre abierta y puño: no arma ni dispara, pero tampoco
+      // desarma, porque al cerrar la mano siempre se pasa por acá.
+      _punoAbierta = 0; _punoCerrada = 0;
+    }
   }
 
   /** Shaka 🤙: pulgar arriba + meñique arriba, índice/medio/anular cerrados */
@@ -1500,7 +1557,11 @@ async function init() {
     // La mano que maneja el puntero se saca del resto: si no, la misma pinza que
     // hace clic tocaría un La en modo música o soltaría un trazo en pintura.
     const manoPuntero = actualizarPuntero(manosTodas);
-    const manos = manoPuntero ? manosTodas.filter(m => m !== manoPuntero) : manosTodas;
+    // Con el puntero encendido, la izquierda es el clicador (abierta → puño) y
+    // también sale: abierta tiene el índice estirado y dibujaría un trazo.
+    const manos = manoPuntero
+      ? manosTodas.filter(m => m !== manoPuntero && m !== _manoClicador)
+      : manosTodas;
 
     if (modoPintar) {
       // ── Modo pintar ────────────────────────────────────────────────────────

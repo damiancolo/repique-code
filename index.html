@@ -1071,6 +1071,60 @@
     }
     #btn-res-cerrar:hover { border-color: #86efac; color: #86efac; }
 
+    /* ── Mapa de manos: lo que despliega el «?» ── */
+    #mapa-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 42;
+      display: none;
+      background: rgba(8,8,8,0.55);
+    }
+    #mapa-overlay.visible { display: block; }
+    #mapa-caja {
+      position: absolute;
+      top: 1.2rem;
+      bottom: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1120px, 94vw);
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #F6F3EE;
+    }
+    #mapa-barra {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.6rem 0.45rem 0.9rem;
+      background: #1A1A18;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    #mapa-barra span { flex: 1; }
+    #mapa-barra button {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.55);
+      font-family: inherit;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #mapa-barra button:hover { border-color: rgba(255,255,255,0.55); color: #fff; }
+    #btn-cerrar-mapa { font-size: 0.8rem !important; padding: 0.2rem 0.55rem !important; }
+    #mapa-iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #F6F3EE;
+    }
+
     /* ── Overlay Vínculos ── */
     #vinculos-overlay {
       position: fixed;
@@ -1481,6 +1535,19 @@
   <button id="btn-vinculos">🤙🤙 vínculos</button>
 
   <!-- Overlay Vínculos: iframe del juego + canvas satélites encima -->
+  <!-- Mapa de manos: el «?» lo despliega. Es una página aparte
+       (public/mapa-de-manos.html) que se carga recién al abrirla. -->
+  <div id="mapa-overlay">
+    <div id="mapa-caja">
+      <div id="mapa-barra">
+        <span>Mapa de manos</span>
+        <button id="btn-mapa-guia">Guía completa →</button>
+        <button id="btn-cerrar-mapa" title="Cerrar">✕</button>
+      </div>
+      <iframe id="mapa-iframe" src="" title="Mapa de manos"></iframe>
+    </div>
+  </div>
+
   <div id="vinculos-overlay">
     <iframe id="vinculos-iframe" src="" frameborder="0" allow="camera; microphone; autoplay"></iframe>
     <canvas id="vinculos-canvas"></canvas>

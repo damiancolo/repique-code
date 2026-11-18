@@ -9,6 +9,18 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Clic con la otra mano** (18 nov)
+- Con la flecha encendida en el índice derecho, abrir la mano izquierda y
+  cerrarla en puño es un clic. La derecha sólo apunta y no se mueve al clicar.
+  La pinza sigue funcionando igual.
+
+**El «?» despliega un mapa de manos dibujado** (1 nov)
+- Una lámina con las manos en «L» —índice arriba, pulgar abajo— para cada forma
+  y su acorde, el lado que manda (IZQ/DER), las tres franjas de altura y los
+  dedos mayores. Pensada para músicos que miran antes de leer.
+- Vive en `public/mapa-de-manos.html` y se carga recién al abrirla. La guía
+  completa de texto sigue a un clic, desde la barra del mapa.
+
 **El meñique derecho pasa el acorde de mayor a menor** (16 nov)
 - Mientras el meñique derecho está arriba, el acorde cambia de calidad: Dm pasa
   a D, F a Fm. Al bajarlo vuelve solo. Abre los acordes prestados, los que se

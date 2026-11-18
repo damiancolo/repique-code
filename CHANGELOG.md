@@ -9,6 +9,10 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**El mapa de manos suma el meñique** (18 nov)
+- Cuarta sección de la lámina del «?»: el meñique derecho arriba da vuelta
+  el acorde (C → Cm, Dm → D…).
+
 **Clic con la otra mano** (18 nov)
 - Con la flecha encendida en el índice derecho, abrir la mano izquierda y
   cerrarla en puño es un clic. La derecha sólo apunta y no se mueve al clicar.

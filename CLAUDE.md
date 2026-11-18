@@ -50,6 +50,8 @@ cada forma con su acorde, el lado que manda, los tres tercios de altura y los
 dedos mayores. La barra `#mapa-barra` (en `ZONAS_PUNTERO`, para cerrarla con la
 pinza) tiene «Guía completa →», que abre `#guia-detalle`.
 
+La sección 4 (18 nov) dibuja el meñique derecho arriba (mayor ↔ menor).
+
 ⚠️ La lámina repite el mapa de `hands.js`/`acordes.js` en dibujos. Si cambia qué
 forma da qué grado, o los nombres de los acordes, hay que regenerarla.
 

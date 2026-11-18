@@ -14,9 +14,11 @@ Las fechas salen del historial de git.
   tocar «Arrancar». La base tapaba los sonidos del baile. El loop sigue
   necesitando el ritmo en marcha, porque graba en compases.
 
-**El mapa de manos, entero abajo a la derecha** (18 nov)
-- El «?» abre la lámina como panel en la esquina, completa y sin scroll, y se
-  sigue tocando con ella abierta. La versión larga, con textos, sigue en
+**El mapa de manos, chico y en la esquina** (18 nov)
+- El «?» abre la lámina como una columna chica y translúcida abajo a la
+  derecha, completa y sin scroll, y se sigue tocando con ella abierta.
+- Suma una quinta sección: los botones se usan sin tocar (🖐 derecha = flecha;
+  🤏 o 🖐→✊ izquierda = clic). Y junto al «?» queda ese mismo recordatorio fijo. La versión larga, con textos, sigue en
   `mapa-de-manos.html` sin `?compacto`.
 
 **El mapa de manos suma el meñique** (18 nov)

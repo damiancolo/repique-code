@@ -50,7 +50,7 @@ cada forma con su acorde, el lado que manda, los tres tercios de altura y los
 dedos mayores. La barra `#mapa-barra` (en `ZONAS_PUNTERO`, para cerrarla con la
 pinza) tiene «Guía completa →», que abre `#guia-detalle`.
 
-Desde el 18 nov se abre como **panel abajo a la derecha** (`#mapa-overlay` sin velo, se sigue tocando) con `mapa-de-manos.html?compacto`: grilla de 9 + tres secciones lado a lado, sin párrafos, escalada con `transform` para entrar entera. Si se agregan tarjetas, revisar el `aspect-ratio` de `#mapa-iframe` (2200/961). La sección 4 (18 nov) dibuja el meñique derecho arriba (mayor ↔ menor).
+Desde el 18 nov se abre como **columna chica y translúcida abajo a la derecha** (`#mapa-overlay`, ~12vw, opacity 0.8, sin velo y con `pointer-events:none` en el iframe: se sigue tocando) con `mapa-de-manos.html?compacto`: todo en una columna de 3 tarjetas por fila, sin párrafos, escalado con `transform` para entrar entero. Si se agregan tarjetas, medir el alto de `.wrap` y actualizar el `aspect-ratio` de `#mapa-iframe` (hoy 700/2064). Sección 5 = puntero de mano; `#ayuda-manos` junto al «?» lo recuerda fijo. La sección 4 (18 nov) dibuja el meñique derecho arriba (mayor ↔ menor).
 
 ⚠️ La lámina repite el mapa de `hands.js`/`acordes.js` en dibujos. Si cambia qué
 forma da qué grado, o los nombres de los acordes, hay que regenerarla.

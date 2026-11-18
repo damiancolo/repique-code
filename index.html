@@ -460,6 +460,13 @@
       padding: 0;
     }
     #btn-guia:hover { border-color: rgba(255,255,255,0.55); color: rgba(255,255,255,0.7); }
+    #fila-guia { display: flex; align-items: center; gap: 0.55rem; }
+    #ayuda-manos {
+      font-size: 0.55rem;
+      letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.38);
+      white-space: nowrap;
+    }
 
     #guia {
       position: fixed;
@@ -1077,32 +1084,31 @@
        tocando con el mapa abierto. */
     #mapa-overlay {
       position: fixed;
-      right: 1rem;
-      bottom: 1rem;
+      right: 0.8rem;
+      bottom: 0.8rem;
       z-index: 42;
       display: none;
-      width: min(58vw, 1100px);
+      width: clamp(130px, 12vw, 190px);
+      opacity: 0.8;
     }
     #mapa-overlay.visible { display: block; }
     #mapa-caja {
       display: flex;
       flex-direction: column;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: #F6F3EE;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+      background: rgba(246,243,238,0.35);
     }
     #mapa-barra {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.45rem 0.6rem 0.45rem 0.9rem;
-      background: #1A1A18;
+      padding: 0.25rem 0.3rem 0.25rem 0.5rem;
+      background: rgba(26,26,24,0.7);
       color: rgba(255,255,255,0.5);
       font-size: 0.58rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
     }
-    #mapa-barra span { flex: 1; }
+    #mapa-barra span { flex: 1; visibility: hidden; }
     #mapa-barra button {
       background: none;
       border: 1px solid rgba(255,255,255,0.2);
@@ -1119,9 +1125,10 @@
     #btn-cerrar-mapa { font-size: 0.8rem !important; padding: 0.2rem 0.55rem !important; }
     #mapa-iframe {
       width: 100%;
-      aspect-ratio: 2200 / 961;
+      aspect-ratio: 700 / 2064;
       border: none;
-      background: #F6F3EE;
+      background: transparent;
+      pointer-events: none; /* es para mirar: el ratón pasa al instrumento */
     }
 
     /* ── Overlay Vínculos ── */
@@ -1332,7 +1339,11 @@
       <button id="btn-ritmo" title="Ver ritmo / cambiar">♩</button>
       <span id="ritmo-nombre">CANDOMByte</span>
     </div>
-    <button id="btn-guia" title="Guía de gestos">?</button>
+    <div id="fila-guia">
+      <button id="btn-guia" title="Guía de gestos">?</button>
+      <!-- Recordatorio fijo de que los botones se usan sin tocar el ordenador -->
+      <span id="ayuda-manos" title="Los botones se usan con las manos">🖐 derecha: flecha · 🤏 o 🖐→✊ izquierda: clic</span>
+    </div>
   </div>
 
   <div id="menu-tono">
@@ -1540,7 +1551,7 @@
     <div id="mapa-caja">
       <div id="mapa-barra">
         <span>Mapa de manos</span>
-        <button id="btn-mapa-guia">Guía completa →</button>
+        <button id="btn-mapa-guia">Guía →</button>
         <button id="btn-cerrar-mapa" title="Cerrar">✕</button>
       </div>
       <iframe id="mapa-iframe" src="" title="Mapa de manos"></iframe>

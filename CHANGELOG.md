@@ -9,6 +9,16 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**El baile ya no arranca el ritmo solo** (18 nov)
+- Al entrar a baile, los gestos suenan pero el candombe queda parado hasta
+  tocar «Arrancar». La base tapaba los sonidos del baile. El loop sigue
+  necesitando el ritmo en marcha, porque graba en compases.
+
+**El mapa de manos, entero abajo a la derecha** (18 nov)
+- El «?» abre la lámina como panel en la esquina, completa y sin scroll, y se
+  sigue tocando con ella abierta. La versión larga, con textos, sigue en
+  `mapa-de-manos.html` sin `?compacto`.
+
 **El mapa de manos suma el meñique** (18 nov)
 - Cuarta sección de la lámina del «?»: el meñique derecho arriba da vuelta
   el acorde (C → Cm, Dm → D…).

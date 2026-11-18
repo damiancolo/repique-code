@@ -1071,26 +1071,25 @@
     }
     #btn-res-cerrar:hover { border-color: #86efac; color: #86efac; }
 
-    /* ── Mapa de manos: lo que despliega el «?» ── */
+    /* ── Mapa de manos: lo que despliega el «?» ──
+       Panel abajo a la derecha, con la lámina ENTERA a la vista (versión
+       ?compacto, que se escala sola). Sin velo oscuro ni bloqueo: se sigue
+       tocando con el mapa abierto. */
     #mapa-overlay {
       position: fixed;
-      inset: 0;
+      right: 1rem;
+      bottom: 1rem;
       z-index: 42;
       display: none;
-      background: rgba(8,8,8,0.55);
+      width: min(58vw, 1100px);
     }
     #mapa-overlay.visible { display: block; }
     #mapa-caja {
-      position: absolute;
-      top: 1.2rem;
-      bottom: 1.2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      width: min(1120px, 94vw);
       display: flex;
       flex-direction: column;
       border: 1px solid rgba(255,255,255,0.12);
       background: #F6F3EE;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.45);
     }
     #mapa-barra {
       display: flex;
@@ -1119,8 +1118,8 @@
     #mapa-barra button:hover { border-color: rgba(255,255,255,0.55); color: #fff; }
     #btn-cerrar-mapa { font-size: 0.8rem !important; padding: 0.2rem 0.55rem !important; }
     #mapa-iframe {
-      flex: 1;
       width: 100%;
+      aspect-ratio: 2200 / 961;
       border: none;
       background: #F6F3EE;
     }

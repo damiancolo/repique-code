@@ -216,7 +216,7 @@ dropZap.connect(dropFilter);
 dropFilter.connect(fxDelay);
 
 export function efectoTechnoDrop(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('drop');
   const now = time ?? Tone.now();
   // Whoosh descendente de ruido (la tensión antes del impacto)
@@ -249,7 +249,7 @@ riserTone.connect(riserFilter);
 riserFilter.connect(fxDelay);
 
 export function efectoRiser(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('riser');
   const now = time ?? Tone.now();
   riserFilter.frequency.cancelScheduledValues(now);
@@ -288,7 +288,7 @@ function _acordeNotas() { return STAB_CHORDS[_stabIdx].map(_fam); }
 function _acordeRoot() { return _fam(STAB_CHORDS[_stabIdx][0]); }
 
 export function efectoStab(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('stab');
   stabSynth.triggerAttackRelease(_acordeNotas(), '8n', time);
   _stabIdx = (_stabIdx + 1) % STAB_CHORDS.length;
@@ -304,7 +304,7 @@ const arpSynth = new Tone.Synth({
 arpSynth.connect(fxDelay);
 
 export function efectoArpegio(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('arp');
   const now = time ?? Tone.now();
   const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(12).toNote());
@@ -326,7 +326,7 @@ const acidSynth = new Tone.MonoSynth({
 acidSynth.connect(fxDelay);
 
 export function efectoLaser(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('laser');
   const nota = Tone.Frequency(_acordeRoot()).transpose(12).toNote(); // raíz +1 octava
   acidSynth.triggerAttackRelease(nota, '8n', time);
@@ -342,7 +342,7 @@ const shimmer = new Tone.PolySynth(Tone.Synth, {
 shimmer.connect(fxDelay);
 
 export function efectoShimmer(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('shimmer');
   const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(24).toNote());
   shimmer.triggerAttackRelease(notas, '2n', time);
@@ -375,7 +375,7 @@ const impactAir = new Tone.NoiseSynth({
 impactAir.connect(fxDelay);
 
 export function efectoImpacto(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('impacto');
   const sub  = Tone.Frequency(_acordeRoot()).transpose(-24).toNote(); // raíz −2 oct
   const bajo = Tone.Frequency(_acordeRoot()).transpose(-12).toNote(); // raíz −1 oct
@@ -397,7 +397,7 @@ pluckSynth.connect(pluckShaper);
 pluckShaper.connect(fxDelay);
 
 export function efectoPluck(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('pluck');
   const nota = Tone.Frequency(_acordeNotas()[1]).transpose(12).toNote();
   pluckSynth.triggerAttackRelease(nota, '16n', time);
@@ -415,7 +415,7 @@ sweepNoise.connect(sweepFilter);
 sweepFilter.connect(fxDelay);
 
 export function efectoSweep(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('sweep');
   const now = time ?? Tone.now();
   sweepFilter.frequency.cancelScheduledValues(now);
@@ -447,13 +447,13 @@ function _runEscalera(sube, time) {
 }
 
 export function efectoEscaleraSube(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('escaleraSube');
   _runEscalera(true, time);
 }
 
 export function efectoEscaleraBaja(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('escaleraBaja');
   _runEscalera(false, time);
 }
@@ -469,7 +469,7 @@ const sfxKickSynth = new Tone.MembraneSynth({
 });
 sfxKickSynth.connect(sfxDry);
 export function sfxKick(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('kick');
   sfxKickSynth.triggerAttackRelease(_fam('C1'), '8n', time);
 }
@@ -483,7 +483,7 @@ const sfxClapFilter = new Tone.Filter({ type: 'bandpass', frequency: 1400, Q: 1.
 sfxClapNoise.connect(sfxClapFilter);
 sfxClapFilter.connect(sfxDry);
 export function sfxClap(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('clap');
   sfxClapNoise.triggerAttackRelease(0.16, time);
 }
@@ -498,7 +498,7 @@ const sfxHatFilter = new Tone.Filter({ type: 'highpass', frequency: 7000 });
 sfxHatSynth.connect(sfxHatFilter);
 sfxHatFilter.connect(sfxDry);
 export function sfxHat(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('hat');
   sfxHatSynth.triggerAttackRelease('16n', time);
 }
@@ -518,7 +518,7 @@ const sfxSnareBody = new Tone.MembraneSynth({
 });
 sfxSnareBody.connect(sfxDry);
 export function sfxSnare(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('snare');
   sfxSnareBody.triggerAttackRelease(_fam('G2'), '16n', time);
   sfxSnareNoise.triggerAttackRelease(0.2, time);
@@ -532,7 +532,7 @@ const sfxCowbellSynth = new Tone.MetalSynth({
 });
 sfxCowbellSynth.connect(sfxDry);
 export function sfxCowbell(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('cowbell');
   sfxCowbellSynth.triggerAttackRelease('8n', time);
 }
@@ -544,7 +544,7 @@ const sfxTomSynth = new Tone.MembraneSynth({
 });
 sfxTomSynth.connect(sfxDry);
 export function sfxTom(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('tom');
   sfxTomSynth.triggerAttackRelease(_fam('A2'), '8n', time);
 }
@@ -556,7 +556,7 @@ const sfxRimSynth = new Tone.MembraneSynth({
 });
 sfxRimSynth.connect(sfxDry);
 export function sfxRim(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('rim');
   sfxRimSynth.triggerAttackRelease(_fam('E4'), '32n', time);
 }
@@ -568,7 +568,7 @@ const sfxSubSynth = new Tone.Synth({
 });
 sfxSubSynth.connect(sfxDry);
 export function sfxSub(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('sub');
   const nota = Tone.Frequency(_acordeRoot()).transpose(-12).toNote();
   sfxSubSynth.triggerAttackRelease(nota, '8n', time);
@@ -583,7 +583,7 @@ const sfxBellSynth = new Tone.FMSynth({
 });
 sfxBellSynth.connect(fxDelay);
 export function sfxBell(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('bell');
   const nota = Tone.Frequency(_acordeRoot()).transpose(12).toNote();
   sfxBellSynth.triggerAttackRelease(nota, '4n', time);
@@ -596,7 +596,7 @@ const sfxZapSynth = new Tone.Synth({
 });
 sfxZapSynth.connect(fxDelay);
 export function sfxZap(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('zap');
   const now = time ?? Tone.now();
   const root = Tone.Frequency(_acordeRoot()).toFrequency();
@@ -611,7 +611,7 @@ const sfxChordSynth = new Tone.PolySynth(Tone.Synth, {
 });
 sfxChordSynth.connect(fxDelay);
 export function sfxChord(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('chord');
   sfxChordSynth.triggerAttackRelease(_acordeNotas(), '4n', time);
 }
@@ -648,14 +648,14 @@ function _organNota(nota, time) {
   organHi.triggerAttackRelease(Tone.Frequency(nota).transpose(12).toNote(), '4n', now);
 }
 
-export function gDo(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gDo');  _organNota('C3', time); }
-export function gRe(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gRe');  _organNota('D3', time); }
-export function gMi(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gMi');  _organNota('E3', time); }
-export function gFa(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gFa');  _organNota('F3', time); }
-export function gSol(time) { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gSol'); _organNota('G3', time); }
-export function gLa(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gLa');  _organNota('A3', time); }
-export function gSi(time)  { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gSi');  _organNota('B3', time); }
-export function gDo2(time) { if (!state.audioIniciado) return; if (time === undefined) _registrarFx('gDo2'); _organNota('C4', time); }
+export function gDo(time)  { if (!_fxListos()) return; if (time === undefined) _registrarFx('gDo');  _organNota('C3', time); }
+export function gRe(time)  { if (!_fxListos()) return; if (time === undefined) _registrarFx('gRe');  _organNota('D3', time); }
+export function gMi(time)  { if (!_fxListos()) return; if (time === undefined) _registrarFx('gMi');  _organNota('E3', time); }
+export function gFa(time)  { if (!_fxListos()) return; if (time === undefined) _registrarFx('gFa');  _organNota('F3', time); }
+export function gSol(time) { if (!_fxListos()) return; if (time === undefined) _registrarFx('gSol'); _organNota('G3', time); }
+export function gLa(time)  { if (!_fxListos()) return; if (time === undefined) _registrarFx('gLa');  _organNota('A3', time); }
+export function gSi(time)  { if (!_fxListos()) return; if (time === undefined) _registrarFx('gSi');  _organNota('B3', time); }
+export function gDo2(time) { if (!_fxListos()) return; if (time === undefined) _registrarFx('gDo2'); _organNota('C4', time); }
 
 // Efectos de Mate (mismo órgano espacial): acordes y corridas de la escala
 function _organAcorde(notas, dur, time) {
@@ -672,27 +672,27 @@ function _organRun(sube, time) {
   }
 }
 export function gAcordeDo(time) { // acorde de Do mayor (C-E-G)
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('gAcordeDo');
   _organAcorde(['C3', 'E3', 'G3'], '2n', time);
 }
 export function gPadOrgano(time) { // pad sostenido (para "al cielo")
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('gPadOrgano');
   _organAcorde(['C3', 'G3', 'C4', 'E4'], '1n', time);
 }
 export function gOrganoSube(time) { // corrida ascendente de la escala
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('gOrganoSube');
   _organRun(true, time);
 }
 export function gOrganoBaja(time) { // corrida descendente
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('gOrganoBaja');
   _organRun(false, time);
 }
 export function gOrganoHit(time) { // ARMONÍA: acorde de Do mayor amplio y sostenido
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('gOrganoHit');
   _organAcorde(['C3', 'E3', 'G3', 'C4', 'E4'], '2n', time);
 }
@@ -706,7 +706,7 @@ const aBellSynth = new Tone.FMSynth({
 });
 aBellSynth.connect(fxDelay);
 export function aBell(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('aBell');
   aBellSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(24).toNote(), '4n', time);
 }
@@ -719,7 +719,7 @@ const aGlassHP = new Tone.Filter({ type: 'highpass', frequency: 600 });
 aGlassSynth.connect(aGlassHP);
 aGlassHP.connect(fxDelay);
 export function aGlass(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('aGlass');
   aGlassSynth.triggerAttackRelease(Tone.Frequency(_acordeNotas()[1]).transpose(24).toNote(), '16n', time);
 }
@@ -730,7 +730,7 @@ const aChimeSynth = new Tone.Synth({
 });
 aChimeSynth.connect(fxDelay);
 export function aChime(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('aChime');
   const now = time ?? Tone.now();
   const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(24).toNote());
@@ -744,7 +744,7 @@ const aSparkSynth = new Tone.MetalSynth({
 });
 aSparkSynth.connect(fxDelay);
 export function aSpark(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('aSpark');
   aSparkSynth.triggerAttackRelease('16n', time);
 }
@@ -758,7 +758,7 @@ const aBlipSynth = new Tone.MonoSynth({
 });
 aBlipSynth.connect(fxDelay);
 export function aBlip(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('aBlip');
   aBlipSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(24).toNote(), '16n', time);
 }
@@ -769,7 +769,7 @@ const aCrystalSynth = new Tone.PolySynth(Tone.Synth, {
 });
 aCrystalSynth.connect(fxDelay);
 export function aCrystal(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('aCrystal');
   const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(24).toNote());
   aCrystalSynth.triggerAttackRelease(notas, '2n', time);
@@ -781,7 +781,7 @@ const aZapHiSynth = new Tone.Synth({
 });
 aZapHiSynth.connect(fxDelay);
 export function aZapHi(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('aZapHi');
   const now = time ?? Tone.now();
   const root = Tone.Frequency(_acordeRoot()).transpose(24).toFrequency();
@@ -803,7 +803,7 @@ const vCristalSynth = new Tone.FMSynth({
 });
 vCristalSynth.connect(fxDelay);
 export function vCristal(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('vCristal');
   vCristalSynth.triggerAttackRelease(Tone.Frequency(_acordeRoot()).transpose(24).toNote(), '2n', time);
 }
@@ -815,7 +815,7 @@ const vGotaSynth = new Tone.Synth({
 });
 vGotaSynth.connect(fxDelay);
 export function vGota(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('vGota');
   const now = time ?? Tone.now();
   const f = Tone.Frequency(_acordeNotas()[1]).transpose(12).toFrequency();
@@ -832,7 +832,7 @@ const vHalitoLP = new Tone.Filter({ type: 'lowpass', frequency: 1400, Q: 2 });
 vHalitoSynth.connect(vHalitoLP);
 vHalitoLP.connect(fxDelay);
 export function vHalito(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('vHalito');
   const notas = _acordeNotas().map(n => Tone.Frequency(n).transpose(12).toNote());
   vHalitoSynth.triggerAttackRelease(notas, '1n', time);
@@ -847,7 +847,7 @@ const vPulsoLP = new Tone.Filter({ type: 'lowpass', frequency: 2400 });
 vPulsoSynth.connect(vPulsoLP);
 vPulsoLP.connect(fxDelay);
 export function vPulso(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('vPulso');
   const now = time ?? Tone.now();
   const f = Tone.Frequency(_acordeRoot()).transpose(24).toFrequency();
@@ -862,7 +862,7 @@ const vSonarSynth = new Tone.Synth({
 });
 vSonarSynth.connect(fxDelay);
 export function vSonar(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('vSonar');
   const now = time ?? Tone.now();
   const f = Tone.Frequency(_acordeRoot()).transpose(12).toFrequency();
@@ -879,7 +879,7 @@ const vVidrioVib = new Tone.Vibrato({ frequency: 5.5, depth: 0.12 });
 vVidrioSynth.connect(vVidrioVib);
 vVidrioVib.connect(fxDelay);
 export function vVidrio(time) {
-  if (!state.audioIniciado) return;
+  if (!_fxListos()) return;
   if (time === undefined) _registrarFx('vVidrio');
   const notas = [_acordeNotas()[0], _acordeNotas()[2]].map(n => Tone.Frequency(n).transpose(24).toNote());
   vVidrioSynth.triggerAttackRelease(notas, '2n', time);
@@ -1759,6 +1759,32 @@ function asegurarCadena() {
     acordeGain.connect(acordeVerbEnv);
     acordeVerbEnv.connect(acordeVerb);
     acordeVerb.connect(masterComp);
+  }
+}
+
+// ─── Sonidos del baile sin ritmo ─────────────────────────────────────────────
+// Los efectos de los gestos suenan con la cadena de audio armada, sin
+// transporte ni secuenciador: el candombe sólo entra con "Arrancar". Antes,
+// entrar a baile arrancaba el ritmo solo, y la base tapaba los gestos.
+function _fxListos() { return state.audioIniciado || state.sonidosIniciados; }
+
+let _sonidosArrancando = false;
+export async function startSonidos() {
+  if (state.sonidosIniciados) return true;
+  if (_sonidosArrancando) return false;
+  _sonidosArrancando = true;
+  try {
+    resumeContextSync();
+    await Promise.race([
+      Tone.start().catch(() => {}),
+      new Promise(r => setTimeout(r, 400)),
+    ]);
+    if (Tone.context.state !== 'running') return false;
+    asegurarCadena();
+    state.sonidosIniciados = true;
+    return true;
+  } finally {
+    _sonidosArrancando = false;
   }
 }
 

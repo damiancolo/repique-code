@@ -50,7 +50,7 @@ cada forma con su acorde, el lado que manda, los tres tercios de altura y los
 dedos mayores. La barra `#mapa-barra` (en `ZONAS_PUNTERO`, para cerrarla con la
 pinza) tiene «Guía completa →», que abre `#guia-detalle`.
 
-La sección 4 (18 nov) dibuja el meñique derecho arriba (mayor ↔ menor).
+Desde el 18 nov se abre como **panel abajo a la derecha** (`#mapa-overlay` sin velo, se sigue tocando) con `mapa-de-manos.html?compacto`: grilla de 9 + tres secciones lado a lado, sin párrafos, escalada con `transform` para entrar entera. Si se agregan tarjetas, revisar el `aspect-ratio` de `#mapa-iframe` (2200/961). La sección 4 (18 nov) dibuja el meñique derecho arriba (mayor ↔ menor).
 
 ⚠️ La lámina repite el mapa de `hands.js`/`acordes.js` en dibujos. Si cambia qué
 forma da qué grado, o los nombres de los acordes, hay que regenerarla.
@@ -354,7 +354,7 @@ En modo baile los gestos de movimiento disparan efectos de audio (además de los
 
 **Ranuras de gesto** (`GESTOS_BAILE`, 13 slots): 8 de una mano — `derSube`, `derCae`, `derDer` (swipe a la derecha), `derIzq` (swipe a la izquierda), `izqSube`, `izqCae`, `izqDer`, `izqIzq` — + 5 de dos manos: `separar`, `juntar` (aplaudir), `cielo`, `ambasSuben`, `ambasBajan`. Los swipes distinguen dirección por el signo de `h.vx` (canvas espejado: vx>0 = a la derecha). 
 
-**Audio se autoarranca al entrar a baile**: el handler de `btn-baile` (main.js) es async, llama `resumeContextSync()` y `startAudio()` si `!state.audioIniciado` → el baile suena sin tocar "Arrancar".
+**Al entrar a baile el ritmo NO arranca** (18 nov 2026, pedido de Damián: la base tapaba los gestos). `btn-baile` llama `startSonidos()` (audio.js): arma la cadena sin transporte ni secuenciador y pone `state.sonidosIniciados`. Los efectos chequean `_fxListos()` (= `audioIniciado || sonidosIniciados`), no `audioIniciado`. El looper sigue exigiendo `audioIniciado`: graba en ticks del transporte.
 
 **Anti-solapamiento** (clave — gestos de dos manos tienen prioridad y suprimen los de una):
 - `dobleVert`: si ambas manos van juntas en vertical → suena sólo la escalera (suprime drop/riser/arp/láser), aunque la escalera esté en cooldown.

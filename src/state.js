@@ -6,6 +6,8 @@ export const state = {
   // Voz de notas (el drone del cuadrilátero) sonando. Se enciende sola en modo
   // música, sin pulsar "Arrancar"; con el ritmo en marcha también está en true.
   notasIniciadas: false,
+  // Sonidos de los gestos del baile listos (cadena armada, sin ritmo).
+  sonidosIniciados: false,
   step: -1, // paso actual del secuenciador (0-15), -1 = detenido
   // Dos canales distintos de la figura, y no hay que mezclarlos:
   //

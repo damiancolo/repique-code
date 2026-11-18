@@ -11,6 +11,27 @@ body{margin:0;background:#F6F3EE}
 .wrap{max-width:1200px;margin:0 auto}
 @media (max-width:760px){h1{font-size:44px!important}h2{font-size:30px!important}}
 a{color:#C44A1A}a:hover{color:#1A1A18}
+
+/* ── Compacto (?compacto): lo que se ve dentro de Repique Code ──
+   Toda la lámina de un vistazo, sin scroll: la forma en una fila de nueve y
+   altura, dedos mayores y meñique lado a lado. Se escala entera para entrar
+   en la ventana (ver el script del final). Sin textos largos: en el panel se
+   mira, no se lee; la versión completa sigue en esta misma página sin ?compacto. */
+body.compacto{overflow:hidden}
+body.compacto .wrap{max-width:none;width:2200px;padding:0 28px 28px;box-sizing:border-box;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:28px;transform-origin:0 0}
+body.compacto .wrap>div{padding:22px 0 0!important}
+body.compacto .wrap>div:nth-child(1),body.compacto .wrap>div:nth-child(2){grid-column:1/-1}
+body.compacto .wrap>div:nth-child(1)>*:not(h1){display:none!important}
+body.compacto .wrap>div:nth-child(6){display:none}
+body.compacto p{display:none!important}
+body.compacto h2{font-size:34px!important;white-space:nowrap}
+body.compacto div[style*="grid-template-columns"]{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important}
+body.compacto .wrap>div:nth-child(2) div[style*="grid-template-columns"]{grid-template-columns:repeat(9,minmax(0,1fr))!important}
+body.compacto svg{height:auto!important}
+body.compacto div[style*="background: #FFFFFF"]{padding:10px 12px 14px!important}
+body.compacto span[style*="font-size: 76px"]{font-size:44px!important}
+body.compacto .wrap>div:nth-child(3) span[style*="font-size: 76px"]{font-size:30px!important}
+body.compacto div[style*="justify-content: space-between"]{flex-wrap:wrap;row-gap:4px}
 </style>
 </head>
 <body>
@@ -205,5 +226,19 @@ a{color:#C44A1A}a:hover{color:#1A1A18}
 </div>
 <div style="padding: 36px 40px 40px 40px; font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: 0.12em; color: #8A887E">EN OTRO TONO, LAS FORMAS SON LAS MISMAS: CAMBIA SÓLO EL NOMBRE DEL ACORDE.</div>
 </div>
+<script>
+if (/[?&]compacto/.test(location.search)) {
+  document.body.classList.add('compacto');
+  const w = document.querySelector('.wrap');
+  const ajustar = () => {
+    w.style.transform = '';
+    const k = Math.min(innerWidth / w.offsetWidth, innerHeight / w.offsetHeight);
+    w.style.transform = 'scale(' + k + ')';
+  };
+  addEventListener('resize', ajustar);
+  ajustar();
+  document.fonts && document.fonts.ready.then(ajustar);
+}
+</script>
 </body>
 </html>

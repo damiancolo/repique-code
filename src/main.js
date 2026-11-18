@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
-import { setModoAcordes, sonarAcorde, setComplementoNota, setInvertirTercera, startAudio, startNotas, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
+import { setModoAcordes, sonarAcorde, setComplementoNota, setInvertirTercera, startAudio, startNotas, startSonidos, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
 import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde, inversionAplica } from './acordes.js';
 import { INSTRUMENTOS, setInstrumento, getInstrumento } from './audio.js';
@@ -2053,17 +2053,12 @@ async function init() {
     paletaBaile.classList.add('visible');
     pintarModos();
     pintarLoop(getLooperEstado()); // si un loop quedó sonando, el botón verde lo refleja
-    // Arrancar el audio solo, para que el baile suene aunque no hayas tocado "Arrancar"
-    if (!state.audioIniciado) {
-      status.textContent = 'Iniciando audio…';
-      try {
-        await startAudio();
-        status.textContent = '';
-      } catch (err) {
-        status.textContent = err.message || 'Error de audio';
-        console.error('[Repique Code] Audio (baile):', err);
-      }
-      pintarStart();
+    // Los gestos suenan solos, pero el ritmo NO arranca: queda parado hasta
+    // que se toque "Arrancar". La base tapaba los sonidos del baile.
+    if (!state.sonidosIniciados) {
+      const ok = await startSonidos();
+      // Si el navegador todavía no abrió el audio, se reintenta al próximo toque
+      if (!ok) document.addEventListener('pointerdown', () => startSonidos(), { once: true });
     }
   });
 
@@ -2742,7 +2737,7 @@ async function init() {
   const mapaOverlay   = document.getElementById('mapa-overlay');
   const mapaIframe    = document.getElementById('mapa-iframe');
   const abrirMapa  = () => {
-    if (!mapaIframe.getAttribute('src')) mapaIframe.setAttribute('src', 'mapa-de-manos.html');
+    if (!mapaIframe.getAttribute('src')) mapaIframe.setAttribute('src', 'mapa-de-manos.html?compacto');
     guia.classList.remove('visible');
     mapaOverlay.classList.add('visible');
   };
@@ -2758,7 +2753,6 @@ async function init() {
     cerrarMapa();
     guiaDetalle.classList.add('visible');
   });
-  mapaOverlay.addEventListener('click', (e) => { if (e.target === mapaOverlay) cerrarMapa(); });
 
   btnGuiaDetalle.addEventListener('click', (e) => {
     e.stopPropagation();

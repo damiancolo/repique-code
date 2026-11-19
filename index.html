@@ -1238,12 +1238,12 @@
   <div id="panel">
     <button id="btn-start" disabled>Arrancar</button>
     <div id="fila-modos">
-      <button id="btn-musica" title="Modo música — la forma de tus manos son las notas">🎵</button>
-      <button id="btn-paint" class="activo" title="Modo pintura — dibujás con los dedos">✏</button>
+      <button id="btn-musica" class="activo" title="Modo música — la forma de tus manos son las notas">🎵</button>
+      <button id="btn-paint" title="Modo pintura — dibujás con los dedos">✏</button>
       <button id="btn-baile" title="Modo baile — cada movimiento dispara un sonido">🕺</button>
     </div>
     <!-- Paleta propia del modo música, como la de colores en pintura -->
-    <div id="paleta-musica">
+    <div id="paleta-musica" class="visible">
       <button id="btn-notas" title="Notas sueltas — cada forma es una nota, no un acorde">♪ notas</button>
       <div id="fila-tono" class="visible">
         <button id="btn-tono" title="Tonalidad — la misma canción en el tono que te venga bien">Do</button>
@@ -1253,7 +1253,7 @@
         <button id="btn-instrumento" title="Instrumento de la voz de notas">Aire</button>
       </div>
     </div>
-    <div id="paleta" class="visible">
+    <div id="paleta">
       <!-- El orden DEBE coincidir con COLORES_PINCEL en main.js -->
       <div id="fila-colores">
         <button class="color-btn" style="background:#e63946" title="Rojo — ☝ índice"></button>

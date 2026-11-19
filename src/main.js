@@ -335,7 +335,7 @@ async function init() {
     _snapshots.push(c);
     if (_snapshots.length > SNAPSHOTS_MAX) _snapshots.shift();
   }
-  let modoPintar     = true;   // la app abre directamente en modo pintura
+  let modoPintar     = false;  // la app abre en modo música (19 nov 2026)
   let colorIdx       = 0;
   // Pintura viva: el dibujo late con el beat del secuenciador
   let _pulse         = 0;  // envolvente 1→0 que dispara cada negra
@@ -2768,6 +2768,10 @@ async function init() {
     mapaOverlay.classList.contains('visible') ? cerrarMapa() : abrirMapa();
   });
   document.getElementById('btn-cerrar-mapa').addEventListener('click', cerrarMapa);
+  // Se entra en música con el mapa ya abierto: lo primero que se ve es qué
+  // figura da cada acorde (Do, Re, Mi…). Pedido de Damián, 19 nov 2026.
+  pintarModos();
+  abrirMapa();
   document.getElementById('btn-mapa-guia').addEventListener('click', (e) => {
     e.stopPropagation();
     cerrarMapa();

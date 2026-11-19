@@ -9,6 +9,11 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Se entra en música, con el mapa abierto** (19 nov)
+- La app ya no abre en pintura: abre en 🎵 con el «?» desplegado, así lo
+  primero que se ve es qué figura de las manos da cada acorde (Do, Re, Mi…).
+  El mapa se cierra con la ✕ o con el «?».
+
 **El baile ya no arranca el ritmo solo** (18 nov)
 - Al entrar a baile, los gestos suenan pero el candombe queda parado hasta
   tocar «Arrancar». La base tapaba los sonidos del baile. El loop sigue

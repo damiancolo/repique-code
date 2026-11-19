@@ -182,20 +182,29 @@ function pintarCancion() {
   const cabeza = `<div class="tono">${CANTAR ? 'Modo cantar · ' : ''}Tonalidad en Repique Code: <b>${t.nombre} (${t.cifrado})</b></div>`;
   $('cancion').innerHTML = cabeza + filas.map(f => {
     if (!f.toks) return `<div class="linea">${esc(f.l) || ' '}</div>`;
-    let fin = -Infinity;
-    const piezas = f.toks.map(tok => {
-      const x = Math.max(tok.col * ch, fin + 6);
-      if (!tok.ac) { fin = x + tok.texto.length * ch; return `<span class="txt" style="left:${x.toFixed(1)}px">${esc(tok.texto)}</span>`; }
-      const r = resolver(tok.ac, tono);
-      if (r.fuera) {
-        fin = x + tok.texto.length * ch;
-        return `<span class="ac fuera" style="left:${x.toFixed(1)}px" title="No está en ${t.nombre}"><span class="nom">${esc(tok.texto)}</span></span>`;
+    // Cada acorde va en su columna, pero con la mano al lado ocupa más que en el
+    // texto: si el renglón no entra en el ancho, sigue en otro renglón (antes se
+    // salía por la derecha y había que desplazar para ver los últimos).
+    const ancho = Math.max(120, $('cancion').clientWidth - 4);
+    const renglones = [[]];
+    let fin = -Infinity, envuelto = false;
+    for (const tok of f.toks) {
+      // Pasado el primer renglón ya no hay columna que respetar: van seguidos
+      let x = envuelto ? fin + 8 : Math.max(tok.col * ch, fin + 6);
+      const r = tok.ac ? resolver(tok.ac, tono) : null;
+      const largo = tok.texto.length * ch + (r && !r.fuera ? 3 + MANO : 0);
+      if (x + largo > ancho && renglones.at(-1).length) { renglones.push([]); x = 0; envuelto = true; }
+      fin = x + largo;
+      let html;
+      if (!tok.ac) html = `<span class="txt" style="left:${x.toFixed(1)}px">${esc(tok.texto)}</span>`;
+      else if (r.fuera) html = `<span class="ac fuera" style="left:${x.toFixed(1)}px" title="No está en ${t.nombre}"><span class="nom">${esc(tok.texto)}</span></span>`;
+      else {
+        const marca = r.aprox ? `<span class="marca" title="Suena ${esc(r.cifrado)}">≈</span>` : '';
+        html = `<span class="ac" style="left:${x.toFixed(1)}px"><span class="nom">${esc(tok.texto)}</span>${marca}${MANOS[`${r.figura}|${r.comp}|${r.inv ? 1 : 0}`]}</span>`;
       }
-      fin = x + tok.texto.length * ch + 3 + MANO;
-      const marca = r.aprox ? `<span class="marca" title="Suena ${esc(r.cifrado)}">≈</span>` : '';
-      return `<span class="ac" style="left:${x.toFixed(1)}px"><span class="nom">${esc(tok.texto)}</span>${marca}${MANOS[`${r.figura}|${r.comp}|${r.inv ? 1 : 0}`]}</span>`;
-    }).join('');
-    return `<div class="fila-ac" style="min-width:${Math.ceil(fin)}px">${piezas}</div>`;
+      renglones.at(-1).push(html);
+    }
+    return renglones.map(p => `<div class="fila-ac">${p.join('')}</div>`).join('');
   }).join('');
 }
 

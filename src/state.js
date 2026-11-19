@@ -6,6 +6,9 @@ export const state = {
   // Ancho (px de CSS) que ocupa arriba a la derecha el cancionero del modo cantar:
   // render.js corre a su izquierda la lectura del acorde para que no quede tapada.
   reservaDerecha: 0,
+  // Caja del panel de botones (px de CSS): render.js corre las etiquetas de los
+  // tercios para que nunca queden debajo de un botón.
+  panel: null,
   // Voz de notas (el drone del cuadrilátero) sonando. Se enciende sola en modo
   // música, sin pulsar "Arrancar"; con el ritmo en marcha también está en true.
   notasIniciadas: false,

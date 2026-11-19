@@ -17,6 +17,9 @@ Las fechas salen del historial de git.
   canción con acordes (o el enlace, o una captura) y sale con las manos de cada
   acorde. La tonalidad del instrumento se pone sola.
 - Guía propia del modo cantar en el «?».
+**AGUDO, MEDIO y GRAVE ya no caen sobre los botones** (19 nov)
+- Las etiquetas de los tercios se corren a la derecha del panel cuando caerían
+  encima de él (antes AGUDO tapaba el «?» según la altura de la pantalla).
 
 **El candado ya no tapa la nota** (19 nov)
 - Con las dos pinzas puestas ya no aparece el cartel «bloqueado» arriba a la

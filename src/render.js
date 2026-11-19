@@ -242,9 +242,19 @@ function dibujarTercios(ctx, w, h, registro) {
   ctx.fillStyle = 'rgba(255,255,255,0.22)';
   ctx.font = '300 10px "Space Grotesk", system-ui, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('AGUDO', 24, y1 - 12);
-  ctx.fillText('MEDIO', 24, y2 - 12);
-  ctx.fillText('GRAVE', 24, h - 12);
+  // Las etiquetas nunca caen debajo del panel de botones (antes AGUDO quedaba
+  // encima del «?», según la altura de la pantalla). Si la etiqueta cae a la
+  // altura del panel, se corre a su derecha. state.panel lo mide main.js en
+  // cada cuadro, en px de CSS.
+  const k = w / Math.max(1, window.innerWidth);
+  const xDe = (y) => {
+    const p = state.panel;
+    if (p && (y - 12) / k < p.bottom + 10 && y / k > p.top - 10) return (p.right + 16) * k;
+    return 24;
+  };
+  ctx.fillText('AGUDO', xDe(y1 - 12), y1 - 12);
+  ctx.fillText('MEDIO', xDe(y2 - 12), y2 - 12);
+  ctx.fillText('GRAVE', xDe(h - 12), h - 12);
 }
 
 function dibujarDosTriangulos(ctx, manos, w, h) {

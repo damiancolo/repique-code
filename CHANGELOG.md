@@ -9,6 +9,10 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**El candado ya no tapa la nota** (19 nov)
+- Con las dos pinzas puestas ya no aparece el cartel «bloqueado» arriba a la
+  derecha, que tapaba la nota: queda sólo un candado 🔒, arriba al centro.
+
 **Espiral: las manos cruzadas suenan en acordes** (19 nov)
 - La figura de los dos triángulos (manos cruzadas) ya no queda muda en
   acordes: el último acorde se desarma en sus notas y gira en espiral (sube por

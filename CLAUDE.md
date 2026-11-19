@@ -80,7 +80,7 @@ Cuando `locked = true`:
 - `actualizarBPM` no se llama (tempo congelado)
 - `actualizarNota` no se llama (nota congelada)
 - Filtro y área del drone siguen respondiendo
-- Indicador visual: `#lock-indicator` arriba a la derecha
+- Indicador visual: `#lock-indicator`, **sólo un candado 🔒 arriba al centro** (19 nov 2026: el texto «⏸ bloqueado» arriba a la derecha tapaba la nota)
 
 ## Banco de patrones (audio.js — BANCO_PATRONES)
 

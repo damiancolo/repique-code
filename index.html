@@ -747,13 +747,13 @@
     .viz-gap { width: 3px; flex-shrink: 0; }
 
     /* ── Indicador de lock ── */
+    /* Arriba al centro: arriba a la derecha tapaba la nota que escribe el lienzo */
     #lock-indicator {
       position: fixed;
-      top: 1.4rem;
-      right: 1.8rem;
-      font-size: 0.68rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      top: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.1rem;
       color: rgba(255,255,255,0.65);
       opacity: 0;
       transition: opacity 0.3s;

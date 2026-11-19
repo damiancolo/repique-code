@@ -304,7 +304,7 @@ async function init() {
 
   function setLocked(val) {
     locked = val;
-    lockIndicator.textContent   = locked ? '⏸ bloqueado' : '';
+    lockIndicator.textContent   = locked ? '🔒' : '';   // sólo el candado: el texto tapaba la nota (19 nov 2026)
     lockIndicator.style.opacity = locked ? '0.7' : '0';
   }
 

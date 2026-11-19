@@ -11,7 +11,7 @@ import { MANOS } from './manos-cancionero.js';
 
 const CANTAR = /[?&]modo=cantar/.test(location.search);
 const FIGURAS = CANTAR ? GRADO_POR_FORMA_CANTAR : GRADO_POR_FORMA;
-const OSCURO = /[?&]oscuro/.test(location.search);
+const GUIA = /[?&]guia/.test(location.search);
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -134,6 +134,22 @@ function anchoCaracter() {
 }
 
 function pintar() {
+  pintarCancion();
+  avisarAlto();
+}
+
+// Dentro de la guía: le cuenta al instrumento cuánto mide y si ya hay canción,
+// para que la guía pase a ser la canción (y vuelva a ser la guía al borrarla)
+function avisarAlto() {
+  if (!GUIA || window.parent === window) return;
+  const conCancion = !!$('cancion').querySelector('.fila-ac');
+  // Se mide el contenido (main), no el documento: el documento nunca es más bajo
+  // que el iframe, y así la caja no se achicaría al borrar la canción
+  const alto = Math.ceil(document.querySelector('main').getBoundingClientRect().height);
+  window.parent.postMessage({ tipo: 'cancionero-alto', alto, conCancion }, '*');
+}
+
+function pintarCancion() {
   // Los cancioneros meten caracteres invisibles (Cifra Club pone un espacio de
   // ancho cero al principio de cada línea) y espacios duros: fuera, o «​D» no es «D»
   const texto = cancion.replace(/[​-‍⁠﻿]/g, '').replace(/[   ]/g, ' ')
@@ -151,7 +167,7 @@ function pintar() {
   }
 
   const ch = anchoCaracter();
-  const MANO = OSCURO ? 70 : 84;
+  const MANO = GUIA ? 54 : 84;
   document.documentElement.style.setProperty('--mano', MANO + 'px');
   const cabeza = `<div class="tono">${CANTAR ? 'Modo cantar · ' : ''}Tonalidad en Repique Code: <b>${t.nombre} (${t.cifrado})</b></div>`;
   $('cancion').innerHTML = cabeza + filas.map(f => {
@@ -226,6 +242,9 @@ document.addEventListener('drop', (e) => {
   if (f) leerCaptura(f);
 });
 window.addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(pintar, 150); });
+// Si la caja se vacía, vuelve la guía
+$('caja').addEventListener('input', () => { if (!$('caja').value.trim()) { cancion = ''; $('estado').textContent = ''; pintar(); } });
+if (GUIA) new ResizeObserver(avisarAlto).observe(document.querySelector('main'));
 document.fonts.ready.then(pintar);
 
 // Para pruebas desde la consola

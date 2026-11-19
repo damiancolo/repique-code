@@ -7,16 +7,21 @@ Las fechas salen del historial de git.
 
 ---
 
-## 1.9 — julio 2026 · **Primera versión pública**
+## 2.0 — noviembre 2026 · **en construcción**
 
 **Modo cantar** (19 nov)
 - Botón 🎤 al lado de «♪ notas»: las mismas figuras, pero con los acordes de
   guitarra más usados (en Sol: G, Am, Em, C, D7, A7, B7 y D), y cada cambio de
   acorde suena como un rasguido.
-- Al abrir la guía en este modo aparece arriba un cancionero: se pega una
+- El cancionero está dentro de la guía, en el lugar de los botones: se pega una
   canción con acordes (o el enlace, o una captura) y sale con las manos de cada
   acorde. La tonalidad del instrumento se pone sola.
 - Guía propia del modo cantar en el «?».
+
+---
+
+## 1.9 — julio 2026 · **Primera versión pública**
+
 **AGUDO, MEDIO y GRAVE ya no caen sobre los botones** (19 nov)
 - Las etiquetas de los tercios se corren a la derecha del panel cuando caerían
   encima de él (antes AGUDO tapaba el «?» según la altura de la pantalla).

@@ -16,7 +16,7 @@
 
 Instrumento musical controlado por gestos de manos. Usa MediaPipe para detectar manos por cámara y Tone.js para síntesis de audio. Publicado en `estudioprompt.com/lab/repique-code` como iframe embebido.
 
-Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado) y **abre en modo música con el mapa de manos («?») ya desplegado** (19 nov 2026, antes abría en pintura). Tiene tres modos excluyentes en `#fila-modos`: **música 🎵** (drone + secuenciador por gestos de forma; es el modo base, se está en él cuando no hay ninguno de los otros dos), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos; arranca en el efecto `orbe`). El botón `Arrancar` es un interruptor del **ritmo**: las notas de música suenan solas (ver «Voz de notas sin Arrancar»).
+**Versión 2.0 en construcción** (rama `modo-cantar`; producción sigue en 1.9). Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado) y **abre en modo música con el mapa de manos («?») ya desplegado** (19 nov 2026, antes abría en pintura). Tiene tres modos excluyentes en `#fila-modos`: **música 🎵** (drone + secuenciador por gestos de forma; es el modo base, se está en él cuando no hay ninguno de los otros dos), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos; arranca en el efecto `orbe`). El botón `Arrancar` es un interruptor del **ritmo**: las notas de música suenan solas (ver «Voz de notas sin Arrancar»).
 
 ## Arquitectura
 
@@ -264,13 +264,19 @@ acordes, sólo cambia la tabla de figuras.
 - **Guía propia**: la lámina tiene `#cantar` (secciones `forma-cantar` y
   `menique-cantar`; botones, altura, mayores y pie se comparten).
   `modoDelMapa()`/`avisarModoMapa()` mandan `cantar` en ese modo.
-- **El cancionero arriba de la guía**: `#cancionero-caja` dentro de
-  `#mapa-overlay`; con `.cantar` el overlay pasa a columna (cancionero ancho
-  arriba, mapa chico abajo). Carga `cancionero.html?modo=cantar&oscuro` (segunda
-  página del build: `vite.config.js` tiene dos entradas). El cancionero avisa la
-  tonalidad que deduce (`postMessage {tipo:'cancionero-tono'}`) y el instrumento
-  la pone sola. `state.reservaDerecha` corre a la izquierda la lectura del acorde
-  del lienzo para que el cancionero no la tape.
+- **El cancionero dentro de la guía** (2.0): `#cancionero-caja` va dentro de
+  `#mapa-caja`, entre la barra y la lámina, **en el lugar de «Los botones, sin
+  tocar nada»** (en `#cantar` la lámina ya no muestra esa sección). Carga
+  `cancionero.html?modo=cantar&guia` (segunda página del build: `vite.config.js`
+  tiene dos entradas), con la estética de la lámina. **Con una canción pegada la
+  guía pasa a ser la canción**: el cancionero avisa
+  `postMessage {tipo:'cancionero-alto', alto, conCancion}` (mide `main`, no el
+  documento, o no se achicaría al borrar), el overlay toma `.con-cancion` (más
+  ancho, `clamp(260px, 26vw, 400px)`, y la lámina escondida) y el iframe toma ese
+  alto. Al vaciar la caja vuelve la guía. También avisa la tonalidad
+  (`{tipo:'cancionero-tono'}`) y el instrumento la pone sola.
+  `state.reservaDerecha` corre a la izquierda la lectura del acorde del lienzo
+  cuando el overlay sube hasta arriba.
 - **El cancionero** (`src/cancionero.js`): sin IA, mapa inverso de
   `nombreAcorde` sobre las figuras del modo (el más barato en dedos), tonalidad
   deducida. Dibujos en `src/manos-cancionero.js`, **generado** por

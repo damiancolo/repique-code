@@ -2818,10 +2818,9 @@ async function init() {
   // correr antes de que existan las const de esta parte.
   /** Cuánto ancho tapa el cancionero arriba a la derecha (0 si no está a la vista) */
   function reservaCancionero() {
-    const caja = document.getElementById('cancionero-caja');
     const ov = document.getElementById('mapa-overlay');
-    if (!caja || !ov || !ov.classList.contains('visible') || !ov.classList.contains('cantar')) return 0;
-    const r = caja.getBoundingClientRect();
+    if (!ov || !ov.classList.contains('visible') || !ov.classList.contains('cantar')) return 0;
+    const r = ov.getBoundingClientRect();
     return r.top < 140 ? window.innerWidth - r.left + 12 : 0;
   }
 
@@ -2831,7 +2830,7 @@ async function init() {
     if (!ov || !fr) return;
     const cantar = modoCantar && !modoPintar && !modoBaile;
     ov.classList.toggle('cantar', cantar);
-    if (cantar && !fr.getAttribute('src')) fr.setAttribute('src', 'cancionero.html?modo=cantar&oscuro');
+    if (cantar && !fr.getAttribute('src')) fr.setAttribute('src', 'cancionero.html?modo=cantar&guia');
   }
   // El cancionero deduce la tonalidad de la canción y se la pasa al instrumento
   window.addEventListener('message', (e) => {
@@ -2839,6 +2838,16 @@ async function init() {
     const fr = document.getElementById('cancionero-iframe');
     if (!fr || e.source !== fr.contentWindow || !d || d.tipo !== 'cancionero-tono') return;
     if (d.tono && d.tono !== tonalidad) menuTonoGrilla.querySelector(`[data-tono="${d.tono}"]`)?.click();
+  });
+  // El cancionero avisa cuánto mide y si ya tiene una canción: con canción, la
+  // guía pasa a ser la canción (la lámina se esconde y la columna se ensancha)
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    const fr = document.getElementById('cancionero-iframe');
+    if (!fr || e.source !== fr.contentWindow || !d || d.tipo !== 'cancionero-alto') return;
+    document.getElementById('mapa-overlay').classList.toggle('con-cancion', !!d.conCancion);
+    const tope = window.innerHeight - 64;   // la barra del mapa y un margen
+    fr.style.height = Math.max(60, Math.min(d.alto, tope)) + 'px';
   });
 
   // La lámina avisa cuánto mide en cada modo: el panel toma esa forma

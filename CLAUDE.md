@@ -278,7 +278,9 @@ acordes, sólo cambia la tabla de figuras.
   `postMessage {tipo:'cancionero-alto', alto, conCancion}` (mide `main`, no el
   documento, o no se achicaría al borrar), el overlay toma `.con-cancion` (más
   ancho, `clamp(260px, 26vw, 400px)`, y la lámina escondida) y el iframe toma ese
-  alto. Al vaciar la caja vuelve la guía. También avisa la tonalidad
+  alto. Al vaciar la caja vuelve la guía. Con canción aparece **«← guía»**, que
+  esconde la canción y vuelve a la lámina sin perderla (`oculta`); **«canción →»**
+  la trae de vuelta, y escribir en la caja también. También avisa la tonalidad
   (`{tipo:'cancionero-tono'}`) y el instrumento la pone sola.
   `state.reservaDerecha` corre a la izquierda la lectura del acorde del lienzo
   cuando el overlay sube hasta arriba.

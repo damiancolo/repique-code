@@ -133,16 +133,26 @@ function anchoCaracter() {
   return w || 9;
 }
 
+// «← guía» esconde la canción y vuelve a la lámina sin perderla; «canción →» la
+// trae de vuelta. Escribir en la caja también la vuelve a mostrar.
+let oculta = false;
+
 function pintar() {
   pintarCancion();
+  const hay = !!$('cancion').querySelector('.fila-ac');
+  $('cancion').style.display = (hay && oculta) ? 'none' : '';
+  $('b-guia').classList.toggle('visible', hay && !oculta);
+  $('b-cancion').classList.toggle('visible', hay && oculta);
   avisarAlto();
 }
+$('b-guia').addEventListener('click', () => { oculta = true; pintar(); });
+$('b-cancion').addEventListener('click', () => { oculta = false; pintar(); });
 
 // Dentro de la guía: le cuenta al instrumento cuánto mide y si ya hay canción,
 // para que la guía pase a ser la canción (y vuelva a ser la guía al borrarla)
 function avisarAlto() {
   if (!GUIA || window.parent === window) return;
-  const conCancion = !!$('cancion').querySelector('.fila-ac');
+  const conCancion = !!$('cancion').querySelector('.fila-ac') && !oculta;
   // Se mide el contenido (main), no el documento: el documento nunca es más bajo
   // que el iframe, y así la caja no se achicaría al borrar la canción
   const alto = Math.ceil(document.querySelector('main').getBoundingClientRect().height);
@@ -197,6 +207,7 @@ async function leer(cuerpo, aviso) {
     const d = await r.json().catch(() => ({}));
     if (!r.ok || !d.texto) { $('estado').textContent = d.error || 'Aquí sólo se puede pegar el texto de la canción.'; return; }
     cancion = (d.titulo ? d.titulo + '\n\n' : '') + d.texto;
+    oculta = false;
     pintar();
   } catch { $('estado').textContent = 'No hay conexión con el lector. Pega el texto de la canción.'; }
 }
@@ -225,6 +236,7 @@ function desdeCaja() {
   if (!v || v === '(captura)') return;
   if (/^https?:\/\/\S+$/.test(v)) { leer({ url: v }, 'Leyendo la página…'); return; }
   cancion = $('caja').value;
+  oculta = false;
   pintar();
 }
 

@@ -34,7 +34,11 @@
   html.guia main { padding: 8px 9px 10px; }
   .cabeza-guia { display: none; font: 600 11px/1.3 Outfit, system-ui, sans-serif; color: #1A1A18; margin: 0 1px 5px; }
   .cabeza-guia span { font-weight: 300; color: #5A5850; }
-  html.guia .cabeza-guia { display: block; }
+  html.guia .cabeza-guia { display: flex; align-items: baseline; gap: 4px; }
+  .cabeza-guia .tit { flex: 1; }
+  .ir { display: none; font: 600 10px/1 'JetBrains Mono', monospace; letter-spacing: .06em; color: #F6F3EE;
+    background: #1A1A18; border: 0; border-radius: 4px; padding: 4px 7px; cursor: pointer; }
+  .ir.visible { display: inline-block; }
   html.guia #caja { min-height: 38px; font-size: 11px; padding: 7px 8px; border-color: #D6D3CC; }
   html.guia #estado { margin: 3px 1px 6px; font-size: 10px; min-height: 0; }
 
@@ -65,7 +69,11 @@
 </head>
 <body>
 <main>
-  <div class="cabeza-guia">Cancionero <span>· pega la canción: texto, enlace o captura</span></div>
+  <div class="cabeza-guia">
+    <button class="ir" id="b-guia" title="Volver a la guía (la canción queda guardada)">← guía</button>
+    <span class="tit">Cancionero <span>· pega la canción: texto, enlace o captura</span></span>
+    <button class="ir" id="b-cancion" title="Volver a la canción">canción →</button>
+  </div>
   <textarea id="caja" spellcheck="false" rows="2"
     placeholder="Pega aquí la canción con los acordes"></textarea>
   <div id="estado"></div>

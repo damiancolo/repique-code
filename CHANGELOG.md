@@ -7,7 +7,7 @@ Las fechas salen del historial de git.
 
 ---
 
-## 2.0 — noviembre 2026 · **en construcción**
+## 2.0 — 19 noviembre 2026 · **Modo cantar**
 
 **Modo cantar** (19 nov)
 - Botón 🎤 al lado de «♪ notas»: las mismas figuras, pero con los acordes de

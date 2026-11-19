@@ -3,7 +3,7 @@
 // Lo que suena es exactamente lo que devuelve frecuenciasAcorde(), en móvil y en
 // ordenador: audio.js ya no cambia de octava según el dispositivo. Si alguien
 // vuelve a meter un desplazamiento en audio.js, tiene que reproducirlo acá.
-import { frecuenciasAcorde, nombreAcorde, inversionAplica, TONALIDADES, REGISTROS } from '../src/acordes.js';
+import { frecuenciasAcorde, nombreAcorde, inversionAplica, TONALIDADES, REGISTROS, GRADO_POR_FORMA_CANTAR } from '../src/acordes.js';
 
 const GRADOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'I8'];
 let fallos = 0, comprobados = 0;
@@ -88,6 +88,30 @@ comprobados += 3;
 if (n1.cifrado !== 'D')  falla(`II invertido se llama ${n1.cifrado}`);
 if (n2.cifrado !== 'D7') falla(`II7 invertido se llama ${n2.cifrado}`);
 if (n3.cifrado !== 'Fm') falla(`IV invertido se llama ${n3.cifrado}`);
+
+// 8. Modo cantar: los acordes de guitarra, en Sol y en Do, y que cada figura suene
+const CANTAR_ESPERADO = {
+  G: ['G', 'C', 'D', 'Em', 'Am', 'A7', 'B7', 'Bm'],
+  C: ['C', 'F', 'G', 'Am', 'Dm', 'D7', 'E7', 'Em'],
+};
+for (const [tono, esperado] of Object.entries(CANTAR_ESPERADO)) {
+  const dados = Object.values(GRADO_POR_FORMA_CANTAR).map(g => nombreAcorde(tono, g).cifrado);
+  comprobados++;
+  if (dados.join(' ') !== esperado.join(' ')) falla(`cantar en ${tono}: ${dados.join(' ')} (esperado ${esperado.join(' ')})`);
+}
+for (const t of TONALIDADES) for (const g of Object.values(GRADO_POR_FORMA_CANTAR)) for (const r of REGISTROS) for (const c of [0, 1, 2]) for (const inv of [false, true]) {
+  comprobados++;
+  const f = frecuenciasAcorde(t.id, g, r, c, inv);
+  if (!f || f.some(x => !(x > 40 && x < 2200))) falla(`cantar ${t.nombre} ${g} ${r} c${c}${inv ? ' meñ' : ''}: ${f}`);
+}
+// El V del modo cantar: un dedo mayor lo pasa a V7 (D → D7 en Sol), dos a 9;
+// y las dominantes secundarias con meñique pasan a m7 (A7 → Am7)
+const d1 = nombreAcorde('G', 'V', 1).cifrado, d2 = nombreAcorde('G', 'V', 2).cifrado, d3 = nombreAcorde('G', 'II7', 0, true).cifrado;
+comprobados += 4;
+if (d1 !== 'D7') falla(`V con un dedo se llama ${d1}`);
+if (d2 !== 'D9') falla(`V con dos dedos se llama ${d2}`);
+if (d3 !== 'Am7') falla(`II7 con meñique se llama ${d3}`);
+if ('do_alto' in GRADO_POR_FORMA_CANTAR) falla('el modo cantar no usa «pulgares arriba»');
 
 console.log(fallos ? `\n${fallos} fallos de ${comprobados} comprobaciones` : `✓ ${comprobados} comprobaciones, todas bien`);
 process.exit(fallos ? 1 : 0);

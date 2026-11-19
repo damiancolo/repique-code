@@ -46,6 +46,32 @@ export const GRADO_POR_FORMA = {
   do_alto:        'I8',
 };
 
+// ─── Modo cantar: los acordes de guitarra ────────────────────────────────────
+// Pedido de Damián (19 nov 2026): un modo para quien canta y toca la guitarra.
+// Las mismas ocho figuras, pero con los acordes que más se usan en una canción:
+// la tónica, el ii, el vi, el IV, la dominante CON séptima, las dos dominantes
+// secundarias (II7 lleva al V, III7 lleva al vi). Fuera el iii y el vii°, que
+// casi no aparecen en un cancionero. En Sol: G Am Em C D A7 B7 (D7 = D con un
+// dedo mayor). Las figuras dejan de ser una escala que sube: acá manda la comodidad.
+//
+// Sin «pulgares arriba» (19 nov 2026, pedido de Damián): la cámara la confundía
+// con las figuras de pulgares abajo. El V lo da el trapecio de techo y un dedo
+// mayor lo pasa a V7 (D → D7 en Sol), como en el modo música. Si la cámara lee
+// esa figura igual, no cambia nada: el acorde que sonaba sigue sonando.
+// Orden de uso (19 nov 2026, pedido de Damián): el rectángulo es el acorde más
+// tocado; después los dos trapecios de pulgares/índices (piso y techo), después
+// los de costado, después las pinzas de una mano y por último las dos pinzas.
+export const GRADO_POR_FORMA_CANTAR = {
+  rectangulo:     'I',
+  trapecio_piso:  'IV',
+  trapecio_techo: 'V',    // un mayor = V7
+  trapecio_izq:   'VI',
+  trapecio_der:   'II',
+  la:             'II7',  // pinza derecha
+  si:             'III7', // pinza izquierda
+  dos_pinzas:     'III',  // las dos manos en pinza
+};
+
 // La calidad de cada grado viene puesta por la tonalidad: en Do el segundo
 // acorde es Dm. Lo único que la cambia es el MEÑIQUE DERECHO (ver «La
 // inversión» más abajo), y sólo mientras está arriba.
@@ -62,6 +88,11 @@ const GRADOS = {
   // orden la escala subía do-re-mi-fa-sol-la-si y de golpe BAJABA a sol: el
   // último escalón tiraba para abajo. Así cierra la octava.
   I8:  { semis:  0, tipo: 'mayor', octavaArriba: true },
+  // Los del modo cantar: dominantes que ya son de séptima sin subir ningún dedo
+  // (`base`). El meñique las pasa a m7 como al resto (D7 → Dm7).
+  V7:   { semis:  7, tipo: 'mayor', base: 'dom7' },
+  II7:  { semis:  2, tipo: 'mayor', base: 'dom7' },
+  III7: { semis:  4, tipo: 'mayor', base: 'dom7' },
 };
 
 // ─── El complemento (subir un dedo mayor) ────────────────────────────────────
@@ -87,6 +118,9 @@ const COMPLEMENTO = {
   VI:  'sus4',
   VII: 'semidim',
   I8:  'sus4',
+  V7:  'sus4',    // la dominante colgada: D7 → Dsus4
+  II7: 'sus4',
+  III7:'sus4',
 };
 
 // Los DOS dedos = EL COLOR: el acorde se abre. Son las dos únicas cosas que se
@@ -101,6 +135,9 @@ const COMPLEMENTO2 = {
   VI:  'min7',
   VII: 'semidim11',
   I8:  'maj7',
+  V7:  'nueve',
+  II7: 'nueve',
+  III7:'nueve',
 };
 
 const SUFIJO = {
@@ -158,6 +195,7 @@ function tipoComplemento(grado, nivel, invertido = false) {
   let t = null;
   if (nivel >= 2) t = COMPLEMENTO2[grado];
   else if (nivel >= 1) t = COMPLEMENTO[grado];
+  else t = GRADOS[grado]?.base ?? null;   // las dominantes del modo cantar
   if (t && invertido) t = COMPLEMENTO_INVERTIDO[t] ?? t;
   return t;
 }

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Acordes · Repique Code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
+<!--
+  Todos los acordes que se pueden tocar en el modo cantar, con sus manos, en la
+  tonalidad que tenga el instrumento. Se abre desde «Guía →» del modo cantar.
+
+  ?tono=G  → la tonalidad con que arranca
+  Dentro del instrumento: recibe {tipo:'tono', tono} cuando cambia la tonalidad
+  y, si se elige otra desde acá, le avisa {tipo:'cancionero-tono', tono}.
+-->
+<style>
+  :root { --fg: #1A1A18; --fg2: #5A5850; --fg3: #8A887E; --acc: #C44A1A; }
+  * { box-sizing: border-box; }
+  html { background: rgba(246,243,238,0.62); }
+  body { margin: 0; color: var(--fg); font-family: Outfit, system-ui, sans-serif; }
+  main { padding: 10px 12px 16px; }
+  .tonos { display: flex; flex-wrap: wrap; gap: 3px; margin: 0 0 10px; }
+  .tonos button { font: 600 10px/1 'JetBrains Mono', monospace; padding: 5px 6px; border-radius: 4px; cursor: pointer;
+    border: 1px solid #D6D3CC; background: rgba(255,255,255,0.7); color: var(--fg2); }
+  .tonos button.activo { background: var(--fg); color: #F6F3EE; border-color: var(--fg); }
+  h2 { font: 600 12px/1.2 Outfit, sans-serif; margin: 12px 0 2px; }
+  h2 span { font-weight: 300; color: var(--fg2); }
+  p.nota { font: 300 11px/1.35 Outfit, sans-serif; color: var(--fg2); margin: 0 0 6px; }
+  .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 6px; }
+  .ac { background: rgba(255,255,255,0.72); border-radius: 7px; padding: 5px 6px 6px; }
+  .ac .mano { width: 100%; height: auto; display: block; }
+  .ac b { display: block; font: 900 22px/1 Outfit, sans-serif; margin-top: 2px; }
+  .ac small { display: block; font: 300 10px/1.2 Outfit, sans-serif; color: var(--fg2); }
+  .ac i { display: block; font: 400 9px/1.2 'JetBrains Mono', monospace; color: var(--acc); font-style: normal; margin-top: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="tonos" id="tonos"></div>
+  <div id="lista"></div>
+</main>
+<script type="module" src="./src/diccionario.js"></script>
+</body>
+</html>

@@ -7,6 +7,29 @@ Las fechas salen del historial de git.
 
 ---
 
+## 2.0 — 19 noviembre 2026 · **Modo cantar**
+
+**Modo cantar** (19 nov)
+- Botón 🎤 al lado de «♪ notas»: las mismas figuras, pero con los acordes de
+  guitarra más usados (en Sol: G, Am, Em, C, D, A7 y B7; el D con un dedo
+  mayor da D7), y cada cambio de acorde suena como un rasguido. Sin la figura
+  de pulgares arriba, que la cámara confundía.
+- El cancionero está dentro de la guía, en el lugar de los botones: se pega una
+  canción con acordes (o el enlace, o una captura) y sale con las manos de cada
+  acorde. La tonalidad del instrumento se pone sola.
+- Guía propia del modo cantar en el «?».
+- «Acordes →» en la barra de la guía abre todos los acordes que se pueden
+  tocar (unos 35 por tonalidad), cada uno con sus manos, en la tonalidad del
+  instrumento o en la que se elija.
+- Los acordes por orden de uso: el rectángulo es la tónica, después los
+  trapecios, y las pinzas (una o las dos) para los que aparecen menos.
+- El volumen tiene más recorrido: llega al máximo con las manos un poco
+  abiertas, no casi juntas.
+- La canción del cancionero deja ver la cámara detrás, sin perder la letra, y
+  el panel es más ancho para que entren todos los acordes.
+
+---
+
 ## 1.9 — julio 2026 · **Primera versión pública**
 
 **AGUDO, MEDIO y GRAVE ya no caen sobre los botones** (19 nov)

@@ -4,9 +4,9 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
-import { setModoAcordes, sonarAcorde, setEspiral, actualizarEspiral, setComplementoNota, setInvertirTercera, startAudio, startNotas, startSonidos, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
+import { setModoAcordes, sonarAcorde, setRasguido, setEspiral, actualizarEspiral, setComplementoNota, setInvertirTercera, startAudio, startNotas, startSonidos, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
-import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde, inversionAplica } from './acordes.js';
+import { TONALIDADES, GRADO_POR_FORMA, GRADO_POR_FORMA_CANTAR, frecuenciasAcorde, nombreAcorde, inversionAplica } from './acordes.js';
 import { INSTRUMENTOS, setInstrumento, getInstrumento } from './audio.js';
 
 const video         = document.getElementById('video');
@@ -27,6 +27,7 @@ const menuRitmo     = document.getElementById('menu-ritmo');
 const ritmoBtns     = document.querySelectorAll('.ritmo-btn');
 const paletaMusica  = document.getElementById('paleta-musica');
 const btnNotas      = document.getElementById('btn-notas');
+const btnCantar     = document.getElementById('btn-cantar');
 const panelEl       = document.getElementById('panel');
 const filaTono      = document.getElementById('fila-tono');
 const btnTono       = document.getElementById('btn-tono');
@@ -119,6 +120,9 @@ async function init() {
   // acompañar algo — y la nota suelta es el caso raro, no al revés. El botón de
   // la paleta es el de notas: apagado = acordes.
   let modoAcordes  = true;
+  // Modo cantar (19 nov 2026): acordes, pero los de guitarra (GRADO_POR_FORMA_CANTAR)
+  // y con rasguido. Sólo existe dentro de acordes: pasar a notas lo apaga.
+  let modoCantar   = false;
   let tonalidad    = 'C';
   let registroTono = 'medio';
   let vistaAcordes = null;   // lo que render.js pinta arriba a la derecha
@@ -148,6 +152,10 @@ async function init() {
   const ACORDE_MS      = 100; // hay que sostener la forma esto
   const ACORDE_LECTURAS = 3;  // ...y verla al menos estas veces
   const ACORDE_GRACIA  = 50;  // si el detector pierde la mano, no cortar el acorde
+  // En cantar, una pinza sola espera más: para hacer las dos pinzas casi siempre
+  // se cierra una mano antes que la otra, y sin esta espera sonaría un instante
+  // el acorde de esa pinza sola antes de la tónica.
+  const ACORDE_MS_PINZA = 230;
   let _acCandidato = null, _acDesde = 0, _acLecturas = 0;
   let _acVistoEn   = 0;
   let _acSonando   = null;
@@ -240,7 +248,7 @@ async function init() {
   }
 
   function pasoAcordes(forma, centroY, ahora, complemento, invertido = false) {
-    const grado = forma ? GRADO_POR_FORMA[forma] : null;
+    const grado = forma ? (modoCantar ? GRADO_POR_FORMA_CANTAR : GRADO_POR_FORMA)[forma] : null;
     // En un suspendido el meñique no cambia nada (no hay tercera): se descarta
     // para que no cuente como cambio ni destelle sobre un sonido idéntico.
     const inv = !!(grado && invertido && inversionAplica(grado, complemento));
@@ -256,7 +264,8 @@ async function init() {
     if (!mismoAcorde(_acCandidato, lectura)) { _acCandidato = lectura; _acDesde = ahora; _acLecturas = 1; return; }
     _acLecturas++;
 
-    if (ahora - _acDesde < ACORDE_MS || _acLecturas < ACORDE_LECTURAS) return;
+    const espera = (modoCantar && (forma === 'la' || forma === 'si')) ? ACORDE_MS_PINZA : ACORDE_MS;
+    if (ahora - _acDesde < espera || _acLecturas < ACORDE_LECTURAS) return;
 
     // Comparar el ACORDE que va a sonar, no el gesto: si la mano tiembla entre
     // dos posturas que dan lo mismo, no pasa absolutamente nada.
@@ -451,7 +460,7 @@ async function init() {
     'panel', 'tempo-slider-wrap', 'filtro-slider-wrap', 'menu-ritmo',
     'ritmo-viz', 'config-sonidos', 'guia-detalle-panel', 'btn-vinculos',
     // La barra del mapa de manos: para poder cerrarlo con la pinza.
-    'mapa-barra',
+    'mapa-barra', 'acordes-barra',
     // El cartel de guardado va acá o la persona no puede aceptarlo con la mano:
     // en la instalación nadie toca el ordenador, y decidir si se publica su
     // propia imagen es justo lo último que debería obligar a agacharse al teclado.
@@ -1673,9 +1682,17 @@ async function init() {
         // Hay cuadrilátero en pantalla: que la nota suene, con ritmo o sin él
         asegurarNotas();
 
+        // En cantar las dos pinzas son un acorde más. El detector no le da forma
+        // (es el gesto del candado), así que se le pone nombre acá. Con las dos
+        // pinzas el cuadrilátero se aplasta en una línea y el área daría
+        // silencio: el volumen sale de la separación, como si la figura tuviera
+        // un tercio de pantalla de alto.
+        const dosPinzasCantar = modoAcordes && modoCantar && dosPinzas;
+        const formaAc = dosPinzasCantar ? 'dos_pinzas' : forma;
+
         if (state.notasIniciadas) {
           areaHold = AREA_HOLD_MAX;
-          actualizarArea(area);
+          actualizarArea(dosPinzasCantar ? ancho * 0.33 : area);
 
           // Cuántos mayores están arriba: 0 la tríada, 1 la tensión, 2 el color.
           // La línea entre los mayores muestra el estado sin tener que leer nada.
@@ -1684,8 +1701,8 @@ async function init() {
             : 0;
 
           if (modoAcordes) {
-            pasoEspiral(forma, centroY, ancho, timestamp);
-            pasoAcordes(forma, centroY, timestamp, complemento, invertido);
+            pasoEspiral(formaAc, centroY, ancho, timestamp);
+            pasoAcordes(formaAc, centroY, timestamp, complemento, invertido);
           } else {
             // La quinta entra y sale sola: no necesita debounce porque el
             // estirado del mayor ya trae su propia histéresis. Pero cambia lo
@@ -1761,6 +1778,7 @@ async function init() {
 
       // `mayores` sólo se dibuja, todavía no dispara nada: primero hay que
       // afinar el umbral con manos de verdad y ver si el salto cae donde toca.
+      state.reservaDerecha = reservaCancionero();
       const _pr = panelEl.getBoundingClientRect();
       state.panel = { top: _pr.top, bottom: _pr.bottom, right: _pr.right };
       renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada, vistaAcordes, mayores, menique);
@@ -1985,6 +2003,8 @@ async function init() {
     b.addEventListener('click', () => {
       tonalidad = t.id;
       pintarTono();
+      // La tabla de acordes (si está abierta) se muda a la tonalidad nueva
+      document.getElementById('acordes-iframe')?.contentWindow?.postMessage({ tipo: 'tono', tono: tonalidad }, '*');
       // Transportar en caliente: el acorde que está sonando se muda al tono
       // nuevo sin que haya que rehacer el gesto
       if (modoAcordes && _acSonando) {
@@ -2000,6 +2020,7 @@ async function init() {
   /** Refleja acordes ↔ notas en la paleta: cada uno muestra su propio control */
   function pintarVozMusica() {
     btnNotas.classList.toggle('activo', !modoAcordes);
+    btnCantar.classList.toggle('activo', modoCantar);
     filaTono.classList.toggle('visible', modoAcordes);
     filaInstrumento.classList.toggle('visible', !modoAcordes);
     if (modoAcordes) menuInstrumento.classList.remove('visible');
@@ -2009,10 +2030,30 @@ async function init() {
   btnNotas.addEventListener('click', () => {
     resumeContextSync(); // el clic es el permiso que pide el navegador
     modoAcordes = !modoAcordes;
+    // Las notas sueltas no tienen modo cantar: se apaga y vuelve la guía normal
+    if (!modoAcordes && modoCantar) { modoCantar = false; setRasguido(false); avisarModoMapa(); }
     registroNombre.textContent = '';
     resetAcordes();
     setModoAcordes(modoAcordes);
     pintarVozMusica();
+    notasAuto = true;
+    asegurarNotas();
+  });
+
+  // 🎤 Modo cantar: los acordes de guitarra, con rasguido, y el cancionero arriba de la guía
+  btnCantar.addEventListener('click', () => {
+    resumeContextSync();
+    modoCantar = !modoCantar;
+    if (modoCantar && !modoAcordes) {
+      modoAcordes = true;
+      setModoAcordes(true);
+    }
+    setRasguido(modoCantar);
+    registroNombre.textContent = '';
+    resetAcordes();
+    pintarVozMusica();
+    avisarModoMapa();
+    if (modoCantar) abrirMapa();          // la guía de cantar, con el cancionero arriba
     notasAuto = true;
     asegurarNotas();
   });
@@ -2774,15 +2815,62 @@ async function init() {
   const mapaIframe    = document.getElementById('mapa-iframe');
   // La lámina muestra sólo lo del modo activo (#pintar, #musica, #baile), y
   // siempre arriba cómo se usan los botones con las manos.
-  const modoDelMapa = () => modoPintar ? 'pintar' : modoBaile ? 'baile' : 'musica';
+  const modoDelMapa = () => modoPintar ? 'pintar' : modoBaile ? 'baile' : modoCantar ? 'cantar' : 'musica';
   // Ojo: pintarModos() la llama desde arriba del archivo, antes de que existan
   // las const de acá (zona muerta temporal). Por eso busca el iframe ella misma.
   function avisarModoMapa() {
     const fr = document.getElementById('mapa-iframe');
+    actualizarCancionero();
     if (!fr || !fr.getAttribute('src')) return;
-    const m = modoPintar ? 'pintar' : modoBaile ? 'baile' : 'musica';
+    const m = modoPintar ? 'pintar' : modoBaile ? 'baile' : modoCantar ? 'cantar' : 'musica';
     try { fr.contentWindow.location.hash = m; } catch (_) {}
+    actualizarCancionero();
   }
+  // ── El cancionero, arriba de la guía, sólo en modo cantar ────────────────────
+  // Es otra página del mismo build (cancionero.html): se pega una canción con
+  // acordes y sale con las manos de cada acorde. Se carga la primera vez que se
+  // entra a cantar. Busca los nodos por id porque, como avisarModoMapa, puede
+  // correr antes de que existan las const de esta parte.
+  /** Cuánto ancho tapa el cancionero arriba a la derecha (0 si no está a la vista) */
+  function reservaCancionero() {
+    const ov = document.getElementById('mapa-overlay');
+    if (!ov || !ov.classList.contains('visible') || !ov.classList.contains('cantar')) return 0;
+    const r = ov.getBoundingClientRect();
+    return r.top < 140 ? window.innerWidth - r.left + 12 : 0;
+  }
+
+  function actualizarCancionero() {
+    const ov = document.getElementById('mapa-overlay');
+    const fr = document.getElementById('cancionero-iframe');
+    if (!ov || !fr) return;
+    const cantar = modoCantar && !modoPintar && !modoBaile;
+    ov.classList.toggle('cantar', cantar);
+    if (!cantar) document.getElementById('acordes-overlay')?.classList.remove('visible');
+    const bg = document.getElementById('btn-mapa-guia');
+    if (bg) bg.textContent = cantar ? 'Acordes →' : 'Guía →';
+    if (cantar && !fr.getAttribute('src')) fr.setAttribute('src', 'cancionero.html?modo=cantar&guia');
+  }
+  // El cancionero deduce la tonalidad de la canción y se la pasa al instrumento
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    const fr = document.getElementById('cancionero-iframe');
+    const fa = document.getElementById('acordes-iframe');
+    const deAca = (fr && e.source === fr.contentWindow) || (fa && e.source === fa.contentWindow);
+    if (!deAca || !d || d.tipo !== 'cancionero-tono') return;
+    if (typeof d.tono === 'string' && /^[A-G][#b♯♭]?$/.test(d.tono) && d.tono !== tonalidad)
+      menuTonoGrilla.querySelector(`[data-tono="${d.tono}"]`)?.click();
+  });
+  // El cancionero avisa cuánto mide y si ya tiene una canción: con canción, la
+  // guía pasa a ser la canción (la lámina se esconde y la columna se ensancha)
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    const fr = document.getElementById('cancionero-iframe');
+    if (!fr || e.source !== fr.contentWindow || !d || d.tipo !== 'cancionero-alto') return;
+    document.getElementById('mapa-overlay').classList.toggle('con-cancion', !!d.conCancion);
+    const tope = window.innerHeight - 64;   // la barra del mapa y un margen
+    fr.style.height = Math.max(60, Math.min(Number(d.alto) || 0, tope)) + 'px';
+  });
+
   // La lámina avisa cuánto mide en cada modo: el panel toma esa forma
   window.addEventListener('message', (e) => {
     const d = e.data;
@@ -2793,6 +2881,7 @@ async function init() {
   const abrirMapa  = () => {
     if (!mapaIframe.getAttribute('src')) mapaIframe.setAttribute('src', 'mapa-de-manos.html?compacto#' + modoDelMapa());
     else avisarModoMapa();
+    actualizarCancionero();
     guia.classList.remove('visible');
     mapaOverlay.classList.add('visible');
   };
@@ -2807,10 +2896,25 @@ async function init() {
   // figura da cada acorde (Do, Re, Mi…). Pedido de Damián, 19 nov 2026.
   pintarModos();
   abrirMapa();
+  // En cantar, «Guía →» abre todos los acordes con sus manos, que es lo que
+  // necesita quien canta; en los otros modos, la guía de texto de siempre.
+  const acordesOverlay = document.getElementById('acordes-overlay');
+  const acordesIframe  = document.getElementById('acordes-iframe');
+  const cerrarAcordes  = () => acordesOverlay.classList.remove('visible');
+  function abrirAcordes() {
+    if (!acordesIframe.getAttribute('src')) acordesIframe.setAttribute('src', `acordes.html?tono=${encodeURIComponent(tonalidad)}`);
+    else acordesIframe.contentWindow?.postMessage({ tipo: 'tono', tono: tonalidad }, '*');
+    acordesOverlay.classList.add('visible');
+  }
+  document.getElementById('btn-cerrar-acordes').addEventListener('click', cerrarAcordes);
+  document.getElementById('btn-acordes-mapa').addEventListener('click', (e) => {
+    e.stopPropagation(); cerrarAcordes(); abrirMapa();
+  });
   document.getElementById('btn-mapa-guia').addEventListener('click', (e) => {
     e.stopPropagation();
     cerrarMapa();
-    guiaDetalle.classList.add('visible');
+    if (modoCantar && !modoPintar && !modoBaile) abrirAcordes();
+    else guiaDetalle.classList.add('visible');
   });
 
   btnGuiaDetalle.addEventListener('click', (e) => {

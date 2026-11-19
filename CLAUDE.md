@@ -16,7 +16,7 @@
 
 Instrumento musical controlado por gestos de manos. Usa MediaPipe para detectar manos por cámara y Tone.js para síntesis de audio. Publicado en `estudioprompt.com/lab/repique-code` como iframe embebido.
 
-Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado) y **abre en modo música con el mapa de manos («?») ya desplegado** (19 nov 2026, antes abría en pintura). Tiene tres modos excluyentes en `#fila-modos`: **música 🎵** (drone + secuenciador por gestos de forma; es el modo base, se está en él cuando no hay ninguno de los otros dos), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos; arranca en el efecto `orbe`). El botón `Arrancar` es un interruptor del **ritmo**: las notas de música suenan solas (ver «Voz de notas sin Arrancar»).
+**Versión 2.0** (publicada el 19 nov 2026: modo cantar, cancionero, todos los acordes). Arranca en el ritmo **CANDOMByte** (índice 5, candombe sintetizado) y **abre en modo música con el mapa de manos («?») ya desplegado** (19 nov 2026, antes abría en pintura). Tiene tres modos excluyentes en `#fila-modos`: **música 🎵** (drone + secuenciador por gestos de forma; es el modo base, se está en él cuando no hay ninguno de los otros dos), **pintura ✏** y **baile 🕺** (los movimientos disparan efectos visuales y sonidos; arranca en el efecto `orbe`). El botón `Arrancar` es un interruptor del **ritmo**: las notas de música suenan solas (ver «Voz de notas sin Arrancar»).
 
 ## Arquitectura
 
@@ -240,6 +240,76 @@ dentro de un mismo estado. Para comprobar que una capa entra hay que mirar el
   banda hace rubato. Si algún día se enciende el candombe debajo, ahí sí tendría
   sentido que los cambios esperen al pulso.
 
+## Modo cantar (acordes.js + audio.js + main.js + cancionero)
+
+19 nov 2026, pedido de Damián: un modo para quien canta y toca la guitarra.
+Botón **`🎤 cantar`** (`#btn-cantar`) al lado de `♪ notas`, en `#fila-voz`. Es un
+interruptor **dentro de acordes** (`modoCantar` en main.js): prenderlo fuerza
+acordes; pasar a notas lo apaga. **No es un fork**: comparte todo con el modo
+acordes, sólo cambia la tabla de figuras.
+
+- **Las figuras** (`GRADO_POR_FORMA_CANTAR` en acordes.js), por orden de uso
+  (19 nov 2026, pedido de Damián): rectángulo=**I**; trapecios de pulgares/
+  índices: piso=**IV**, techo=**V** (un dedo mayor = **V7**); de costado:
+  izq=**vi**, der=**ii**; pinzas de una mano: der=**II7**, izq=**III7**; **dos
+  pinzas=iii**. En Sol: G C D Em Am A7 B7 Bm. Las figuras **dejan de ser una
+  escala que sube**: acá manda la comodidad.
+- **Las dos pinzas** no son una forma para `hands.js` (es el gesto del candado,
+  apagado en acordes): main.js las nombra `dos_pinzas` sólo en cantar. Su
+  cuadrilátero se aplasta en una línea, así que el volumen sale de la separación
+  (`actualizarArea(ancho * 0.33)`).
+- ⚠️ **Una pinza sola espera más** (`ACORDE_MS_PINZA` = 230 ms, contra 100):
+  para hacer las dos pinzas casi siempre se cierra una mano antes, y sin esa
+  espera sonaría un instante el II7 o el III7.
+- ⚠️ **Sin «pulgares arriba» (`do_alto`)** (19 nov 2026, pedido de Damián): la
+  cámara la confundía con las figuras de pulgares abajo. En cantar no tiene
+  grado: si la cámara la lee, `pasoAcordes` no ve lectura y el acorde que
+  sonaba sigue sonando. La lámina `#cantar` no la muestra.
+- **Grados nuevos** en `GRADOS`: `II7` y `III7` (y `V7`, hoy sin figura), con
+  `base: 'dom7'` — `tipoComplemento` devuelve la base con 0 dedos, así nombre,
+  frecuencias, meñique (A7 → Am7) y registros salen solos. Dedos: 1 = sus4,
+  2 = 9. `npm test` comprueba los nombres en Sol y Do, que el V con un dedo sea
+  V7 y que todo suene en las 12 tonalidades.
+- **Rasguido** (`setRasguido`, audio.js): en cantar, `sonarAcorde` va por
+  `_rasguear`: cada voz baja casi a cero, salta a su nota y vuelve a subir con
+  `RASGUIDO_PASO` (22 ms) de retraso respecto de la de abajo. Las voces siguen
+  sin soltarse nunca.
+- **Guía propia**: la lámina tiene `#cantar` (secciones `forma-cantar` y
+  `menique-cantar`; botones, altura, mayores y pie se comparten).
+  `modoDelMapa()`/`avisarModoMapa()` mandan `cantar` en ese modo.
+- **El cancionero dentro de la guía** (2.0): `#cancionero-caja` va dentro de
+  `#mapa-caja`, entre la barra y la lámina, **en el lugar de «Los botones, sin
+  tocar nada»** (en `#cantar` la lámina ya no muestra esa sección). Carga
+  `cancionero.html?modo=cantar&guia` (segunda página del build: `vite.config.js`
+  tiene dos entradas), con la estética de la lámina. **Con una canción pegada la
+  guía pasa a ser la canción**: el cancionero avisa
+  `postMessage {tipo:'cancionero-alto', alto, conCancion}` (mide `main`, no el
+  documento, o no se achicaría al borrar), el overlay toma `.con-cancion` (más
+  ancho, `clamp(260px, 26vw, 400px)`, y la lámina escondida) y el iframe toma ese
+  alto. Al vaciar la caja vuelve la guía. El fondo de la canción es crema al 58 % (iframe transparente, panel a opacidad 1): deja ver la cámara sin borronear la letra. Un renglón de acordes que no entra en el ancho sigue en otro renglón (los acordes con su mano ocupan más que en el texto). Con canción aparece **«← guía»**, que
+  esconde la canción y vuelve a la lámina sin perderla (`oculta`); **«canción →»**
+  la trae de vuelta, y escribir en la caja también. También avisa la tonalidad
+  (`{tipo:'cancionero-tono'}`) y el instrumento la pone sola.
+  `state.reservaDerecha` corre a la izquierda la lectura del acorde del lienzo
+  cuando el overlay sube hasta arriba.
+- **El cancionero** (`src/cancionero.js`): sin IA, mapa inverso de
+  `nombreAcorde` sobre las figuras del modo (el más barato en dedos), tonalidad
+  deducida. Dibujos en `src/manos-cancionero.js`, **generado** por
+  `scripts/genera-manos-cancionero.py` a partir de la lámina (cambia el dedo
+  doblado por el estirado, girado según cada mano). ⚠️ Si cambia la lámina,
+  volver a correrlo. Enlaces y capturas van a `/lab/cancionero/leer`, que sólo
+  existe en estudioprompt.com; en cualquier otro lado se pega el texto.
+- **Todos los acordes** (`acordes.html` + `src/diccionario.js`, tercera página
+  del build): en cantar, el botón de la barra del mapa dice **«Acordes →»** y
+  abre `#acordes-overlay` (panel translúcido a la derecha) en vez de la guía de
+  texto. Recorre figuras × 0/1/2 mayores × meñique y muestra cada acorde una vez,
+  con la combinación más barata, en tres grupos: la figura sola, con mayores,
+  con meñique (unos 35 por tonalidad). Tiene sus 12 tonalidades arriba: elegir
+  una cambia la del instrumento (`cancionero-tono`), y el instrumento le avisa
+  `{tipo:'tono'}` cuando cambia desde el menú. Se cierra al salir de cantar.
+- ⚠️ El build ahora saca `main-*.js` (antes `index-*.js`) y `cancionero-*.js`:
+  al copiar `dist/` al sitio, borrar **todos** los `.js` viejos de `assets/`.
+
 ## La espiral: manos cruzadas en acordes (audio.js + main.js:pasoEspiral)
 
 19 nov 2026, pedido de Damián: en acordes la figura de los dos triángulos
@@ -371,7 +441,7 @@ que una cuerda pulsada se sienta pulsada.
 
 `actualizarBPM(bpm)` — suavizado: `Si += (objetivo - Si) * 0.04`
 `actualizarFiltro(ancho)` — lowpass 3500-12000 Hz según apertura de manos
-`actualizarArea(area)` — volumen del drone según bounding box de dedos
+`actualizarArea(area)` — volumen (drone o acorde) según la caja de las yemas: máximo con las manos un poco abiertas (`AREA_MAX` 0.15, curva ^0.7; antes saturaba en 0.06, casi con las manos juntas)
 
 ## Modo baile: gestos → sonidos, biblioteca y familias (audio.js + main.js)
 

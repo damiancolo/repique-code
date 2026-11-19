@@ -182,29 +182,33 @@ function pintarCancion() {
   const cabeza = `<div class="tono">${CANTAR ? 'Modo cantar · ' : ''}Tonalidad en Repique Code: <b>${t.nombre} (${t.cifrado})</b></div>`;
   $('cancion').innerHTML = cabeza + filas.map(f => {
     if (!f.toks) return `<div class="linea">${esc(f.l) || ' '}</div>`;
-    // Cada acorde va en su columna, pero con la mano al lado ocupa más que en el
-    // texto: si el renglón no entra en el ancho, sigue en otro renglón (antes se
-    // salía por la derecha y había que desplazar para ver los últimos).
+    // El nombre del acorde va EXACTO en su columna, como en el cancionero
+    // original, para que caiga sobre la sílaba que le toca. Las manos van en
+    // una franja encima, en el mismo orden; si los acordes están muy juntos
+    // (en «De no olvidar»: «D     A7 G A7 D G»), las manos se achican para
+    // entrar en el ancho, y si aun así no les alcanza el hueco, se corren a la
+    // derecha sin pisarse. Antes la mano iba al lado del nombre y empujaba los
+    // acordes siguientes, que terminaban en otro renglón, lejos de su letra.
     const ancho = Math.max(120, $('cancion').clientWidth - 4);
-    const renglones = [[]];
-    let fin = -Infinity, envuelto = false;
-    for (const tok of f.toks) {
-      // Pasado el primer renglón ya no hay columna que respetar: van seguidos
-      let x = envuelto ? fin + 8 : Math.max(tok.col * ch, fin + 6);
-      const r = tok.ac ? resolver(tok.ac, tono) : null;
-      const largo = tok.texto.length * ch + (r && !r.fuera ? 3 + MANO : 0);
-      if (x + largo > ancho && renglones.at(-1).length) { renglones.push([]); x = 0; envuelto = true; }
-      fin = x + largo;
-      let html;
-      if (!tok.ac) html = `<span class="txt" style="left:${x.toFixed(1)}px">${esc(tok.texto)}</span>`;
-      else if (r.fuera) html = `<span class="ac fuera" style="left:${x.toFixed(1)}px" title="No está en ${t.nombre}"><span class="nom">${esc(tok.texto)}</span></span>`;
-      else {
-        const marca = r.aprox ? `<span class="marca" title="Suena ${esc(r.cifrado)}">≈</span>` : '';
-        html = `<span class="ac" style="left:${x.toFixed(1)}px"><span class="nom">${esc(tok.texto)}</span>${marca}${MANOS[`${r.figura}|${r.comp}|${r.inv ? 1 : 0}`]}</span>`;
-      }
-      renglones.at(-1).push(html);
-    }
-    return renglones.map(p => `<div class="fila-ac">${p.join('')}</div>`).join('');
+    const conMano = f.toks.filter(tok => tok.ac && !resolver(tok.ac, tono).fuera);
+    const x0 = conMano.length ? conMano[0].col * ch : 0;
+    const w = conMano.length
+      ? Math.max(26, Math.min(MANO, (ancho - x0) / conMano.length - 3))
+      : MANO;
+    let finMano = -Infinity;
+    const piezas = f.toks.map(tok => {
+      const x = tok.col * ch;
+      if (!tok.ac) return `<span class="txt" style="left:${x.toFixed(1)}px">${esc(tok.texto)}</span>`;
+      const r = resolver(tok.ac, tono);
+      if (r.fuera) return `<span class="ac fuera" style="left:${x.toFixed(1)}px" title="No está en ${t.nombre}"><span class="nom">${esc(tok.texto)}</span></span>`;
+      const marca = r.aprox ? `<span class="marca" title="Suena ${esc(r.cifrado)}">≈</span>` : '';
+      const xm = Math.max(x - 4, finMano + 3);
+      finMano = xm + w;
+      return `<span class="ac" style="left:${x.toFixed(1)}px"><span class="nom">${esc(tok.texto)}</span>${marca}</span>`
+        + `<span class="mano-ac" style="left:${xm.toFixed(1)}px;width:${w.toFixed(1)}px">${MANOS[`${r.figura}|${r.comp}|${r.inv ? 1 : 0}`]}</span>`;
+    }).join('');
+    const alto = conMano.length ? Math.round(w * 0.65) + 16 : 18;
+    return `<div class="fila-ac" style="height:${alto}px;min-width:${Math.ceil(Math.max(finMano, 0))}px">${piezas}</div>`;
   }).join('');
 }
 

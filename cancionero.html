@@ -58,11 +58,11 @@
   .tono { margin-bottom: 12px; font-size: 12px; color: var(--fg3); }
   .tono b { color: var(--acc); font-size: 14px; }
   .linea { white-space: pre; min-height: 1.55em; }
-  .fila-ac { position: relative; height: 58px; }
-  html.guia .fila-ac { height: 40px; }
+  .fila-ac { position: relative; }
   .ac { position: absolute; bottom: 0; display: flex; align-items: flex-end; gap: 3px; white-space: nowrap; }
   .ac .nom { color: var(--acc); font-weight: 700; line-height: 1.2; }
-  .ac .mano { width: var(--mano, 84px); height: auto; display: block; }
+  .mano-ac { position: absolute; top: 0; }
+  .mano-ac .mano { width: 100%; height: auto; display: block; }
   .ac .marca { font-size: 10px; color: var(--fg3); align-self: flex-start; }
   .ac.fuera .nom { text-decoration: underline dotted; }
   .txt { position: absolute; bottom: 0; white-space: pre; line-height: 1.2; }

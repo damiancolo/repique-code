@@ -2850,7 +2850,8 @@ async function init() {
     const d = e.data;
     const fr = document.getElementById('cancionero-iframe');
     if (!fr || e.source !== fr.contentWindow || !d || d.tipo !== 'cancionero-tono') return;
-    if (d.tono && d.tono !== tonalidad) menuTonoGrilla.querySelector(`[data-tono="${d.tono}"]`)?.click();
+    if (typeof d.tono === 'string' && /^[A-G][#b♯♭]?$/.test(d.tono) && d.tono !== tonalidad)
+      menuTonoGrilla.querySelector(`[data-tono="${d.tono}"]`)?.click();
   });
   // El cancionero avisa cuánto mide y si ya tiene una canción: con canción, la
   // guía pasa a ser la canción (la lámina se esconde y la columna se ensancha)
@@ -2860,7 +2861,7 @@ async function init() {
     if (!fr || e.source !== fr.contentWindow || !d || d.tipo !== 'cancionero-alto') return;
     document.getElementById('mapa-overlay').classList.toggle('con-cancion', !!d.conCancion);
     const tope = window.innerHeight - 64;   // la barra del mapa y un margen
-    fr.style.height = Math.max(60, Math.min(d.alto, tope)) + 'px';
+    fr.style.height = Math.max(60, Math.min(Number(d.alto) || 0, tope)) + 'px';
   });
 
   // La lámina avisa cuánto mide en cada modo: el panel toma esa forma

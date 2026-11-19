@@ -2024,8 +2024,14 @@ export function actualizarFiltro(t) {
   filtro.frequency.rampTo(freq, 0.18);
 }
 
+// Volumen por tamaño de la figura (caja de las cuatro yemas, en fracción de la
+// pantalla). Antes llegaba al máximo con 0.06 —manos casi juntas— y todo el
+// control quedaba apretado cerca del centro. Ahora el máximo es con las manos
+// un poco abiertas (~0.15, unos 45 % × 33 % de la pantalla) y la curva es
+// suave, para que haya recorrido de verdad entre bajito y fuerte.
+const AREA_MAX = 0.15;
 export function actualizarArea(area) {
-  const ganancia = Math.min(area / 0.06, 1);
+  const ganancia = Math.pow(Math.min(Math.max(area, 0) / AREA_MAX, 1), 0.7);
   if (_modoAcordes) acordeGain.gain.rampTo(ganancia, 0.18);
   else              droneGain.gain.rampTo(ganancia, 0.18);
 }

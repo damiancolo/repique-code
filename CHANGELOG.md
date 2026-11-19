@@ -18,6 +18,10 @@ Las fechas salen del historial de git.
   canción con acordes (o el enlace, o una captura) y sale con las manos de cada
   acorde. La tonalidad del instrumento se pone sola.
 - Guía propia del modo cantar en el «?».
+- Los acordes por orden de uso: el rectángulo es la tónica, después los
+  trapecios, y las pinzas (una o las dos) para los que aparecen menos.
+- El volumen tiene más recorrido: llega al máximo con las manos un poco
+  abiertas, no casi juntas.
 - La canción del cancionero deja ver la cámara detrás, sin perder la letra, y
   el panel es más ancho para que entren todos los acordes.
 

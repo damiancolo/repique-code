@@ -248,12 +248,19 @@ interruptor **dentro de acordes** (`modoCantar` en main.js): prenderlo fuerza
 acordes; pasar a notas lo apaga. **No es un fork**: comparte todo con el modo
 acordes, sólo cambia la tabla de figuras.
 
-- **Las figuras** (`GRADO_POR_FORMA_CANTAR` en acordes.js): los más usados en
-  las figuras más cómodas — rectángulo=**I**, trapecios: piso=ii, techo=**vi**,
-  izq=IV, der=**V** (un dedo mayor = **V7**); pinzas sueltas: der=**II7**,
-  izq=**III7**. En Sol: G Am Em C D A7 B7 (D7 = D con un mayor). Fuera el iii y
-  el vii°. (19 nov 2026 se probó poner I/IV/V en las pinzas y las dos pinzas
-  como tónica; Damián prefirió esto: rectángulo, luego trapecios, luego pinzas.)
+- **Las figuras** (`GRADO_POR_FORMA_CANTAR` en acordes.js), por orden de uso
+  (19 nov 2026, pedido de Damián): rectángulo=**I**; trapecios de pulgares/
+  índices: piso=**IV**, techo=**V** (un dedo mayor = **V7**); de costado:
+  izq=**vi**, der=**ii**; pinzas de una mano: der=**II7**, izq=**III7**; **dos
+  pinzas=iii**. En Sol: G C D Em Am A7 B7 Bm. Las figuras **dejan de ser una
+  escala que sube**: acá manda la comodidad.
+- **Las dos pinzas** no son una forma para `hands.js` (es el gesto del candado,
+  apagado en acordes): main.js las nombra `dos_pinzas` sólo en cantar. Su
+  cuadrilátero se aplasta en una línea, así que el volumen sale de la separación
+  (`actualizarArea(ancho * 0.33)`).
+- ⚠️ **Una pinza sola espera más** (`ACORDE_MS_PINZA` = 230 ms, contra 100):
+  para hacer las dos pinzas casi siempre se cierra una mano antes, y sin esa
+  espera sonaría un instante el II7 o el III7.
 - ⚠️ **Sin «pulgares arriba» (`do_alto`)** (19 nov 2026, pedido de Damián): la
   cámara la confundía con las figuras de pulgares abajo. En cantar no tiene
   grado: si la cámara la lee, `pasoAcordes` no ve lectura y el acorde que
@@ -426,7 +433,7 @@ que una cuerda pulsada se sienta pulsada.
 
 `actualizarBPM(bpm)` — suavizado: `Si += (objetivo - Si) * 0.04`
 `actualizarFiltro(ancho)` — lowpass 3500-12000 Hz según apertura de manos
-`actualizarArea(area)` — volumen del drone según bounding box de dedos
+`actualizarArea(area)` — volumen (drone o acorde) según la caja de las yemas: máximo con las manos un poco abiertas (`AREA_MAX` 0.15, curva ^0.7; antes saturaba en 0.06, casi con las manos juntas)
 
 ## Modo baile: gestos → sonidos, biblioteca y familias (audio.js + main.js)
 

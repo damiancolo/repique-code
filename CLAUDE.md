@@ -249,14 +249,19 @@ acordes; pasar a notas lo apaga. **No es un fork**: comparte todo con el modo
 acordes, sólo cambia la tabla de figuras.
 
 - **Las figuras** (`GRADO_POR_FORMA_CANTAR` en acordes.js): rectángulo=I,
-  trapecio piso=ii, techo=**vi**, izq=IV, der=**V7**, pinza der=**II7**, pinza
-  izq=**III7**, pulgares arriba=**V** (sin séptima). En Sol: G Am Em C D7 A7 B7 D.
-  Fuera el iii y el vii°, que casi no aparecen en un cancionero. Las figuras
-  **dejan de ser una escala que sube**: acá manda la comodidad.
-- **Grados nuevos** en `GRADOS`: `V7`, `II7`, `III7`, con `base: 'dom7'` —
-  `tipoComplemento` devuelve la base con 0 dedos, así nombre, frecuencias,
-  meñique (D7 → Dm7) y registros salen solos. Dedos: 1 = sus4, 2 = 9. `npm test`
-  comprueba los nombres en Sol y Do y que todo suene en las 12 tonalidades.
+  trapecio piso=ii, techo=**vi**, izq=IV, der=**V** (un dedo mayor = **V7**),
+  pinza der=**II7**, pinza izq=**III7**. En Sol: G Am Em C D A7 B7 (D7 = D con
+  un mayor). Fuera el iii y el vii°, que casi no aparecen en un cancionero. Las
+  figuras **dejan de ser una escala que sube**: acá manda la comodidad.
+- ⚠️ **Sin «pulgares arriba» (`do_alto`)** (19 nov 2026, pedido de Damián): la
+  cámara la confundía con las figuras de pulgares abajo. En cantar no tiene
+  grado: si la cámara la lee, `pasoAcordes` no ve lectura y el acorde que
+  sonaba sigue sonando. La lámina `#cantar` no la muestra.
+- **Grados nuevos** en `GRADOS`: `II7` y `III7` (y `V7`, hoy sin figura), con
+  `base: 'dom7'` — `tipoComplemento` devuelve la base con 0 dedos, así nombre,
+  frecuencias, meñique (A7 → Am7) y registros salen solos. Dedos: 1 = sus4,
+  2 = 9. `npm test` comprueba los nombres en Sol y Do, que el V con un dedo sea
+  V7 y que todo suene en las 12 tonalidades.
 - **Rasguido** (`setRasguido`, audio.js): en cantar, `sonarAcorde` va por
   `_rasguear`: cada voz baja casi a cero, salta a su nota y vuelve a subir con
   `RASGUIDO_PASO` (22 ms) de retraso respecto de la de abajo. Las voces siguen

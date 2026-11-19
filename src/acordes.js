@@ -50,18 +50,22 @@ export const GRADO_POR_FORMA = {
 // Pedido de Damián (19 nov 2026): un modo para quien canta y toca la guitarra.
 // Las mismas ocho figuras, pero con los acordes que más se usan en una canción:
 // la tónica, el ii, el vi, el IV, la dominante CON séptima, las dos dominantes
-// secundarias (II7 lleva al V, III7 lleva al vi) y el V sin séptima. Fuera el
-// iii y el vii°, que casi no aparecen en un cancionero. En Sol: G Am Em C D7 A7
-// B7 D. Las figuras dejan de ser una escala que sube: acá manda la comodidad.
+// secundarias (II7 lleva al V, III7 lleva al vi). Fuera el iii y el vii°, que
+// casi no aparecen en un cancionero. En Sol: G Am Em C D A7 B7 (D7 = D con un
+// dedo mayor). Las figuras dejan de ser una escala que sube: acá manda la comodidad.
+//
+// Sin «pulgares arriba» (19 nov 2026, pedido de Damián): la cámara la confundía
+// con las figuras de pulgares abajo. El V lo da el trapecio derecho y un dedo
+// mayor lo pasa a V7 (D → D7 en Sol), como en el modo música. Si la cámara lee
+// esa figura igual, no cambia nada: el acorde que sonaba sigue sonando.
 export const GRADO_POR_FORMA_CANTAR = {
   rectangulo:     'I',
   trapecio_piso:  'II',
   trapecio_techo: 'VI',
   trapecio_izq:   'IV',
-  trapecio_der:   'V7',
+  trapecio_der:   'V',
   la:             'II7',
   si:             'III7',
-  do_alto:        'V',
 };
 
 // La calidad de cada grado viene puesta por la tonalidad: en Do el segundo

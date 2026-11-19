@@ -11,8 +11,9 @@ Las fechas salen del historial de git.
 
 **Modo cantar** (19 nov)
 - Botón 🎤 al lado de «♪ notas»: las mismas figuras, pero con los acordes de
-  guitarra más usados (en Sol: G, Am, Em, C, D7, A7, B7 y D), y cada cambio de
-  acorde suena como un rasguido.
+  guitarra más usados (en Sol: G, Am, Em, C, D, A7 y B7; el D con un dedo
+  mayor da D7), y cada cambio de acorde suena como un rasguido. Sin la figura
+  de pulgares arriba, que la cámara confundía.
 - El cancionero está dentro de la guía, en el lugar de los botones: se pega una
   canción con acordes (o el enlace, o una captura) y sale con las manos de cada
   acorde. La tonalidad del instrumento se pone sola.

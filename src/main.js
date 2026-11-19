@@ -152,6 +152,10 @@ async function init() {
   const ACORDE_MS      = 100; // hay que sostener la forma esto
   const ACORDE_LECTURAS = 3;  // ...y verla al menos estas veces
   const ACORDE_GRACIA  = 50;  // si el detector pierde la mano, no cortar el acorde
+  // En cantar, una pinza sola espera más: para hacer las dos pinzas casi siempre
+  // se cierra una mano antes que la otra, y sin esta espera sonaría un instante
+  // el acorde de esa pinza sola antes de la tónica.
+  const ACORDE_MS_PINZA = 230;
   let _acCandidato = null, _acDesde = 0, _acLecturas = 0;
   let _acVistoEn   = 0;
   let _acSonando   = null;
@@ -260,7 +264,8 @@ async function init() {
     if (!mismoAcorde(_acCandidato, lectura)) { _acCandidato = lectura; _acDesde = ahora; _acLecturas = 1; return; }
     _acLecturas++;
 
-    if (ahora - _acDesde < ACORDE_MS || _acLecturas < ACORDE_LECTURAS) return;
+    const espera = (modoCantar && (forma === 'la' || forma === 'si')) ? ACORDE_MS_PINZA : ACORDE_MS;
+    if (ahora - _acDesde < espera || _acLecturas < ACORDE_LECTURAS) return;
 
     // Comparar el ACORDE que va a sonar, no el gesto: si la mano tiembla entre
     // dos posturas que dan lo mismo, no pasa absolutamente nada.
@@ -1677,9 +1682,16 @@ async function init() {
         // Hay cuadrilátero en pantalla: que la nota suene, con ritmo o sin él
         asegurarNotas();
 
+        // En cantar las dos pinzas son la tónica. El detector no le da forma
+        // (es el gesto del candado), así que se le pone nombre acá, y como con
+        // las dos pinzas el cuadrilátero se aplasta en una línea, el volumen no
+        // puede salir del área: va entero.
+        const dosPinzasCantar = modoAcordes && modoCantar && dosPinzas;
+        const formaAc = dosPinzasCantar ? 'dos_pinzas' : forma;
+
         if (state.notasIniciadas) {
           areaHold = AREA_HOLD_MAX;
-          actualizarArea(area);
+          actualizarArea(dosPinzasCantar ? 1 : area);
 
           // Cuántos mayores están arriba: 0 la tríada, 1 la tensión, 2 el color.
           // La línea entre los mayores muestra el estado sin tener que leer nada.
@@ -1688,8 +1700,8 @@ async function init() {
             : 0;
 
           if (modoAcordes) {
-            pasoEspiral(forma, centroY, ancho, timestamp);
-            pasoAcordes(forma, centroY, timestamp, complemento, invertido);
+            pasoEspiral(formaAc, centroY, ancho, timestamp);
+            pasoAcordes(formaAc, centroY, timestamp, complemento, invertido);
           } else {
             // La quinta entra y sale sola: no necesita debounce porque el
             // estirado del mayor ya trae su propia histéresis. Pero cambia lo

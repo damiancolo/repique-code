@@ -55,17 +55,19 @@ export const GRADO_POR_FORMA = {
 // dedo mayor). Las figuras dejan de ser una escala que sube: acá manda la comodidad.
 //
 // Sin «pulgares arriba» (19 nov 2026, pedido de Damián): la cámara la confundía
-// con las figuras de pulgares abajo. El V lo da el trapecio derecho y un dedo
+// con las figuras de pulgares abajo. El V lo da la pinza derecha y un dedo
 // mayor lo pasa a V7 (D → D7 en Sol), como en el modo música. Si la cámara lee
 // esa figura igual, no cambia nada: el acorde que sonaba sigue sonando.
+// Los acordes que más se tocan van en las figuras más fáciles de hacer: las
+// pinzas (19 nov 2026, pedido de Damián). El trapecio de techo queda libre.
 export const GRADO_POR_FORMA_CANTAR = {
-  rectangulo:     'I',
+  dos_pinzas:     'I',    // las dos manos en pinza
+  si:             'IV',   // pinza izquierda
+  la:             'V',    // pinza derecha (un mayor = V7)
+  rectangulo:     'VI',
   trapecio_piso:  'II',
-  trapecio_techo: 'VI',
-  trapecio_izq:   'IV',
-  trapecio_der:   'V',
-  la:             'II7',
-  si:             'III7',
+  trapecio_izq:   'II7',
+  trapecio_der:   'III7',
 };
 
 // La calidad de cada grado viene puesta por la tonalidad: en Do el segundo

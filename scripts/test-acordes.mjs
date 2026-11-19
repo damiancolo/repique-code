@@ -91,8 +91,8 @@ if (n3.cifrado !== 'Fm') falla(`IV invertido se llama ${n3.cifrado}`);
 
 // 8. Modo cantar: los acordes de guitarra, en Sol y en Do, y que cada figura suene
 const CANTAR_ESPERADO = {
-  G: ['G', 'Am', 'Em', 'C', 'D', 'A7', 'B7'],
-  C: ['C', 'Dm', 'Am', 'F', 'G', 'D7', 'E7'],
+  G: ['G', 'C', 'D', 'Em', 'Am', 'A7', 'B7'],
+  C: ['C', 'F', 'G', 'Am', 'Dm', 'D7', 'E7'],
 };
 for (const [tono, esperado] of Object.entries(CANTAR_ESPERADO)) {
   const dados = Object.values(GRADO_POR_FORMA_CANTAR).map(g => nombreAcorde(tono, g).cifrado);

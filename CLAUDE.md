@@ -248,11 +248,20 @@ interruptor **dentro de acordes** (`modoCantar` en main.js): prenderlo fuerza
 acordes; pasar a notas lo apaga. **No es un fork**: comparte todo con el modo
 acordes, sólo cambia la tabla de figuras.
 
-- **Las figuras** (`GRADO_POR_FORMA_CANTAR` en acordes.js): rectángulo=I,
-  trapecio piso=ii, techo=**vi**, izq=IV, der=**V** (un dedo mayor = **V7**),
-  pinza der=**II7**, pinza izq=**III7**. En Sol: G Am Em C D A7 B7 (D7 = D con
-  un mayor). Fuera el iii y el vii°, que casi no aparecen en un cancionero. Las
-  figuras **dejan de ser una escala que sube**: acá manda la comodidad.
+- **Las figuras** (`GRADO_POR_FORMA_CANTAR` en acordes.js; 19 nov 2026, los
+  más usados van en las pinzas, que son las figuras más fáciles): **dos
+  pinzas=I**, pinza izq=**IV**, pinza der=**V** (un dedo mayor = **V7**),
+  rectángulo=**vi**, trapecio piso=ii, izq=**II7**, der=**III7**; el trapecio de
+  techo queda libre. En Sol: G C D Em Am A7 B7 (D7 = D con un mayor). Fuera el
+  iii y el vii°. Las figuras **dejan de ser una escala que sube**: acá manda la
+  comodidad.
+- **Las dos pinzas** no son una forma para `hands.js` (es el gesto del candado,
+  que en acordes está apagado): main.js las nombra `dos_pinzas` sólo en cantar y
+  les da volumen entero (`actualizarArea(1)`), porque el cuadrilátero se aplasta
+  en una línea y el área daría silencio.
+- ⚠️ **Una pinza sola espera más** (`ACORDE_MS_PINZA` = 230 ms, contra 100):
+  para hacer las dos pinzas casi siempre se cierra una mano antes, y sin esa
+  espera sonaría un instante el IV o el V antes de la tónica.
 - ⚠️ **Sin «pulgares arriba» (`do_alto`)** (19 nov 2026, pedido de Damián): la
   cámara la confundía con las figuras de pulgares abajo. En cantar no tiene
   grado: si la cámara la lee, `pasoAcordes` no ve lectura y el acorde que
@@ -278,7 +287,7 @@ acordes, sólo cambia la tabla de figuras.
   `postMessage {tipo:'cancionero-alto', alto, conCancion}` (mide `main`, no el
   documento, o no se achicaría al borrar), el overlay toma `.con-cancion` (más
   ancho, `clamp(260px, 26vw, 400px)`, y la lámina escondida) y el iframe toma ese
-  alto. Al vaciar la caja vuelve la guía. Con canción aparece **«← guía»**, que
+  alto. Al vaciar la caja vuelve la guía. El fondo de la canción es crema al 72 % (iframe transparente, panel a opacidad 1): deja ver la cámara sin borronear la letra. Con canción aparece **«← guía»**, que
   esconde la canción y vuelve a la lámina sin perderla (`oculta`); **«canción →»**
   la trae de vuelta, y escribir en la caja también. También avisa la tonalidad
   (`{tipo:'cancionero-tono'}`) y el instrumento la pone sola.

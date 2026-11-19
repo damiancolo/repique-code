@@ -113,7 +113,7 @@ function deducirTono(acordes) {
     for (const a of [acordes[0], acordes.at(-1)]) {
       const r = a && resolver(a, t.id);
       // Las canciones suelen empezar y terminar en la tónica o en su relativa menor (vi)
-      if (r && !r.fuera && (r.figura === 'rectangulo' || r.figura === (CANTAR ? 'trapecio_techo' : 'la'))) p += 2;
+      if (r && !r.fuera && ['I', 'VI', 'I8'].includes(FIGURAS[r.figura])) p += 2;
     }
     if (!mejor || p > mejor.p) mejor = { id: t.id, p };
   }

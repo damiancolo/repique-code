@@ -18,6 +18,11 @@ Las fechas salen del historial de git.
   canción con acordes (o el enlace, o una captura) y sale con las manos de cada
   acorde. La tonalidad del instrumento se pone sola.
 - Guía propia del modo cantar en el «?».
+- Los acordes que más se tocan van en las pinzas: las dos pinzas son la tónica
+  (G en Sol), la pinza izquierda el IV (C) y la derecha el V (D, D7 con un
+  dedo mayor). Una pinza sola espera un poco antes de sonar, para que al cerrar
+  las dos no se cuele su acorde.
+- La canción del cancionero deja ver la cámara detrás, sin perder la letra.
 
 ---
 

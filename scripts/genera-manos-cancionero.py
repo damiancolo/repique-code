@@ -14,6 +14,26 @@ d = {'forma': _seccion('forma'), 'mayores': _seccion('mayores'), 'menique': _sec
 # música; en el cancionero no significa nada (en cantar esa figura es el V): fuera.
 FLECHA = '<path d="M150 34 L150 8 M139 19 L150 8 L161 19" stroke="#C44A1A" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
 d['forma'] = [x.replace(FLECHA, '') for x in d['forma']]
+
+def dos_pinzas(svgs):
+    """«Las dos pinzas» (modo cantar) no está en la lámina: se arma con la mano
+    izquierda de la pinza izquierda (si) y la derecha de la pinza derecha (la),
+    con sus dos marcas de pinza. Sin el cuadrilátero: acá no hay figura."""
+    def partes(svg, izquierda):
+        out = []
+        for e in re.findall(ELRE, svg):
+            if 'polygon' in e:
+                continue
+            if 'C44A1A' in e and 'r="17"' not in e and 'r="5"' not in e:
+                continue   # vértices del cuadrilátero: fuera; quedan las marcas de pinza
+            m = re.search(r'(?:d="M|cx="|x1=")(-?[\d.]+)', e)
+            if not m:
+                continue
+            if (float(m.group(1)) < 150) == izquierda:
+                out.append(e)
+        return out
+    cab = re.match(r'<svg[^>]*>', svgs[5]).group(0)
+    return cab + ''.join(partes(svgs[6], True) + partes(svgs[5], False)) + '</svg>'
 ELRE=r'<(?:path|circle|line|polygon|polyline|rect|ellipse|text)[^>]*?/?>(?:[^<]*</text>)?'
 def els(s): return re.findall(ELRE, s)
 NUM=r'(-?[\d.]+)'
@@ -59,7 +79,8 @@ def transf(ib, forma_lista, ishape):
     ca,sa=math.cos(t)*s,math.sin(t)*s
     e=c1[0]-(ca*c0[0]-sa*c0[1]); f=c1[1]-(sa*c0[0]+ca*c0[1])
     return f'matrix({ca:.4f} {sa:.4f} {-sa:.4f} {ca:.4f} {e:.2f} {f:.2f})'
-GR=['rectangulo','trapecio_piso','trapecio_techo','trapecio_izq','trapecio_der','la','si','do_alto']
+d['forma'] = d['forma'][:8] + [dos_pinzas(d['forma'])]   # el 9.º (espiral) no se dibuja: va el de las dos pinzas
+GR=['rectangulo','trapecio_piso','trapecio_techo','trapecio_izq','trapecio_der','la','si','do_alto','dos_pinzas']
 out={}
 for gi,g in enumerate(GR):
     svg=d['forma'][gi]; lista=els(svg); D=doblados(lista)

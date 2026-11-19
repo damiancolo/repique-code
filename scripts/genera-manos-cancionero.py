@@ -10,6 +10,10 @@ def _seccion(nombre):
     j = _lam.index('data-sec=', i + 20)
     return re.findall(r'<svg.*?</svg>', _lam[i:j], re.S)
 d = {'forma': _seccion('forma'), 'mayores': _seccion('mayores'), 'menique': _seccion('menique')}
+# La flecha de «pulgares arriba» quiere decir «una octava más alto» en el modo
+# música; en el cancionero no significa nada (en cantar esa figura es el V): fuera.
+FLECHA = '<path d="M150 34 L150 8 M139 19 L150 8 L161 19" stroke="#C44A1A" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+d['forma'] = [x.replace(FLECHA, '') for x in d['forma']]
 ELRE=r'<(?:path|circle|line|polygon|polyline|rect|ellipse|text)[^>]*?/?>(?:[^<]*</text>)?'
 def els(s): return re.findall(ELRE, s)
 NUM=r'(-?[\d.]+)'

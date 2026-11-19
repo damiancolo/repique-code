@@ -299,6 +299,14 @@ acordes, sólo cambia la tabla de figuras.
   doblado por el estirado, girado según cada mano). ⚠️ Si cambia la lámina,
   volver a correrlo. Enlaces y capturas van a `/lab/cancionero/leer`, que sólo
   existe en estudioprompt.com; en cualquier otro lado se pega el texto.
+- **Todos los acordes** (`acordes.html` + `src/diccionario.js`, tercera página
+  del build): en cantar, el botón de la barra del mapa dice **«Acordes →»** y
+  abre `#acordes-overlay` (panel translúcido a la derecha) en vez de la guía de
+  texto. Recorre figuras × 0/1/2 mayores × meñique y muestra cada acorde una vez,
+  con la combinación más barata, en tres grupos: la figura sola, con mayores,
+  con meñique (unos 35 por tonalidad). Tiene sus 12 tonalidades arriba: elegir
+  una cambia la del instrumento (`cancionero-tono`), y el instrumento le avisa
+  `{tipo:'tono'}` cuando cambia desde el menú. Se cierra al salir de cantar.
 - ⚠️ El build ahora saca `main-*.js` (antes `index-*.js`) y `cancionero-*.js`:
   al copiar `dist/` al sitio, borrar **todos** los `.js` viejos de `assets/`.
 

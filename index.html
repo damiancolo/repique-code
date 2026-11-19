@@ -1139,6 +1139,29 @@
       transition: border-color 0.15s, color 0.15s;
     }
     #mapa-barra button:hover { border-color: rgba(255,255,255,0.55); color: #fff; }
+    /* Modo cantar: «Guía →» abre todos los acordes con sus manos (acordes.html)
+       en vez de la guía de texto. Panel translúcido a la derecha; se lee y se
+       sigue tocando. */
+    #acordes-overlay {
+      position: fixed; top: 3rem; right: 0.8rem; bottom: 0.8rem; z-index: 43;
+      width: clamp(320px, 38vw, 600px);
+      display: none; flex-direction: column;
+    }
+    #acordes-overlay.visible { display: flex; }
+    #acordes-barra {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.25rem 0.3rem 0.25rem 0.6rem;
+      background: rgba(26,26,24,0.7); color: rgba(255,255,255,0.6);
+      font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase;
+    }
+    #acordes-barra span { flex: 1; }
+    #acordes-barra button {
+      background: none; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.55);
+      font-family: inherit; font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 0.35rem 0.6rem; cursor: pointer;
+    }
+    #acordes-barra button:hover { border-color: rgba(255,255,255,0.55); color: #fff; }
+    #acordes-iframe { flex: 1; width: 100%; border: 0; background: transparent; }
     #btn-cerrar-mapa { font-size: 0.8rem !important; padding: 0.2rem 0.55rem !important; }
     #mapa-iframe {
       width: 100%;
@@ -1565,6 +1588,16 @@
   <button id="btn-vinculos">🤙🤙 vínculos</button>
 
   <!-- Overlay Vínculos: iframe del juego + canvas satélites encima -->
+  <!-- Modo cantar: todos los acordes con sus manos (acordes.html), desde «Guía →» -->
+  <div id="acordes-overlay">
+    <div id="acordes-barra">
+      <span>Todos los acordes</span>
+      <button id="btn-acordes-mapa">← mapa</button>
+      <button id="btn-cerrar-acordes" title="Cerrar">✕</button>
+    </div>
+    <iframe id="acordes-iframe" src="" title="Todos los acordes del modo cantar con sus manos"></iframe>
+  </div>
+
   <!-- Mapa de manos: el «?» lo despliega. Es una página aparte
        (public/mapa-de-manos.html) que se carga recién al abrirla. -->
   <div id="mapa-overlay">

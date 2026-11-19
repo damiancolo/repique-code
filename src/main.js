@@ -460,7 +460,7 @@ async function init() {
     'panel', 'tempo-slider-wrap', 'filtro-slider-wrap', 'menu-ritmo',
     'ritmo-viz', 'config-sonidos', 'guia-detalle-panel', 'btn-vinculos',
     // La barra del mapa de manos: para poder cerrarlo con la pinza.
-    'mapa-barra',
+    'mapa-barra', 'acordes-barra',
     // El cartel de guardado va acá o la persona no puede aceptarlo con la mano:
     // en la instalación nadie toca el ordenador, y decidir si se publica su
     // propia imagen es justo lo último que debería obligar a agacharse al teclado.
@@ -2003,6 +2003,8 @@ async function init() {
     b.addEventListener('click', () => {
       tonalidad = t.id;
       pintarTono();
+      // La tabla de acordes (si está abierta) se muda a la tonalidad nueva
+      document.getElementById('acordes-iframe')?.contentWindow?.postMessage({ tipo: 'tono', tono: tonalidad }, '*');
       // Transportar en caliente: el acorde que está sonando se muda al tono
       // nuevo sin que haya que rehacer el gesto
       if (modoAcordes && _acSonando) {
@@ -2843,13 +2845,18 @@ async function init() {
     if (!ov || !fr) return;
     const cantar = modoCantar && !modoPintar && !modoBaile;
     ov.classList.toggle('cantar', cantar);
+    if (!cantar) document.getElementById('acordes-overlay')?.classList.remove('visible');
+    const bg = document.getElementById('btn-mapa-guia');
+    if (bg) bg.textContent = cantar ? 'Acordes →' : 'Guía →';
     if (cantar && !fr.getAttribute('src')) fr.setAttribute('src', 'cancionero.html?modo=cantar&guia');
   }
   // El cancionero deduce la tonalidad de la canción y se la pasa al instrumento
   window.addEventListener('message', (e) => {
     const d = e.data;
     const fr = document.getElementById('cancionero-iframe');
-    if (!fr || e.source !== fr.contentWindow || !d || d.tipo !== 'cancionero-tono') return;
+    const fa = document.getElementById('acordes-iframe');
+    const deAca = (fr && e.source === fr.contentWindow) || (fa && e.source === fa.contentWindow);
+    if (!deAca || !d || d.tipo !== 'cancionero-tono') return;
     if (typeof d.tono === 'string' && /^[A-G][#b♯♭]?$/.test(d.tono) && d.tono !== tonalidad)
       menuTonoGrilla.querySelector(`[data-tono="${d.tono}"]`)?.click();
   });
@@ -2889,10 +2896,25 @@ async function init() {
   // figura da cada acorde (Do, Re, Mi…). Pedido de Damián, 19 nov 2026.
   pintarModos();
   abrirMapa();
+  // En cantar, «Guía →» abre todos los acordes con sus manos, que es lo que
+  // necesita quien canta; en los otros modos, la guía de texto de siempre.
+  const acordesOverlay = document.getElementById('acordes-overlay');
+  const acordesIframe  = document.getElementById('acordes-iframe');
+  const cerrarAcordes  = () => acordesOverlay.classList.remove('visible');
+  function abrirAcordes() {
+    if (!acordesIframe.getAttribute('src')) acordesIframe.setAttribute('src', `acordes.html?tono=${encodeURIComponent(tonalidad)}`);
+    else acordesIframe.contentWindow?.postMessage({ tipo: 'tono', tono: tonalidad }, '*');
+    acordesOverlay.classList.add('visible');
+  }
+  document.getElementById('btn-cerrar-acordes').addEventListener('click', cerrarAcordes);
+  document.getElementById('btn-acordes-mapa').addEventListener('click', (e) => {
+    e.stopPropagation(); cerrarAcordes(); abrirMapa();
+  });
   document.getElementById('btn-mapa-guia').addEventListener('click', (e) => {
     e.stopPropagation();
     cerrarMapa();
-    guiaDetalle.classList.add('visible');
+    if (modoCantar && !modoPintar && !modoBaile) abrirAcordes();
+    else guiaDetalle.classList.add('visible');
   });
 
   btnGuiaDetalle.addEventListener('click', (e) => {

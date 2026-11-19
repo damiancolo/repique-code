@@ -4,8 +4,9 @@ export default defineConfig({
   base: './', // rutas relativas para poder servir desde cualquier subdirectorio
   build: {
     rollupOptions: {
-      // Dos páginas: el instrumento y el cancionero (que el modo cantar abre arriba de la guía)
-      input: { main: 'index.html', cancionero: 'cancionero.html' },
+      // Tres páginas: el instrumento, el cancionero (arriba de la guía en cantar) y
+      // la tabla de todos los acordes (el «Guía →» del modo cantar)
+      input: { main: 'index.html', cancionero: 'cancionero.html', acordes: 'acordes.html' },
     },
   },
 })

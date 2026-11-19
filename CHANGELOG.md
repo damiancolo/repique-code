@@ -18,6 +18,9 @@ Las fechas salen del historial de git.
   canción con acordes (o el enlace, o una captura) y sale con las manos de cada
   acorde. La tonalidad del instrumento se pone sola.
 - Guía propia del modo cantar en el «?».
+- «Acordes →» en la barra de la guía abre todos los acordes que se pueden
+  tocar (unos 35 por tonalidad), cada uno con sus manos, en la tonalidad del
+  instrumento o en la que se elija.
 - Los acordes por orden de uso: el rectángulo es la tónica, después los
   trapecios, y las pinzas (una o las dos) para los que aparecen menos.
 - El volumen tiene más recorrido: llega al máximo con las manos un poco

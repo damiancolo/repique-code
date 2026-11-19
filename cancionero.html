@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Cancionero · Repique Code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!--
+  Cancionero de Repique Code. Se pega una canción con los acordes encima de la
+  letra (o un enlace, o una captura) y sale la misma canción con el dibujo de las
+  manos al lado de cada acorde.
+
+  ?modo=cantar  → las figuras del modo cantar (GRADO_POR_FORMA_CANTAR)
+  ?oscuro       → para ir encima de la cámara, dentro del instrumento
+
+  La traducción acorde → figura no usa IA: es la tabla de acordes.js al revés.
+  Enlaces y capturas pasan por /lab/cancionero/leer, que sólo existe en la
+  instancia oficial (estudioprompt.com). En cualquier otro lado se pega el texto.
+  Dentro de un iframe le avisa al instrumento la tonalidad que deduce
+  (postMessage {tipo:'cancionero-tono', tono}).
+-->
+<style>
+  :root { --bg: #FFFFFF; --fg: #1A1A18; --fg3: #8A887E; --line: #D6D3CC; --acc: #E8700A; --caja: #FBFAF8; }
+  html.oscuro { --bg: rgba(14,14,13,0.82); --fg: #F2EFE9; --fg3: rgba(242,239,233,0.5); --line: rgba(255,255,255,0.18); --caja: rgba(255,255,255,0.06); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); }
+  html.oscuro, html.oscuro body { height: 100%; }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+  html.oscuro main { padding: 10px 12px 30px; }
+
+  #caja { width: 100%; min-height: 54px; resize: vertical; border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; font: 13px/1.5 'JetBrains Mono', monospace; color: var(--fg); background: var(--caja); }
+  #caja:focus { outline: 2px solid var(--acc); outline-offset: 1px; }
+  body.soltando #caja { outline: 2px dashed var(--acc); }
+  #estado { min-height: 18px; margin: 6px 2px 12px; font: 11px/1.5 'JetBrains Mono', monospace; color: var(--fg3); }
+
+  #cancion { font: 14px/1.55 'JetBrains Mono', monospace; overflow-x: auto; }
+  html.oscuro #cancion { font-size: 12.5px; }
+  .tono { margin-bottom: 12px; font-size: 12px; color: var(--fg3); }
+  .tono b { color: var(--acc); font-size: 14px; }
+  .linea { white-space: pre; min-height: 1.55em; }
+  .fila-ac { position: relative; height: 58px; }
+  html.oscuro .fila-ac { height: 50px; }
+  .ac { position: absolute; bottom: 0; display: flex; align-items: flex-end; gap: 3px; white-space: nowrap; }
+  .ac .nom { color: var(--acc); font-weight: 700; line-height: 1.2; }
+  .ac .mano { width: var(--mano, 84px); height: auto; display: block; }
+  .ac .marca { font-size: 10px; color: var(--fg3); align-self: flex-start; }
+  .ac.fuera .nom { text-decoration: underline dotted; }
+  .txt { position: absolute; bottom: 0; white-space: pre; line-height: 1.2; }
+  @media print { #caja, #estado { display: none; } }
+</style>
+<script>if (/[?&]oscuro/.test(location.search)) document.documentElement.classList.add('oscuro');</script>
+</head>
+<body>
+<main>
+  <textarea id="caja" spellcheck="false" rows="2"
+    placeholder="Pega aquí el enlace de la canción, una captura (Cmd/Ctrl+V) o el texto con los acordes"></textarea>
+  <div id="estado"></div>
+  <div id="cancion"></div>
+</main>
+<script type="module" src="./src/cancionero.js"></script>
+</body>
+</html>

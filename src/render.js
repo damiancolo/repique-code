@@ -177,10 +177,13 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acord
   // El nombre de la nota se ve siempre que la voz de notas esté sonando, haya
   // ritmo o no. El bpm solo cuando hay ritmo: sin transporte no dice nada.
   if (state.notasIniciadas) {
+    // En modo cantar el cancionero ocupa la esquina de arriba a la derecha: los
+    // textos se corren a su izquierda (state.reservaDerecha, en px de CSS)
+    const xd = w - 24 - (state.reservaDerecha || 0) * (w / Math.max(1, window.innerWidth));
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '300 13px "Space Grotesk", system-ui, sans-serif';
     ctx.textAlign = 'right';
-    if (state.audioIniciado) ctx.fillText(`${state.bpm} bpm`, w - 24, 32);
+    if (state.audioIniciado) ctx.fillText(`${state.bpm} bpm`, xd, 32);
     const y = state.audioIniciado ? 54 : 32;
 
     if (acordes && acordes.activo) {
@@ -189,14 +192,14 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acord
       if (acordes.cifrado) {
         ctx.fillStyle = 'rgba(230,57,70,0.9)';
         ctx.font = '600 30px "Space Grotesk", system-ui, sans-serif';
-        ctx.fillText(acordes.cifrado, w - 24, y + 22);
+        ctx.fillText(acordes.cifrado, xd, y + 22);
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.font = '300 12px "Space Grotesk", system-ui, sans-serif';
-        ctx.fillText(`${acordes.nombre} · ${acordes.registro}`, w - 24, y + 40);
+        ctx.fillText(`${acordes.nombre} · ${acordes.registro}`, xd, y + 40);
       }
     } else if (forma && LABEL_FORMA[forma]) {
       ctx.fillStyle = 'rgba(230,57,70,0.75)';
-      ctx.fillText(LABEL_FORMA[forma], w - 24, y);
+      ctx.fillText(LABEL_FORMA[forma], xd, y);
     }
 
     // Lectura de calibración del mayor. Está para afinar los umbrales con manos
@@ -205,12 +208,12 @@ export function renderFrame(ctx, video, canvas, manos, puntosGesto, forma, acord
       const leer = m => `${m.razon.toFixed(2)}${m.estirado ? ' ▲' : ' ▾'}`;
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
       ctx.font = '300 11px "Space Grotesk", system-ui, sans-serif';
-      ctx.fillText(`mayor  izq ${leer(mayores[0])}   der ${leer(mayores[1])}`, w - 24, y + 62);
+      ctx.fillText(`mayor  izq ${leer(mayores[0])}   der ${leer(mayores[1])}`, xd, y + 62);
     }
     if (menique) {
       ctx.fillStyle = 'rgba(255,255,255,0.28)';
       ctx.font = '300 11px "Space Grotesk", system-ui, sans-serif';
-      ctx.fillText(`meñique der ${menique.razon.toFixed(2)}${menique.arriba ? ' ▲' : ' ▾'}`, w - 24, y + 78);
+      ctx.fillText(`meñique der ${menique.razon.toFixed(2)}${menique.arriba ? ' ▲' : ' ▾'}`, xd, y + 78);
     }
     ctx.textAlign = 'left';
   }

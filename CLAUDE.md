@@ -240,6 +240,47 @@ dentro de un mismo estado. Para comprobar que una capa entra hay que mirar el
   banda hace rubato. Si algún día se enciende el candombe debajo, ahí sí tendría
   sentido que los cambios esperen al pulso.
 
+## Modo cantar (acordes.js + audio.js + main.js + cancionero)
+
+19 nov 2026, pedido de Damián: un modo para quien canta y toca la guitarra.
+Botón **`🎤 cantar`** (`#btn-cantar`) al lado de `♪ notas`, en `#fila-voz`. Es un
+interruptor **dentro de acordes** (`modoCantar` en main.js): prenderlo fuerza
+acordes; pasar a notas lo apaga. **No es un fork**: comparte todo con el modo
+acordes, sólo cambia la tabla de figuras.
+
+- **Las figuras** (`GRADO_POR_FORMA_CANTAR` en acordes.js): rectángulo=I,
+  trapecio piso=ii, techo=**vi**, izq=IV, der=**V7**, pinza der=**II7**, pinza
+  izq=**III7**, pulgares arriba=**V** (sin séptima). En Sol: G Am Em C D7 A7 B7 D.
+  Fuera el iii y el vii°, que casi no aparecen en un cancionero. Las figuras
+  **dejan de ser una escala que sube**: acá manda la comodidad.
+- **Grados nuevos** en `GRADOS`: `V7`, `II7`, `III7`, con `base: 'dom7'` —
+  `tipoComplemento` devuelve la base con 0 dedos, así nombre, frecuencias,
+  meñique (D7 → Dm7) y registros salen solos. Dedos: 1 = sus4, 2 = 9. `npm test`
+  comprueba los nombres en Sol y Do y que todo suene en las 12 tonalidades.
+- **Rasguido** (`setRasguido`, audio.js): en cantar, `sonarAcorde` va por
+  `_rasguear`: cada voz baja casi a cero, salta a su nota y vuelve a subir con
+  `RASGUIDO_PASO` (22 ms) de retraso respecto de la de abajo. Las voces siguen
+  sin soltarse nunca.
+- **Guía propia**: la lámina tiene `#cantar` (secciones `forma-cantar` y
+  `menique-cantar`; botones, altura, mayores y pie se comparten).
+  `modoDelMapa()`/`avisarModoMapa()` mandan `cantar` en ese modo.
+- **El cancionero arriba de la guía**: `#cancionero-caja` dentro de
+  `#mapa-overlay`; con `.cantar` el overlay pasa a columna (cancionero ancho
+  arriba, mapa chico abajo). Carga `cancionero.html?modo=cantar&oscuro` (segunda
+  página del build: `vite.config.js` tiene dos entradas). El cancionero avisa la
+  tonalidad que deduce (`postMessage {tipo:'cancionero-tono'}`) y el instrumento
+  la pone sola. `state.reservaDerecha` corre a la izquierda la lectura del acorde
+  del lienzo para que el cancionero no la tape.
+- **El cancionero** (`src/cancionero.js`): sin IA, mapa inverso de
+  `nombreAcorde` sobre las figuras del modo (el más barato en dedos), tonalidad
+  deducida. Dibujos en `src/manos-cancionero.js`, **generado** por
+  `scripts/genera-manos-cancionero.py` a partir de la lámina (cambia el dedo
+  doblado por el estirado, girado según cada mano). ⚠️ Si cambia la lámina,
+  volver a correrlo. Enlaces y capturas van a `/lab/cancionero/leer`, que sólo
+  existe en estudioprompt.com; en cualquier otro lado se pega el texto.
+- ⚠️ El build ahora saca `main-*.js` (antes `index-*.js`) y `cancionero-*.js`:
+  al copiar `dist/` al sitio, borrar **todos** los `.js` viejos de `assets/`.
+
 ## La espiral: manos cruzadas en acordes (audio.js + main.js:pasoEspiral)
 
 19 nov 2026, pedido de Damián: en acordes la figura de los dos triángulos

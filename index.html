@@ -160,7 +160,8 @@
     }
     #paleta-musica.visible { display: flex; }
 
-    #btn-notas, #btn-tono, #btn-instrumento {
+    #fila-voz { display: flex; gap: 0.4rem; }
+    #btn-notas, #btn-cantar, #btn-tono, #btn-instrumento {
       background: none;
       border: 1px solid rgba(255,255,255,0.25);
       color: rgba(255,255,255,0.5);
@@ -173,8 +174,8 @@
       cursor: pointer;
       transition: border-color 0.2s, color 0.2s;
     }
-    #btn-notas:hover, #btn-tono:hover, #btn-instrumento:hover { border-color: rgba(255,255,255,0.6); color: #fff; }
-    #btn-notas.activo { border-color: #e63946; color: #e63946; }
+    #btn-notas:hover, #btn-cantar:hover, #btn-tono:hover, #btn-instrumento:hover { border-color: rgba(255,255,255,0.6); color: #fff; }
+    #btn-notas.activo, #btn-cantar.activo { border-color: #e63946; color: #e63946; }
 
     /* La tonalidad sólo tiene sentido con acordes; el instrumento, con notas */
     #fila-tono, #fila-instrumento {
@@ -1097,6 +1098,17 @@
       opacity: 0.8;
     }
     #mapa-overlay.visible { display: block; }
+    /* Modo cantar: el cancionero arriba del mapa, más ancho que él (19 nov 2026) */
+    #mapa-overlay.cantar { width: auto; display: none; flex-direction: column; align-items: flex-end; gap: 0.4rem; opacity: 1; }
+    #mapa-overlay.cantar.visible { display: flex; }
+    #mapa-overlay.cantar #mapa-caja { width: clamp(130px, 12vw, 190px); opacity: 0.8; }
+    #cancionero-caja { display: none; }
+    #mapa-overlay.cantar #cancionero-caja {
+      display: block;
+      width: clamp(300px, 34vw, 520px);
+      height: min(46vh, 520px);
+    }
+    #cancionero-iframe { width: 100%; height: 100%; border: 0; display: block; background: transparent; }
     #mapa-caja {
       display: flex;
       flex-direction: column;
@@ -1244,7 +1256,10 @@
     </div>
     <!-- Paleta propia del modo música, como la de colores en pintura -->
     <div id="paleta-musica" class="visible">
-      <button id="btn-notas" title="Notas sueltas — cada forma es una nota, no un acorde">♪ notas</button>
+      <div id="fila-voz">
+        <button id="btn-notas" title="Notas sueltas — cada forma es una nota, no un acorde">♪ notas</button>
+        <button id="btn-cantar" title="Modo cantar — los acordes de guitarra más usados, para acompañarte cantando">🎤 cantar</button>
+      </div>
       <div id="fila-tono" class="visible">
         <button id="btn-tono" title="Tonalidad — la misma canción en el tono que te venga bien">Do</button>
         <span id="registro-nombre"></span>
@@ -1553,6 +1568,9 @@
   <!-- Mapa de manos: el «?» lo despliega. Es una página aparte
        (public/mapa-de-manos.html) que se carga recién al abrirla. -->
   <div id="mapa-overlay">
+    <div id="cancionero-caja">
+      <iframe id="cancionero-iframe" src="" title="Cancionero — pega una canción con acordes" allowtransparency="true"></iframe>
+    </div>
     <div id="mapa-caja">
       <div id="mapa-barra">
         <span>Mapa de manos</span>

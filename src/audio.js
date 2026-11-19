@@ -1479,11 +1479,37 @@ export function sonarAcorde(frecuencias) {
 
   // ⚠️ Mismas frecuencias en móvil y en ordenador: nada de subir de octava
   // según el acorde (ver la historia del perfil móvil arriba del archivo).
+  if (_rasguido) { _rasguear(frecuencias); return; }
   vocesAcorde.forEach((v, i) => {
     const f = frecuencias[i];
     if (f === undefined) { v.gain.gain.rampTo(0, 0.25); return; }
     v.synth.frequency.rampTo(f, 0.09);
     v.gain.gain.rampTo(1, 0.22);
+  });
+}
+
+// ─── Rasguido (modo cantar) ──────────────────────────────────────────────────
+// Para quien canta con guitarra el cambio de acorde tiene que sonar a rasguido:
+// las cuerdas entran una detrás de otra, de grave a agudo, en ~70 ms. Las cuatro
+// voces siguen sin soltarse nunca (ver arriba): cada una baja casi a cero, salta
+// a su nota nueva y vuelve a subir con un pequeño retraso respecto de la de
+// abajo. El deslizamiento se acorta para que el golpe caiga ya en la nota nueva.
+let _rasguido = false;
+const RASGUIDO_PASO = 0.022;   // segundos entre cuerda y cuerda
+export function setRasguido(activo) { _rasguido = !!activo; }
+
+function _rasguear(frecuencias) {
+  const t0 = Tone.now() + 0.005;
+  vocesAcorde.forEach((v, i) => {
+    const f = frecuencias[i];
+    const g = v.gain.gain;
+    g.cancelScheduledValues(t0);
+    g.setValueAtTime(g.value, t0);
+    if (f === undefined) { g.linearRampToValueAtTime(0, t0 + 0.2); return; }
+    const t = t0 + i * RASGUIDO_PASO;
+    g.linearRampToValueAtTime(0.12, t);              // se apaga un instante…
+    v.synth.frequency.setValueAtTime(f, t);           // …salta a la nota nueva…
+    g.linearRampToValueAtTime(1, t + 0.012);          // …y la cuerda suena
   });
 }
 

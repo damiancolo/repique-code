@@ -3,6 +3,9 @@ export const state = {
   bpm: 100,
   volumen: 0.8,
   audioIniciado: false,
+  // Ancho (px de CSS) que ocupa arriba a la derecha el cancionero del modo cantar:
+  // render.js corre a su izquierda la lectura del acorde para que no quede tapada.
+  reservaDerecha: 0,
   // Voz de notas (el drone del cuadrilátero) sonando. Se enciende sola en modo
   // música, sin pulsar "Arrancar"; con el ritmo en marcha también está en true.
   notasIniciadas: false,

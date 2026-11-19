@@ -9,6 +9,15 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Modo cantar** (19 nov)
+- Botón 🎤 al lado de «♪ notas»: las mismas figuras, pero con los acordes de
+  guitarra más usados (en Sol: G, Am, Em, C, D7, A7, B7 y D), y cada cambio de
+  acorde suena como un rasguido.
+- Al abrir la guía en este modo aparece arriba un cancionero: se pega una
+  canción con acordes (o el enlace, o una captura) y sale con las manos de cada
+  acorde. La tonalidad del instrumento se pone sola.
+- Guía propia del modo cantar en el «?».
+
 **El candado ya no tapa la nota** (19 nov)
 - Con las dos pinzas puestas ya no aparece el cartel «bloqueado» arriba a la
   derecha, que tapaba la nota: queda sólo un candado 🔒, arriba al centro.

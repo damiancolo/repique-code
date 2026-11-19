@@ -3,6 +3,9 @@ export const state = {
   bpm: 100,
   volumen: 0.8,
   audioIniciado: false,
+  // Caja del panel de botones (px de CSS): render.js corre las etiquetas de los
+  // tercios para que nunca queden debajo de un botón.
+  panel: null,
   // Voz de notas (el drone del cuadrilátero) sonando. Se enciende sola en modo
   // música, sin pulsar "Arrancar"; con el ritmo en marcha también está en true.
   notasIniciadas: false,

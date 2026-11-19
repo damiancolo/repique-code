@@ -27,6 +27,7 @@ const menuRitmo     = document.getElementById('menu-ritmo');
 const ritmoBtns     = document.querySelectorAll('.ritmo-btn');
 const paletaMusica  = document.getElementById('paleta-musica');
 const btnNotas      = document.getElementById('btn-notas');
+const panelEl       = document.getElementById('panel');
 const filaTono      = document.getElementById('fila-tono');
 const btnTono       = document.getElementById('btn-tono');
 const registroNombre = document.getElementById('registro-nombre');
@@ -1760,6 +1761,8 @@ async function init() {
 
       // `mayores` sólo se dibuja, todavía no dispara nada: primero hay que
       // afinar el umbral con manos de verdad y ver si el salto cae donde toca.
+      const _pr = panelEl.getBoundingClientRect();
+      state.panel = { top: _pr.top, bottom: _pr.bottom, right: _pr.right };
       renderFrame(ctx, video, canvas, manos, puntos, formaConfirmada, vistaAcordes, mayores, menique);
       // Limpiar paint canvas en modo normal
       ctxPaint.clearRect(0, 0, canvasPaint.width, canvasPaint.height);

@@ -9,6 +9,16 @@ Las fechas salen del historial de git.
 
 ## 1.9 — julio 2026 · **Primera versión pública**
 
+**Espiral: las manos cruzadas suenan en acordes** (19 nov)
+- La figura de los dos triángulos (manos cruzadas) ya no queda muda en
+  acordes: el último acorde se desarma en sus notas y gira en espiral (sube por
+  las cuatro voces, la fundamental arriba y baja). Siempre en tono.
+- Un filtro resonante tipo acid, sin distorsión: la altura de las manos lo
+  abre (abajo oscuro, arriba brillante). Lo separadas que estén da la
+  velocidad. Con el ritmo en marcha va al pulso.
+- El acorde no se corta: queda de colchón y vuelve al deshacer la figura.
+- En el mapa, «ACID» pasa a llamarse «ESPIRAL». En notas sueltas sigue el Acid.
+
 **Se entra en música, con el mapa abierto** (19 nov)
 - La app ya no abre en pintura: abre en 🎵 con el «?» desplegado, así lo
   primero que se ve es qué figura de las manos da cada acorde (Do, Re, Mi…).

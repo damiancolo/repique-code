@@ -4,7 +4,7 @@
 
 import { initHands, detectarManos, calcularGestos, detectarVictoria, lateralidad } from './hands.js';
 import { renderFrame } from './render.js';
-import { setModoAcordes, sonarAcorde, setComplementoNota, setInvertirTercera, startAudio, startNotas, startSonidos, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
+import { setModoAcordes, sonarAcorde, setEspiral, actualizarEspiral, setComplementoNota, setInvertirTercera, startAudio, startNotas, startSonidos, stopAudio, setVolumen, actualizarBPM, actualizarFiltro, actualizarArea, actualizarNota, resetTracks, setModoTecno, actualizarWow, resetNotaAcid, resumeContextSync, cambiarRitmo, BANCO_PATRONES, CANDOMBE_REAL_IDX, efectoTechnoDrop, efectoRiser, efectoStab, efectoImpacto, efectoArpegio, efectoLaser, efectoShimmer, efectoPluck, efectoSweep, efectoEscaleraSube, efectoEscaleraBaja, armarLooper, pararLooper, onLooperEstado, getLooperEstado, dispararGesto, GESTOS_BAILE, getAsignaciones, setAsignacion, previewSonido, setFamilia, getFamilia, FAMILIAS, getBiblioteca, exportarConfig, importarConfig } from './audio.js';
 import { state } from './state.js';
 import { TONALIDADES, GRADO_POR_FORMA, frecuenciasAcorde, nombreAcorde, inversionAplica } from './acordes.js';
 import { INSTRUMENTOS, setInstrumento, getInstrumento } from './audio.js';
@@ -205,6 +205,37 @@ async function init() {
   function resetAcordes() {
     _acCandidato = null; _acLecturas = 0; _acSonando = null;
     vistaAcordes = modoAcordes ? { activo: true } : null;
+  }
+
+  // ── Espiral: manos cruzadas en acordes ─────────────────────────────────────
+  // Entra con 4 lecturas seguidas de los dos triángulos y sale cuando la
+  // figura falta ESPIRAL_SALIDA_MS (un parpadeo del detector no la corta).
+  const ESPIRAL_LECTURAS   = 4;
+  const ESPIRAL_SALIDA_MS  = 220;
+  let _espLecturas = 0;
+  let _espVistaEn  = 0;
+  let _espActiva   = false;
+
+  function pasoEspiral(forma, centroY, ancho, ahora) {
+    const cruzadas = forma === 'dos_triangulos';
+    if (cruzadas) { _espLecturas++; _espVistaEn = ahora; } else _espLecturas = 0;
+    if (!_espActiva && cruzadas && _espLecturas >= ESPIRAL_LECTURAS) {
+      // Arpegia el último acorde que sonó; si todavía no sonó ninguno, el I
+      const a = _acSonando || { grado: 'I', registro: 'medio', complemento: 0, invertido: false };
+      setEspiral(true, frecuenciasAcorde(tonalidad, a.grado, a.registro, a.complemento, a.invertido));
+      _espActiva = true;
+      _registradoEn = ahora;
+      const base = nombreAcorde(tonalidad, a.grado, a.complemento, a.invertido);
+      vistaAcordes = { activo: true, cifrado: 'Espiral', nombre: `sobre ${base.cifrado}`, registro: 'más alto, más brillo' };
+    } else if (_espActiva && !cruzadas && ahora - _espVistaEn > ESPIRAL_SALIDA_MS) {
+      setEspiral(false);
+      _espActiva = false;
+      if (_acSonando) {
+        const n = nombreAcorde(tonalidad, _acSonando.grado, _acSonando.complemento, _acSonando.invertido);
+        vistaAcordes = { activo: true, ...n, registro: _acSonando.registro };
+      }
+    }
+    if (_espActiva && cruzadas) actualizarEspiral(centroY, ancho);
   }
 
   function pasoAcordes(forma, centroY, ahora, complemento, invertido = false) {
@@ -1652,6 +1683,7 @@ async function init() {
             : 0;
 
           if (modoAcordes) {
+            pasoEspiral(forma, centroY, ancho, timestamp);
             pasoAcordes(forma, centroY, timestamp, complemento, invertido);
           } else {
             // La quinta entra y sale sola: no necesita debounce porque el
@@ -1688,7 +1720,7 @@ async function init() {
         else { actualizarArea(0); }
         formaCandidato  = null;
         framesCandidato = 0;
-        if (modoAcordes) pasoAcordes(null, null, timestamp, 0);
+        if (modoAcordes) { pasoEspiral(null, null, null, timestamp); pasoAcordes(null, null, timestamp, 0); }
         else setComplementoNota(0);
       }
 

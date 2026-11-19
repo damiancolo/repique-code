@@ -34,7 +34,7 @@ const LABEL_FORMA = {
   la:            'Pinza der.   La',
   si:            'Pinza izq.   Si',
   do_alto:       'Pulgares arriba   Do₂',
-  dos_triangulos:'▲ ▲   Acid',
+  dos_triangulos:'▲ ▼   Espiral',
 };
 
 // Los tres tercios del modo acordes. Deben coincidir con LIM_AGUDO/LIM_GRAVE

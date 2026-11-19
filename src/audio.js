@@ -1461,6 +1461,7 @@ export function setModoAcordes(activo) {
     _droneSuelta();
     _acordeAtaque();
   } else {
+    setEspiral(false);
     acordeGain.gain.rampTo(0, 0.25);
     _acordeSuelta();
     _droneAtaque('C3');
@@ -1485,6 +1486,99 @@ export function sonarAcorde(frecuencias) {
     v.gain.gain.rampTo(1, 0.22);
   });
 }
+
+// ─── Espiral (modo acordes, manos cruzadas = dos triángulos) ─────────────────
+// El acorde que venía sonando se desarma en sus notas y corre en espiral:
+// sube por las cuatro voces, toca la fundamental una octava arriba y baja.
+// Son las notas del mismo acorde, así que siempre está en tono.
+//
+// Encima, un paso-bajo resonante con envolvente corta por nota: el «uau» del
+// acid, pero SIN distorsión — sobre acordes la distorsión ensucia y tapa a
+// quien canta. La altura de las manos abre el filtro (abajo oscuro, arriba
+// brillante); lo separadas que estén da la velocidad.
+//
+// Reloj propio (Tone.Clock), no el transporte: el ritmo puede estar parado.
+// Si el candombe suena, el reloj arranca en la próxima semicorchea y va a 16
+// por compás, o sea al pulso; con las manos juntas toca una de cada dos.
+//
+// El acorde sostenido NO se corta: baja a un colchón (`acordeDuck`) y vuelve
+// a subir al deshacer la figura, así el arpegio se funde de vuelta en él.
+const ESPIRAL_PATRON = [0, 1, 2, 3, 4, 3, 2, 1];   // 4 = la fundamental ×2
+const acordeDuck   = new Tone.Gain(1);
+const espiralGain  = new Tone.Gain(0);
+const espiralEco   = new Tone.FeedbackDelay({ delayTime: 0.27, feedback: 0.28, wet: 0.22 });
+const espiralSynth = new Tone.MonoSynth({
+  oscillator: { type: 'sawtooth' },
+  envelope:   { attack: 0.004, decay: 0.16, sustain: 0.25, release: 0.12 },
+  filter:     { type: 'lowpass', rolloff: -24, Q: 7 },
+  filterEnvelope: { attack: 0.004, decay: 0.14, sustain: 0.15, release: 0.12,
+                    baseFrequency: 500, octaves: 2.6 },
+  volume: -12,   // medido: solo, ~0,2 RMS contra ~0,28 del acorde entero
+});
+espiralSynth.connect(espiralGain);
+
+let _espiralActiva = false;
+let _espiralFreqs  = null;     // las del acorde que se arpegia
+let _espiralPaso   = 0;
+let _espiralTick   = 0;
+let _espiralLento  = false;    // con el pulso: una de cada dos semicorcheas
+let _espiralAlPulso = false;
+let _espiralUltimo = 0;
+
+const espiralReloj = new Tone.Clock((time) => {
+  if (!_espiralActiva || !_espiralFreqs) return;
+  _espiralTick++;
+  if (_espiralAlPulso && _espiralLento && (_espiralTick % 2)) return;
+  const i = ESPIRAL_PATRON[_espiralPaso % ESPIRAL_PATRON.length];
+  _espiralPaso++;
+  const f = i === 4 ? _espiralFreqs[0] * 2 : _espiralFreqs[Math.min(i, _espiralFreqs.length - 1)];
+  if (!f) return;
+  // Tone exige ataques estrictamente crecientes
+  const t = Math.max(time, _espiralUltimo + 0.002);
+  _espiralUltimo = t;
+  const acento = (_espiralPaso % 4 === 1) ? 1 : 0.72;
+  espiralSynth.triggerAttackRelease(f, 0.09, t, acento);
+}, 8);
+
+/** Entrar o salir de la espiral. `freqs` = las frecuencias del acorde. */
+export function setEspiral(activa, freqs) {
+  if (activa && freqs) _espiralFreqs = freqs.slice(0, 4);
+  if (activa === _espiralActiva) return;
+  if (activa && !state.notasIniciadas) return;
+  _espiralActiva = activa;
+  if (activa) {
+    _espiralPaso = 0; _espiralTick = 0;
+    const T = Tone.getTransport();
+    _espiralAlPulso = T.state === 'started';
+    if (_espiralAlPulso) {
+      espiralReloj.frequency.value = T.bpm.value * 4 / 60;
+      espiralReloj.start(T.nextSubdivision('16n'));
+    } else {
+      espiralReloj.start();
+    }
+    espiralGain.gain.rampTo(1, 0.08);
+    acordeDuck.gain.rampTo(0.3, 0.25);
+  } else {
+    espiralGain.gain.rampTo(0, 0.35);
+    acordeDuck.gain.rampTo(1, 0.6);
+    espiralReloj.stop('+0.4');
+  }
+}
+
+/** Cada cuadro con la figura: altura → filtro, separación → velocidad. */
+export function actualizarEspiral(centroY, ancho) {
+  if (!_espiralActiva) return;
+  const alto = 1 - Math.max(0, Math.min(1, centroY));         // 1 = arriba
+  espiralSynth.filterEnvelope.baseFrequency = 220 * Math.pow(9, alto);   // 220–1980 Hz
+  const sep = Math.max(0, Math.min(1, (ancho - 0.12) / 0.45)); // 0 juntas, 1 separadas
+  if (_espiralAlPulso) {
+    _espiralLento = sep < 0.4;
+  } else {
+    espiralReloj.frequency.rampTo(4 + sep * 8, 0.2);           // 4–12 notas por segundo
+  }
+}
+
+export function estaEnEspiral() { return _espiralActiva; }
 
 const NOTA_POR_FORMA = {
   rectangulo:    'C3',   // Do
@@ -1748,8 +1842,14 @@ function asegurarCadena() {
 
   // Voz de acordes — cadena propia, con su filtro cerrado y su reverb
   vocesAcorde.forEach(v => v.gain.connect(acordeFiltro));
-  acordeFiltro.connect(acordeGain);
+  acordeFiltro.connect(acordeDuck);
+  acordeDuck.connect(acordeGain);
   acordeGain.connect(masterComp);
+  // La espiral va aparte: no depende del área (con las manos cruzadas el
+  // cuadrilátero casi no tiene superficie y se apagaría)
+  espiralGain.connect(masterComp);
+  espiralGain.connect(espiralEco);
+  espiralEco.connect(masterComp);
   // En móvil la reverb del acorde NO se conecta. Es el nodo más caro de esta
   // cadena (Freeverb son ocho peines y cuatro pasa-todo) y encima su cola vive
   // en los graves-medios, justo lo que un altavoz de teléfono no reproduce: lo
@@ -1871,6 +1971,7 @@ export async function startAudio() {
 
 export function stopAudio() {
   pararLooper();
+  setEspiral(false);
   _droneSuelta();
   _acordeSuelta();
   droneGain.gain.rampTo(0, 0.3);

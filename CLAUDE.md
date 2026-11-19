@@ -70,7 +70,7 @@ Clasificación en `hands.js:clasificarForma()`:
 | la | La | pinza mano derecha (dist pulgar-índice < 0.07) |
 | si | Si | pinza mano izquierda |
 | do_alto | Do₂ | ambos pulgares > índices en Y en 0.10 |
-| dos_triangulos | Acid | cuadrilátero auto-intersectante (manos cruzadas) |
+| dos_triangulos | Acid (en notas) · Espiral (en acordes) | cuadrilátero auto-intersectante (manos cruzadas) |
 | dosPinzas (no forma) | Toggle lock | ambas manos en pinza simultáneamente (8 frames) |
 
 ## Lock de tempo/tono (dos pinzas)
@@ -239,6 +239,31 @@ dentro de un mismo estado. Para comprobar que una capa entra hay que mirar el
 - Sin cuantización al pulso: el modo arranca **sin ritmo**, y quien canta sin
   banda hace rubato. Si algún día se enciende el candombe debajo, ahí sí tendría
   sentido que los cambios esperen al pulso.
+
+## La espiral: manos cruzadas en acordes (audio.js + main.js:pasoEspiral)
+
+19 nov 2026, pedido de Damián: en acordes la figura de los dos triángulos
+estaba muda (el acid sólo existe en notas). Ahora es la **espiral**: el último
+acorde que sonó (`_acSonando`, o el I medio si no sonó ninguno) se arpegia con
+el patrón `ESPIRAL_PATRON` [0,1,2,3, fundamental×2, 3,2,1].
+
+- **Entrada/salida**: 4 lecturas seguidas de `dos_triangulos` para entrar;
+  sale cuando la figura falta `ESPIRAL_SALIDA_MS` (220). `pasoAcordes` sigue
+  corriendo igual: los dos triángulos no tienen grado, así que el acorde
+  sostenido no cambia.
+- **Voz**: `espiralSynth` (MonoSynth diente de sierra, paso-bajo −24 resonante
+  Q 7 con envolvente corta por nota) → `espiralGain` → master + eco corto.
+  ⚠️ **Sin distorsión**: sobre acordes ensucia y tapa a quien canta.
+- **Va aparte del área**: con las manos cruzadas el cuadrilátero casi no tiene
+  superficie y `actualizarArea` apagaría todo lo que cuelgue de `acordeGain`.
+- **El acorde no se corta**: `acordeDuck` (entre `acordeFiltro` y
+  `acordeGain`) lo baja a 0,3 y lo devuelve a 1 al salir.
+- **Mando**: `actualizarEspiral(centroY, ancho)` — altura → `baseFrequency` del
+  filtro (220–1980 Hz, arriba brillante); separación → velocidad (4–12 notas/s
+  con reloj libre). **Reloj propio** (`Tone.Clock`), no el transporte. Si el
+  transporte está en marcha al entrar, arranca en la próxima semicorchea a
+  bpm×4/60 (al pulso) y con las manos juntas toca una de cada dos.
+- `setModoAcordes(false)` y `stopAudio()` la apagan.
 
 ## El meñique: mayor ↔ menor (acordes.js + hands.js + main.js)
 
